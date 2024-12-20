@@ -12,9 +12,11 @@ const logFormSchema = z.object({
   }),
 })
 
+export const runtime = 'edge'
+
 export async function createLog(formData: FormData) {
   const data = Object.fromEntries(formData.entries())
-  console.log(data)
+
   const result = await logFormSchema.safeParseAsync(data)
 
   if (!result.success) {
