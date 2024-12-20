@@ -68,6 +68,10 @@ export default {
             filter: 'blur(0)',
           },
         },
+        'sparkle': {
+          '0%, 100%': { opacity: '0.2', transform: 'scale(1)' },
+          '50%': { opacity: '1', transform: 'scale(1.2)' },
+        },
       },
       animation: {
         'float': 'float 3s ease-in-out infinite',
@@ -76,6 +80,7 @@ export default {
         'float-ghost': 'float-ghost 4s ease-in-out infinite',
         'magical-glow': 'magical-glow 3s ease-in-out infinite',
         'ghost': 'ghost 3s ease-in-out infinite',
+        'sparkle': 'sparkle 2s ease-in-out infinite',
       },
       transitionDelay: {
         200: '200ms',

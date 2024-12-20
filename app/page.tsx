@@ -12,7 +12,6 @@ function Home() {
 
       <main className="relative flex flex-col items-center gap-12">
         <HeroSection />
-
         <RecentEvents />
       </main>
 

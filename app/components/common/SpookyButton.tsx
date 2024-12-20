@@ -20,12 +20,13 @@ export function SpookyButton({
   fullWidth = false,
   className,
   disabled,
+  type = 'button',
   ...props
 }: SpookyButtonProps) {
   return (
     <button
       disabled={isLoading || disabled}
-      type="button"
+      type={type}
       className={cn(
         baseStyles,
         variantStyles[variant],
