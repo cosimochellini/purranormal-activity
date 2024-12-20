@@ -44,3 +44,11 @@ export function EventCard({
     </div>
   )
 }
+EventCard.Skeleton = function EventCardSkeleton() {
+  return (
+    <div className={classNames(cardClasses, 'animate-pulse my-4')}>
+      <div className="h-10 m-2 w-full bg-purple-700/30 rounded-full" />
+      <div className="h-10 m-2 w-full bg-purple-700/30 rounded-full" />
+    </div>
+  )
+}

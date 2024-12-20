@@ -1,11 +1,41 @@
 'use client'
 
 import { categories } from '@/data/enum/category'
+import Image from 'next/image'
 
+import Link from 'next/link'
 import { useState, useTransition } from 'react'
+import { randomImage } from '../../images/insert/success'
 import { typedObjectKeys } from '../../utils/typed'
 import { createLog } from '../actions/log'
 import { SpookyButton } from '../components/common/SpookyButton'
+
+function CompletedSection() {
+  const successImage = randomImage()
+  return (
+    <div className="flex flex-col w-full items-center justify-center gap-4">
+      <div className="rounded-md p-4 bg-green-900/30">
+        Log created successfully
+      </div>
+      <div className="relative w-full aspect-square max-w-3xl mx-auto rounded-md overflow-hidden">
+        <Image
+          src={successImage}
+          blurDataURL={successImage.blurDataURL}
+          placeholder="blur"
+          alt="Success"
+          fill
+          className="object-contain"
+        />
+      </div>
+
+      <SpookyButton>
+        <Link href="/">
+          Go to home
+        </Link>
+      </SpookyButton>
+    </div>
+  )
+}
 
 export function NewLogForm() {
   const [isPending, startTransition] = useTransition()
@@ -24,7 +54,7 @@ export function NewLogForm() {
   }
 
   if (completed)
-    return <div className="rounded-md p-4 bg-green-900/30">Log created successfully</div>
+    return <CompletedSection />
 
   return (
     <form
