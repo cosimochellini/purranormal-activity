@@ -8,6 +8,7 @@ export default antfu({
   typescript: true,
   rules: {
     'no-console': 'off',
+    'perfectionist/sort-imports': 'off',
   },
   plugins: {
     'next-on-pages': nextOnPages,
