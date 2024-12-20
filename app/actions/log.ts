@@ -12,8 +12,6 @@ const logFormSchema = z.object({
   }),
 })
 
-export const runtime = 'edge'
-
 export async function createLog(formData: FormData) {
   const data = Object.fromEntries(formData.entries())
 
