@@ -52,6 +52,7 @@ async function generateLogDetails({ description, answers }: Body) {
     category: Categories
   }
 }
+export const runtime = 'edge'
 
 export async function POST(request: Request) {
   try {

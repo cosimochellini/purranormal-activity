@@ -19,7 +19,7 @@ export type Response = {
   success: false
   errors: Partial<Record<keyof typeof logFormSchema.shape, string[]>>
 }
-
+export const runtime = 'edge'
 export async function POST(request: Request) {
   const data = await request.json()
 

@@ -19,7 +19,7 @@ export type Response = {
   errors: Partial<Record<keyof typeof schema.shape, string[]>>
 }
 
-// export const runtime = 'edge'
+export const runtime = 'edge'
 
 export async function POST(request: Request) {
   try {
