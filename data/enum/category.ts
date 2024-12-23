@@ -1,4 +1,4 @@
-export enum categories {
+export enum Categories {
   GhostlyApparition = 'GhostlyApparition',
   Levitation = 'Levitation',
   MysteriousSounds = 'MysteriousSounds',

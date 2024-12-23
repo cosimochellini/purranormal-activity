@@ -1,34 +1,45 @@
-'use server'
-import { categories } from '@/data/enum/category'
+import { Categories } from '@/data/enum/category'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
+
+import { ok } from '@/utils/http'
 import { z } from 'zod'
 
 const logFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
-  category: z.nativeEnum(categories, {
+  category: z.nativeEnum(Categories, {
     message: 'Please select a valid category',
   }),
 })
 
-export async function createLog(formData: FormData) {
-  const data = Object.fromEntries(formData.entries())
+export type Response = {
+  success: true
+} | {
+  success: false
+  errors: Partial<Record<keyof typeof logFormSchema.shape, string[]>>
+}
+
+export async function POST(request: Request) {
+  const data = await request.json()
 
   const result = await logFormSchema.safeParseAsync(data)
 
   if (!result.success) {
-    return {
+    return ok<Response>({
       success: false,
       errors: result.error.flatten().fieldErrors,
-    } as const
+    })
   }
 
   try {
     await db.insert(log).values(result.data)
-    return { success: true } as const
+
+    return ok<Response>({ success: true })
   }
   catch {
-    return { success: false } as const
+    return ok<Response>({ success: false, errors: {} })
   }
 }
+
+export type Body = z.infer<typeof logFormSchema>

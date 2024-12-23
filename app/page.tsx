@@ -1,11 +1,11 @@
 import { desc } from 'drizzle-orm'
 import { Suspense } from 'react'
+import { SpookyBackground } from '../components/background/SpookyBackground'
+import { EventCard } from '../components/events/EventCard'
+import { SpookyFooter } from '../components/footer/SpookyFooter'
+import { HeroSection } from '../components/hero/HeroSection'
 import { log } from '../db/schema'
 import { db } from '../drizzle'
-import { SpookyBackground } from './components/background/SpookyBackground'
-import { EventCard } from './components/events/EventCard'
-import { SpookyFooter } from './components/footer/SpookyFooter'
-import { HeroSection } from './components/hero/HeroSection'
 
 function Home() {
   return (
@@ -21,6 +21,7 @@ function Home() {
     </div>
   )
 }
+
 function getLogs() {
   return db
     .select()
