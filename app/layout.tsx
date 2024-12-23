@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Caveat, Quicksand } from 'next/font/google'
 import './globals.css'
 
@@ -16,8 +16,13 @@ export const metadata: Metadata = {
   title: 'Paranormal Kitten Logger',
   description: 'Track the magical mishaps and spooky shenanigans of your enchanted kitten',
   keywords: ['paranormal', 'kitten', 'magical', 'tracking', 'spooky'],
-  viewport: 'width=device-width, initial-scale=1.0',
 }
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+} satisfies Viewport
 
 interface RootLayoutProps {
   children: React.ReactNode

@@ -1,8 +1,8 @@
+import type { FC } from 'react'
 import heroImage from '@/images/hero.webp'
 import cn from 'classnames'
 import Image from 'next/image'
 import Link from 'next/link'
-import type { FC } from 'react'
 import { AnimatedWord } from '../common/AnimatedWord'
 import { SpookyButton } from '../common/SpookyButton'
 

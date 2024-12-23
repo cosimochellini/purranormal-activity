@@ -1,8 +1,8 @@
-import Image from 'next/image'
-import Link from 'next/link'
-
 import { SpookyButton } from '@/components/common/SpookyButton'
 import { randomImage } from '@/images/insert/success'
+
+import Image from 'next/image'
+import Link from 'next/link'
 
 export function CompletedSection() {
   const successImage = randomImage()
