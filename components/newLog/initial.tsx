@@ -1,30 +1,46 @@
-import type { Body, FollowUpQuestion, Response } from '@/app/api/log/refine/route'
-import { fetcher } from '@/utils/fetch'
-import { typedObjectKeys } from '@/utils/typed'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
+import { Loading } from '../common/Loading'
 import { SpookyButton } from '../common/SpookyButton'
 
-const refineLog = fetcher<Response, never, Body>('/api/log/refine', 'POST')
-
 interface InitialSectionProps {
-  onInitialSuccess?: (body: { description: string, questions: FollowUpQuestion[] }) => void
+  onInitialSuccess?: (body: { description: string, stream: ReadableStreamDefaultReader<Uint8Array> }) => unknown
 }
 
 export function InitialSection({ onInitialSuccess }: InitialSectionProps) {
   const [description, setDescription] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
-  const [isPending, startTransition] = useTransition()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = () => {
-    startTransition(async () => {
-      const response = await refineLog({ body: { description } })
+  const handleSubmit = async () => {
+    try {
+      setIsSubmitting(true)
+      const response = await fetch('/api/log/refine', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ description }),
+      })
 
-      if (!response.success)
-        return setErrorMessage(typedObjectKeys(response.errors ?? {}).find(key => response.errors?.[key]?.length) ?? '')
+      if (!response.ok)
+        setErrorMessage(response.statusText)
 
-      onInitialSuccess?.({ description, questions: response.content })
-    })
+      const stream = response.body?.getReader()
+      if (!stream)
+        return setErrorMessage('Failed to read response stream')
+
+      onInitialSuccess?.({ description, stream })
+    }
+    catch (error) {
+      if (error instanceof Error)
+        setErrorMessage(error.message)
+      else
+        setErrorMessage(JSON.stringify(error))
+    }
   }
+
+  if (isSubmitting)
+    return <Loading />
 
   return (
     <form
@@ -57,7 +73,6 @@ export function InitialSection({ onInitialSuccess }: InitialSectionProps) {
       <SpookyButton
         type="button"
         fullWidth
-        isLoading={isPending}
         onClick={handleSubmit}
       >
         Record Supernatural Event

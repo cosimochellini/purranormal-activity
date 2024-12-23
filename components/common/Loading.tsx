@@ -1,0 +1,16 @@
+import LoadingImage from '@/images/loading.webp'
+import Image from 'next/image'
+
+export function Loading() {
+  return (
+    <div className="flex justify-center items-center min-h-full">
+      <Image
+        src={LoadingImage}
+        blurDataURL={LoadingImage.blurDataURL}
+        placeholder="blur"
+        alt="Loading..."
+        className="w-40 h-40 animate-spin-slow rounded-full shadow-lg shadow-purple-500/50"
+      />
+    </div>
+  )
+}

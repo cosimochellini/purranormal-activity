@@ -1,9 +1,9 @@
 'use client'
 
-import dynamic from 'next/dynamic'
 import type { ComponentType } from 'react'
-import { useState } from 'react'
 import type { FollowUpQuestion } from '../../app/api/log/refine/route'
+import dynamic from 'next/dynamic'
+import { useState } from 'react'
 
 enum State {
   INITIAL = 'initial',
@@ -16,7 +16,7 @@ const completed = dynamic(() => import('./completed').then(mod => mod.CompletedS
 
 interface FormValues {
   description: string
-  questions: FollowUpQuestion[]
+  stream: ReadableStreamDefaultReader<Uint8Array>
 }
 
 interface InitialSectionProps {
@@ -35,12 +35,27 @@ const stateMap = {
 export function NewLogForm() {
   const [state, setState] = useState(State.INITIAL)
   const [body, setBody] = useState<FormValues>()
+  const [questions, setQuestions] = useState<FollowUpQuestion[]>([])
 
   const Component = stateMap[state]
 
-  const handleInitialSuccess = (body: FormValues) => {
+  const handleInitialSuccess = async ({ description, stream }: FormValues) => {
     setState(State.REFINEMENT)
-    setBody(body)
+    setBody({ description, stream })
+
+    const decoder = new TextDecoder('utf-8')
+    let done = false
+
+    while (!done) {
+      const { done: streamDone, value } = await stream.read()
+      done = streamDone
+      if (!value)
+        return
+
+      const chunk = decoder.decode(value, { stream: true })
+      const newQuestion = JSON.parse(chunk) as FollowUpQuestion
+      setQuestions(prev => [...prev, newQuestion])
+    }
   }
 
   const handleRefinementSuccess = () => {
@@ -53,7 +68,7 @@ export function NewLogForm() {
       onInitialSuccess={handleInitialSuccess}
       onSubmitSuccess={handleRefinementSuccess}
       description={body?.description}
-      questions={body?.questions}
+      questions={questions}
     />
   )
 }

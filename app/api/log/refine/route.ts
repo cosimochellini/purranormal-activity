@@ -36,41 +36,86 @@ export async function POST(request: Request) {
     const { description } = result.data
 
     try {
+      const content = `
+        You're a ghostbuster with more than 10 years of experience.
+        A cute, small chick asked for your help with a paranormal activity.
+        The witch cat made for the umpteenth time a paranormal event.
+        this is the description of the paranormal activity:  ${description}.
+        Give me 5 question to understand better the paranormal activity.
+        The questions should be in the following format:
+        {
+          question: string
+          availableAnswers: string[]
+        }[]
+        Please return the JSON only.
+        Both the questions and the answers should be in Italian.
+      `
+
       const completion = await openai.chat.completions.create({
-        messages: [
-          {
-            role: 'user',
-            content: `
-                        You're a ghostbuster with more than 10 years of experience.
-                        A cute, small chick asked for your help with a paranormal activity.
-                        The witch cat made for the umpteenth time a paranormal event.
-                        this is the description of the paranormal activity:  ${description}.
-                        Give me 5 question to understand the better the paranormal activity.
-                        The questions should be in the following format:
-                        {
-                          question: string
-                          availableAnswers: string[]
-                        }[]
-                        Please return the JSON only.
-                        `,
-          },
-        ],
-        model: 'gpt-4o-mini',
-        response_format: { type: 'json_object' },
+        messages: [{ role: 'user', content }],
+        model: 'gpt-3.5-turbo',
+        stream: true,
       })
 
-      const content = completion.choices[0]?.message?.content || '[]'
+      // Convert the async iterable into a ReadableStream
+      const responseStream = new ReadableStream({
+        async start(controller) {
+          let accumulatedContent = ''
 
-      const json = JSON.parse(content) as { questions: FollowUpQuestion[] }
+          try {
+            for await (const chunk of completion) {
+              const contentChunk = chunk.choices[0]?.delta?.content
 
-      return ok<Response>({
-        success: true,
-        content: json.questions,
+              if (!contentChunk)
+                continue
+
+              accumulatedContent += contentChunk
+
+              // Keep parsing out complete JSON objects
+              while (true) {
+                const startIndex = accumulatedContent.indexOf('{')
+                const endIndex = accumulatedContent.indexOf('}', startIndex)
+
+                // If both indices are found, attempt to parse a full JSON object
+                if (startIndex !== -1 && endIndex !== -1) {
+                  const potentialJson = accumulatedContent.slice(startIndex, endIndex + 1)
+                  // Slice it out so we can keep looking for more
+                  accumulatedContent = accumulatedContent.slice(endIndex + 1)
+
+                  try {
+                    const parsed = JSON.parse(potentialJson)
+                    // If parsing succeeds, we enqueue the stringified object
+                    controller.enqueue(JSON.stringify(parsed))
+                  }
+                  catch {
+                    // If parsing fails, re-accumulate and break
+                    accumulatedContent = potentialJson + accumulatedContent
+                    break
+                  }
+                }
+                else {
+                  break
+                }
+              }
+            }
+          }
+          catch (err) {
+            controller.error(err)
+          }
+          finally {
+            controller.close()
+          }
+        },
+      })
+
+      return new Response(responseStream, {
+        headers: { 'Content-Type': 'text/event-stream' },
       })
     }
     catch (error) {
-      if (!(error instanceof Error))
+      if (!(error instanceof Error)) {
         return ok<Response>({ success: false, errors: { description: [JSON.stringify(error)] } })
+      }
 
       return ok<Response>({
         success: false,

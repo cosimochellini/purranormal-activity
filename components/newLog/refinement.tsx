@@ -2,7 +2,7 @@ import type { FollowUpQuestion } from '@/app/api/log/refine/route'
 import type { Body, Response } from '@/app/api/log/submit/route'
 import { fetcher } from '@/utils/fetch'
 import cn from 'classnames'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { SpookyButton } from '../common/SpookyButton'
 
 interface RefinementSectionProps {
@@ -16,10 +16,6 @@ interface AnsweredQuestion extends FollowUpQuestion {
 }
 
 const submitLog = fetcher<Response, never, Body>('/api/log/submit', 'POST')
-
-function buildAnswers(questions: FollowUpQuestion[] | undefined): AnsweredQuestion[] {
-  return questions?.map(q => ({ ...q, answer: '' })) ?? []
-}
 
 interface RadioOptionProps {
   question: string
@@ -78,7 +74,20 @@ function RadioOption({ question, answer, availableAnswer, onAnswerChange }: Radi
 
 export function RefinementSection({ description, questions, onSubmitSuccess }: RefinementSectionProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [answers, setAnswers] = useState(() => buildAnswers(questions))
+  const [answers, setAnswers] = useState([] as AnsweredQuestion[])
+
+  useEffect(() => {
+    const ret = [] as AnsweredQuestion[]
+
+    for (const { availableAnswers, question } of questions ?? []) {
+      const answer = answers.find(a => a.question === question)?.answer ?? ''
+
+      ret.push({ question, availableAnswers, answer })
+    }
+
+    setAnswers(ret)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questions])
 
   const handleSubmit = async () => {
     if (!description)

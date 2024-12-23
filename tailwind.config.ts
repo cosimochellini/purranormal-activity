@@ -129,6 +129,7 @@ const tailwindConfig = {
         'pulse': 'pulse 1s ease-in-out infinite',
         'sparkle': 'sparkle 2s ease-in-out infinite',
         'spooky-shake': 'spooky-shake 1s ease-in-out infinite',
+        'spin-slow': 'spin 20s linear infinite',
       },
 
       // Transition Delays
