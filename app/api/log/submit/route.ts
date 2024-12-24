@@ -87,26 +87,16 @@ export async function POST(request: Request) {
       })
     }
 
-    try {
-      const { description, answers } = result.data
-      const logDetails = await generateLogDetails({ description, answers })
+    const { description, answers } = result.data
+    const logDetails = await generateLogDetails({ description, answers })
 
-      const [newLog] = await db.insert(log).values({
-        title: logDetails.title,
-        description: logDetails.description,
-        categories: JSON.stringify(logDetails.categories),
-      }).returning()
+    const [newLog] = await db.insert(log).values({
+      title: logDetails.title,
+      description: logDetails.description,
+      categories: JSON.stringify(logDetails.categories),
+    }).returning()
 
-      return ok<Response>({ success: true, id: newLog.id.toString() })
-    }
-    catch (error) {
-      return ok<Response>({
-        success: false,
-        errors: {
-          description: ['Failed to save log entry', JSON.stringify(error)],
-        },
-      })
-    }
+    return ok<Response>({ success: true, id: newLog.id.toString() })
   }
   catch (error) {
     return ok<Response>({

@@ -1,11 +1,11 @@
 import classNames from 'classnames'
-import Image from 'next/image'
+import { EventImage } from './EventImage'
 
 interface EventCardProps {
   title: string
   description: string
-  imageUrl?: string
-  imageAlt?: string
+  imageUrl: string
+  imageAlt: string
 }
 const cardClasses = classNames(
   'bg-purple-900/30 backdrop-blur-sm rounded-lg p-6',
@@ -18,26 +18,16 @@ const cardClasses = classNames(
 export function EventCard({
   title,
   description,
-  imageUrl = '/ghost-paw.svg',
-  imageAlt = 'Ghost Paw',
+  imageUrl,
+  imageAlt,
 }: EventCardProps) {
   return (
     <div className={cardClasses}>
-      <div className="relative">
-        <Image
-          src={imageUrl}
-          alt={imageAlt}
-          width={24}
-          height={24}
-          className="mb-4 group-hover:animate-spooky-shake"
-          priority={false}
-        />
-        <div
-          className="absolute -inset-1 bg-purple-500/20 blur-sm
-            group-hover:animate-pulse rounded-full"
-        />
+      <div className="relative flex justify-center">
+        <EventImage imageUrl={imageUrl} imageAlt={imageAlt} />
+
       </div>
-      <h3 className="font-medium mb-2 group-hover:text-purple-300 transition-colors">
+      <h3 className="font-medium mb-2 transition-colors">
         {title}
       </h3>
       <p className="text-purple-200/80">{description}</p>

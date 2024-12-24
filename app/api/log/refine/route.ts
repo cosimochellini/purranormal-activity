@@ -33,8 +33,7 @@ export async function POST(request: Request) {
 
     const { description } = result.data
 
-    try {
-      const content = `
+    const content = `
         You are a Ghostbuster with over 10 years of experience.
         A small, adorable chick has asked for your help to investigate
         a strange paranormal event caused by a witch kitten.
@@ -78,26 +77,17 @@ export async function POST(request: Request) {
         3. Provide a maximum of 5 questions (no more, no less).
       ` as const
 
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'user', content },
-        ],
-        stream: false,
-      })
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'user', content },
+      ],
+      stream: false,
+    })
 
-      const parsedContent = JSON.parse(completion.choices[0]?.message?.content || '[]')
+    const parsedContent = JSON.parse(completion.choices[0]?.message?.content || '[]')
 
-      return ok<Response>({ success: true, content: parsedContent })
-    }
-    catch (error) {
-      return ok<Response>({
-        success: false,
-        errors: {
-          description: ['Failed to generate AI response', JSON.stringify(error)],
-        },
-      })
-    }
+    return ok<Response>({ success: true, content: parsedContent })
   }
   catch (error) {
     return ok<Response>({
