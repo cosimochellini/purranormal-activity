@@ -35,23 +35,54 @@ export async function POST(request: Request) {
 
     try {
       const content = `
-        You're a ghostbuster with more than 10 years of experience.
-        A cute, small chick asked for your help with a paranormal activity.
-        The witch cat made for the umpteenth time a paranormal event.
-        this is the description of the paranormal activity:  ${description}.
-        Give me 5 questions to understand better the paranormal activity.
-        The questions should be in the following format:
-        {
-          question: string
-          availableAnswers: string[]
-        }[]
-        Please return the JSON only.
-        Both the questions and the answers should be in Italian.
-      `
+        You are a Ghostbuster with over 10 years of experience.
+        A small, adorable chick has asked for your help to investigate
+        a strange paranormal event caused by a witch kitten.
+
+        The main characters are:
+        1) "SHE" — Kitty:
+           - A young kitten and the main cause of these paranormal events.
+           - She has many powers but cannot fully control them.
+           - She lives with the Chick, a young chick she loves but might accidentally eat someday.
+           - Always refer to her as "micio", "gattina", "micio strega", or "gattino".
+
+        2) "HE" — Chick:
+           - A young chick who is constantly terrified by these paranormal incidents.
+           - He has no paranormal powers and is mystified by Kitty's abilities.
+           - Always refer to him as "pulcino", "pulcino innamorato", "cosetto", or "pulcino spaventato".
+
+        The kitten and the chick live together in a loving relationship, but there is a risk
+        that the kitten might accidentally kill the chick.
+
+        The description of the paranormal activity is:
+        "${description}"
+
+        You must generate up to 5 follow-up questions in Italian, each designed to clarify
+        details of this paranormal event. Each question should have a list of possible short
+        answers, also in Italian.
+
+        Your output must be strictly valid JSON—no extra text or markdown. Use the following
+        structure exactly:
+
+        [
+          {
+            "question": "Domanda",
+            "availableAnswers": ["Risposta1", "Risposta2", ...] OR ["SI", "NO"]
+          },
+          ...
+        ]
+
+        Remember:
+        1. Only return JSON (no additional text).
+        2. Use concise, clear language for both questions and answer options.
+        3. Provide a maximum of 5 questions (no more, no less).
+      ` as const
 
       const completion = await openai.chat.completions.create({
-        messages: [{ role: 'user', content }],
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'user', content },
+        ],
         stream: false,
       })
 

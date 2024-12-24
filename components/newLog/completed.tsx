@@ -4,7 +4,11 @@ import { randomImage } from '@/images/insert/success'
 import Image from 'next/image'
 import Link from 'next/link'
 
-export function CompletedSection() {
+interface CompletedSectionProps {
+  logId?: string
+}
+
+export function CompletedSection({ logId }: CompletedSectionProps) {
   const successImage = randomImage()
 
   return (
@@ -23,11 +27,19 @@ export function CompletedSection() {
         />
       </div>
 
-      <SpookyButton>
+      <div className="flex gap-4 justify-center w-full">
         <Link href="/">
-          Go to home
+          <SpookyButton>
+            Go to home
+          </SpookyButton>
         </Link>
-      </SpookyButton>
+
+        <Link href={`/${logId}`}>
+          <SpookyButton>
+            View log
+          </SpookyButton>
+        </Link>
+      </div>
     </div>
   )
 }

@@ -8,9 +8,9 @@ import { z } from 'zod'
 const logFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
-  category: z.nativeEnum(Categories, {
+  categories: z.array(z.nativeEnum(Categories, {
     message: 'Please select a valid category',
-  }),
+  })),
 })
 
 export type Response = {
@@ -33,7 +33,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    await db.insert(log).values(result.data)
+    await db.insert(log).values({
+      ...result.data,
+      categories: JSON.stringify(result.data.categories),
+    })
 
     return ok<Response>({ success: true })
   }

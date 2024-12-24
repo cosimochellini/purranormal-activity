@@ -1,14 +1,15 @@
 import type { FollowUpQuestion } from '@/app/api/log/refine/route'
 import type { Body, Response } from '@/app/api/log/submit/route'
+import type { FormValues } from '.'
 import { fetcher } from '@/utils/fetch'
 import cn from 'classnames'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { SpookyButton } from '../common/SpookyButton'
 
 interface RefinementSectionProps {
   description?: string
   questions?: FollowUpQuestion[]
-  onSubmitSuccess?: (id: string) => void
+  onSubmitSuccess?: (body: Partial<FormValues>) => void
 }
 
 interface AnsweredQuestion extends FollowUpQuestion {
@@ -74,20 +75,7 @@ function RadioOption({ question, answer, availableAnswer, onAnswerChange }: Radi
 
 export function RefinementSection({ description, questions, onSubmitSuccess }: RefinementSectionProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [answers, setAnswers] = useState([] as AnsweredQuestion[])
-
-  useEffect(() => {
-    const ret = [] as AnsweredQuestion[]
-
-    for (const { availableAnswers, question } of questions ?? []) {
-      const answer = answers.find(a => a.question === question)?.answer ?? ''
-
-      ret.push({ question, availableAnswers, answer })
-    }
-
-    setAnswers(ret)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [questions])
+  const [answers, setAnswers] = useState<AnsweredQuestion[]>(() => questions?.map(q => ({ ...q, answer: '' })) ?? [])
 
   const handleSubmit = async () => {
     if (!description)
@@ -96,9 +84,11 @@ export function RefinementSection({ description, questions, onSubmitSuccess }: R
     try {
       setIsSubmitting(true)
       const response = await submitLog({ body: { description, answers } })
+
       if (!response.success)
         throw new Error('Failed to submit')
-      onSubmitSuccess?.(response.id)
+
+      onSubmitSuccess?.({ logId: response.id })
     }
     catch (error) {
       console.error('Failed to submit log:', error)

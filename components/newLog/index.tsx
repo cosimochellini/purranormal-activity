@@ -4,6 +4,7 @@ import type { ComponentType } from 'react'
 import type { FollowUpQuestion } from '../../app/api/log/refine/route'
 import dynamic from 'next/dynamic'
 import { useState } from 'react'
+import { usePartialState } from '../../hooks/state'
 
 enum State {
   INITIAL = 'initial',
@@ -14,16 +15,18 @@ const initial = dynamic(() => import('./initial').then(mod => mod.InitialSection
 const refinement = dynamic(() => import('./refinement').then(mod => mod.RefinementSection), { ssr: false })
 const completed = dynamic(() => import('./completed').then(mod => mod.CompletedSection), { ssr: false })
 
-interface FormValues {
+export interface FormValues {
   description: string
   questions: FollowUpQuestion[]
+  logId: string
 }
 
 interface InitialSectionProps {
-  onInitialSuccess?: (body: FormValues) => void
-  onSubmitSuccess?: (id: string) => void
+  onInitialSuccess?: (body: Partial<FormValues>) => void
+  onSubmitSuccess?: (body: Partial<FormValues>) => void
   description?: string
   questions?: FollowUpQuestion[]
+  logId?: string
 }
 
 const stateMap = {
@@ -34,17 +37,18 @@ const stateMap = {
 
 export function NewLogForm() {
   const [state, setState] = useState(State.INITIAL)
-  const [body, setBody] = useState<FormValues>()
+  const [body, setBody] = usePartialState({} as FormValues)
 
   const Component = stateMap[state]
 
-  const handleInitialSuccess = async ({ description, questions }: FormValues) => {
+  const handleInitialSuccess = ({ description, questions }: Partial<FormValues>) => {
     setState(State.REFINEMENT)
     setBody({ description, questions })
   }
 
-  const handleRefinementSuccess = () => {
+  const handleRefinementSuccess = ({ logId }: Partial<FormValues>) => {
     setState(State.COMPLETED)
+    setBody({ logId })
   }
 
   return (
@@ -54,6 +58,7 @@ export function NewLogForm() {
       onSubmitSuccess={handleRefinementSuccess}
       description={body?.description}
       questions={body?.questions}
+      logId={body?.logId}
     />
   )
 }

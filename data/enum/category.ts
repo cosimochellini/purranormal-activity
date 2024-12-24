@@ -1,7 +1,7 @@
 export enum Categories {
-  GhostlyApparition = 'GhostlyApparition',
-  Levitation = 'Levitation',
-  MysteriousSounds = 'MysteriousSounds',
-  ObjectDisplacement = 'ObjectDisplacement',
+  PerfectTiming = 'PerfectTiming',
+  AbsurdCoincidences = 'AbsurdCoincidences',
+  PremonitoryDreams = 'PremonitoryDreams',
+  AlwaysRight = 'AlwaysRight',
   SpectralMischief = 'SpectralMischief',
 }
