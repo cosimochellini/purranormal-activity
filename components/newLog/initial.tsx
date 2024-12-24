@@ -1,35 +1,31 @@
+import type { Body, FollowUpQuestion, Response } from '@/app/api/log/refine/route'
 import { useState } from 'react'
+import { fetcher } from '../../utils/fetch'
 import { Loading } from '../common/Loading'
 import { SpookyButton } from '../common/SpookyButton'
 
 interface InitialSectionProps {
-  onInitialSuccess?: (body: { description: string, stream: ReadableStreamDefaultReader<Uint8Array> }) => unknown
+  onInitialSuccess?: (body: { description: string, questions: FollowUpQuestion[] }) => void
 }
+
+const refineLog = fetcher<Response, never, Body>('/api/log/refine', 'POST')
 
 export function InitialSection({ onInitialSuccess }: InitialSectionProps) {
   const [description, setDescription] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(true)
 
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true)
-      const response = await fetch('/api/log/refine', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ description }),
-      })
+      const response = await refineLog({ body: { description } })
 
-      if (!response.ok)
-        setErrorMessage(response.statusText)
+      if (!response.success)
+        return setErrorMessage(response.errors.description?.at(0) ?? 'Failed to refine log')
 
-      const stream = response.body?.getReader()
-      if (!stream)
-        return setErrorMessage('Failed to read response stream')
+      const questions = response.content
 
-      onInitialSuccess?.({ description, stream })
+      onInitialSuccess?.({ description, questions })
     }
     catch (error) {
       if (error instanceof Error)

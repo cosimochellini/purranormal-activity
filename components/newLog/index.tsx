@@ -16,7 +16,7 @@ const completed = dynamic(() => import('./completed').then(mod => mod.CompletedS
 
 interface FormValues {
   description: string
-  stream: ReadableStreamDefaultReader<Uint8Array>
+  questions: FollowUpQuestion[]
 }
 
 interface InitialSectionProps {
@@ -35,27 +35,12 @@ const stateMap = {
 export function NewLogForm() {
   const [state, setState] = useState(State.INITIAL)
   const [body, setBody] = useState<FormValues>()
-  const [questions, setQuestions] = useState<FollowUpQuestion[]>([])
 
   const Component = stateMap[state]
 
-  const handleInitialSuccess = async ({ description, stream }: FormValues) => {
+  const handleInitialSuccess = async ({ description, questions }: FormValues) => {
     setState(State.REFINEMENT)
-    setBody({ description, stream })
-
-    const decoder = new TextDecoder('utf-8')
-    let done = false
-
-    while (!done) {
-      const { done: streamDone, value } = await stream.read()
-      done = streamDone
-      if (!value)
-        return
-
-      const chunk = decoder.decode(value, { stream: true })
-      const newQuestion = JSON.parse(chunk) as FollowUpQuestion
-      setQuestions(prev => [...prev, newQuestion])
-    }
+    setBody({ description, questions })
   }
 
   const handleRefinementSuccess = () => {
@@ -68,7 +53,7 @@ export function NewLogForm() {
       onInitialSuccess={handleInitialSuccess}
       onSubmitSuccess={handleRefinementSuccess}
       description={body?.description}
-      questions={questions}
+      questions={body?.questions}
     />
   )
 }

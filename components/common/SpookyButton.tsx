@@ -45,7 +45,9 @@ export function SpookyButton({
                 Loading...
               </span>
             )
-          : children}
+          : (
+              children
+            )}
       </span>
       <div
         className={cn(

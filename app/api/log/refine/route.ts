@@ -24,12 +24,10 @@ export const runtime = 'edge'
 export async function POST(request: Request) {
   try {
     const data = await request.json()
-
     const result = await schema.safeParseAsync(data)
 
     if (!result.success) {
       const errors = result.error.flatten().fieldErrors
-
       return ok<Response>({ success: false, errors })
     }
 
@@ -41,7 +39,7 @@ export async function POST(request: Request) {
         A cute, small chick asked for your help with a paranormal activity.
         The witch cat made for the umpteenth time a paranormal event.
         this is the description of the paranormal activity:  ${description}.
-        Give me 5 question to understand better the paranormal activity.
+        Give me 5 questions to understand better the paranormal activity.
         The questions should be in the following format:
         {
           question: string
@@ -54,73 +52,18 @@ export async function POST(request: Request) {
       const completion = await openai.chat.completions.create({
         messages: [{ role: 'user', content }],
         model: 'gpt-3.5-turbo',
-        stream: true,
+        stream: false,
       })
 
-      // Convert the async iterable into a ReadableStream
-      const responseStream = new ReadableStream({
-        async start(controller) {
-          let accumulatedContent = ''
+      const parsedContent = JSON.parse(completion.choices[0]?.message?.content || '[]')
 
-          try {
-            for await (const chunk of completion) {
-              const contentChunk = chunk.choices[0]?.delta?.content
-
-              if (!contentChunk)
-                continue
-
-              accumulatedContent += contentChunk
-
-              // Keep parsing out complete JSON objects
-              while (true) {
-                const startIndex = accumulatedContent.indexOf('{')
-                const endIndex = accumulatedContent.indexOf('}', startIndex)
-
-                // If both indices are found, attempt to parse a full JSON object
-                if (startIndex !== -1 && endIndex !== -1) {
-                  const potentialJson = accumulatedContent.slice(startIndex, endIndex + 1)
-                  // Slice it out so we can keep looking for more
-                  accumulatedContent = accumulatedContent.slice(endIndex + 1)
-
-                  try {
-                    const parsed = JSON.parse(potentialJson)
-                    // If parsing succeeds, we enqueue the stringified object
-                    controller.enqueue(JSON.stringify(parsed))
-                  }
-                  catch {
-                    // If parsing fails, re-accumulate and break
-                    accumulatedContent = potentialJson + accumulatedContent
-                    break
-                  }
-                }
-                else {
-                  break
-                }
-              }
-            }
-          }
-          catch (err) {
-            controller.error(err)
-          }
-          finally {
-            controller.close()
-          }
-        },
-      })
-
-      return new Response(responseStream, {
-        headers: { 'Content-Type': 'text/event-stream' },
-      })
+      return ok<Response>({ success: true, content: parsedContent })
     }
     catch (error) {
-      if (!(error instanceof Error)) {
-        return ok<Response>({ success: false, errors: { description: [JSON.stringify(error)] } })
-      }
-
       return ok<Response>({
         success: false,
         errors: {
-          description: ['Failed to generate AI response', error.message],
+          description: ['Failed to generate AI response', JSON.stringify(error)],
         },
       })
     }

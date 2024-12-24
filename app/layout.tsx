@@ -12,11 +12,11 @@ const accentFont = Caveat({
   variable: '--font-accent',
 })
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'Paranormal Kitten Logger',
   description: 'Track the magical mishaps and spooky shenanigans of your enchanted kitten',
   keywords: ['paranormal', 'kitten', 'magical', 'tracking', 'spooky'],
-}
+} satisfies Metadata
 
 export const viewport = {
   width: 'device-width',

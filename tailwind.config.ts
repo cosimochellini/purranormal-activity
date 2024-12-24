@@ -51,10 +51,6 @@ const tailwindConfig = {
           '0%': { opacity: '0', transform: 'translateY(10px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-        'flicker': {
-          '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.5' },
-        },
         'float': {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-5px)' },
@@ -120,7 +116,6 @@ const tailwindConfig = {
         'eye-shine': 'eye-shine 3s infinite',
         'fade-in': 'fade-in 1s ease-in-out',
         'fade-in-up': 'fade-in-up 1s ease-in-out',
-        'flicker': 'flicker 1s ease-in-out infinite',
         'float': 'float 3s ease-in-out infinite',
         'float-ghost': 'float-ghost 4s ease-in-out infinite',
         'ghost': 'ghost 3s ease-in-out infinite',
@@ -139,8 +134,7 @@ const tailwindConfig = {
       },
     },
   },
-  plugins: [
-  ],
+  plugins: [],
 } satisfies Config
 
 export default tailwindConfig
