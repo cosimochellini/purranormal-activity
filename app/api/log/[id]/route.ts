@@ -41,9 +41,9 @@ export async function GET(request: Request) {
       })
     }
 
-    const [{ categories, description, id, title }] = rows
+    const [data] = rows
 
-    return ok<Response>({ success: true, data: { categories, description, id, title } })
+    return ok<Response>({ success: true, data })
   }
   catch (error) {
     return ok<Response>({

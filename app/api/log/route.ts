@@ -4,6 +4,7 @@ import { db } from '@/drizzle'
 
 import { ok } from '@/utils/http'
 import { z } from 'zod'
+import { LogStatus } from '../../../data/enum/logStatus'
 
 const logFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
@@ -36,6 +37,9 @@ export async function POST(request: Request) {
     await db.insert(log).values({
       ...result.data,
       categories: JSON.stringify(result.data.categories),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      status: LogStatus.Created,
     })
 
     return ok<Response>({ success: true })

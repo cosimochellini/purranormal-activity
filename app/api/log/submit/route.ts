@@ -5,6 +5,7 @@ import { openai } from '@/instances/openai'
 import { ok } from '@/utils/http'
 import { typedObjectValues } from '@/utils/typed'
 import { z } from 'zod'
+import { LogStatus } from '../../../../data/enum/logStatus'
 
 const submitFormSchema = z.object({
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
@@ -94,6 +95,9 @@ export async function POST(request: Request) {
       title: logDetails.title,
       description: logDetails.description,
       categories: JSON.stringify(logDetails.categories),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      status: LogStatus.Created,
     }).returning()
 
     return ok<Response>({ success: true, id: newLog.id.toString() })
