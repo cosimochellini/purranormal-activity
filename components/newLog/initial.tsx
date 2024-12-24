@@ -13,7 +13,7 @@ const refineLog = fetcher<Response, never, Body>('/api/log/refine', 'POST')
 export function InitialSection({ onInitialSuccess }: InitialSectionProps) {
   const [description, setDescription] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async () => {
     try {
