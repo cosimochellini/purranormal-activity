@@ -5,6 +5,7 @@ import { NEXT_PUBLIC_APP_URL } from '@/env/next'
 import { ok } from '@/utils/http'
 import { wait } from '@/utils/promise'
 import { eq } from 'drizzle-orm'
+import { logger } from '../../../../utils/logger'
 
 export const runtime = 'edge'
 
@@ -19,7 +20,7 @@ export async function POST() {
     // Process each log with 5 second delay between requests
     for (const logEntry of logs) {
       try {
-        console.info(`Processing log ${logEntry.id}`)
+        logger.info(`Processing log ${logEntry.id}`)
 
         fetch(`${NEXT_PUBLIC_APP_URL}/api/trigger/${logEntry.id}`, {
           method: 'POST',
@@ -28,7 +29,7 @@ export async function POST() {
         await wait(5000)
       }
       catch (error) {
-        console.error(`Failed to process log ${logEntry.id}:`, error)
+        logger.error(`Failed to process log ${logEntry.id}:`, error)
       }
     }
 

@@ -4,6 +4,7 @@ import type { FormValues } from '.'
 import { fetcher } from '@/utils/fetch'
 import cn from 'classnames'
 import { useState } from 'react'
+import { logger } from '../../utils/logger'
 import { SpookyButton } from '../common/SpookyButton'
 
 interface RefinementSectionProps {
@@ -91,7 +92,7 @@ export function RefinementSection({ description, questions, onSubmitSuccess }: R
       onSubmitSuccess?.({ logId: response.id })
     }
     catch (error) {
-      console.error('Failed to submit log:', error)
+      logger.error('Failed to submit log:', error)
     }
     finally {
       setIsSubmitting(false)

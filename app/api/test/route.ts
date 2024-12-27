@@ -1,6 +1,7 @@
 import { S3 } from '@/instances/s3'
 import { GetObjectCommand } from '@aws-sdk/client-s3'
 import { BUCKET_NAME } from '../../../env/cloudflare'
+import { logger } from '../../../utils/logger'
 
 export const runtime = 'edge'
 
@@ -28,7 +29,7 @@ export async function GET(_: Request) {
   }
   catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    console.error('Error fetching image:', message)
+    logger.error('Error fetching image:', message)
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },

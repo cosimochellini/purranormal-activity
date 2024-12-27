@@ -8,6 +8,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { eq } from 'drizzle-orm'
 import { BUCKET_NAME } from '../../../../env/cloudflare'
 import { S3 } from '../../../../instances/s3'
+import { logger } from '../../../../utils/logger'
 
 export const runtime = 'edge'
 
@@ -86,7 +87,7 @@ async function generateImagePrompt(openai: OpenAI, description: string) {
     return ret
   }
   catch (error) {
-    console.error('Error generating image prompt:', error)
+    logger.error('Error generating image prompt:', error)
     throw new Error('Image prompt generation failed')
   }
 }
@@ -110,7 +111,7 @@ async function generateImage(openai: OpenAI, imagePrompt: string) {
     return buffer
   }
   catch (error) {
-    console.error('Error generating image:', error)
+    logger.error('Error generating image:', error)
     throw new Error('Image generation failed')
   }
 }
@@ -126,7 +127,7 @@ async function uploadToS3(buffer: Buffer, logId: number) {
     }))
   }
   catch (error) {
-    console.error('Error uploading to S3:', error)
+    logger.error('Error uploading to S3:', error)
     throw new Error('S3 upload failed')
   }
 }
@@ -160,7 +161,7 @@ export async function POST(request: Request) {
     return ok({ success: true })
   }
   catch (error) {
-    console.error('Failed to generate image:', error)
+    logger.error('Failed to generate image:', error)
 
     return ok({
       success: false,
