@@ -146,7 +146,7 @@ export async function POST(request: Request) {
     if (!logEntry)
       return ok({ success: false, error: 'Log not found' })
 
-    const imagePrompt = await generateImagePrompt(openai, logEntry.description)
+    const imagePrompt = logEntry.imageDescription ?? await generateImagePrompt(openai, logEntry.description)
 
     const buffer = await generateImage(openai, imagePrompt)
 

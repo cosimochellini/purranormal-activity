@@ -13,6 +13,7 @@ export const log = sqliteTable('log', {
   status: text('status').notNull().default(LogStatus.Created),
   placeholder: text('placeholder'),
   error: text('error'),
+  imageDescription: text('image_description'),
 })
 
 // Type definitions

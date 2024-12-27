@@ -7,6 +7,7 @@ import { ok } from '@/utils/http'
 import { typedObjectValues } from '@/utils/typed'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { NEXT_PUBLIC_APP_URL } from '../../../../env/next'
 
 const submitFormSchema = z.object({
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
@@ -33,7 +34,7 @@ async function generateLogDetails({ description, answers }: Pick<Body, 'descript
              - She lives with the Chick, a young chick she loves but might accidentally eat someday.
              - Always refer to her as "micio", "gattina", "micio strega", or "gattino".
 
-          2) "HE" — Chick:
+          2) "ME" — Chick:
              - A young chick who is constantly terrified by these paranormal incidents.
              - He has no paranormal powers and is mystified by Kitty's abilities.
              - Always refer to him as "pulcino", "pulcino innamorato", "cosetto", or "pulcino spaventato".
@@ -46,9 +47,8 @@ async function generateLogDetails({ description, answers }: Pick<Body, 'descript
           1. A catchy title (up to 60 characters):
              - Mysterious, paranormal, and cute, in the style of a newspaper headline.
 
-          2. A refined description (up to 250 characters):
-             - A brief summary of the paranormal event, emphasizing its extraordinary nature and
-               how delighted the kitten is with the results.
+          2. A refined description (up to 350 characters):
+             - A brief summary of the event, focusing on the kitten's powers and the chick's reactions.
 
           3. A list of fitting categories from the following:
              ${typedObjectValues(Categories).join(', ')}
@@ -58,17 +58,24 @@ async function generateLogDetails({ description, answers }: Pick<Body, 'descript
           - Extra Answers:
             ${answers.map(a => `${a.question}: ${a.answer}`).join('\n')}
 
-          Also, provide an "imageDescription" in **English** (up to 250 characters),
+          Also, provide an "imageDescription" in **English** (up to 300 characters),
           which will be used for generating a visual scene:
           - This field should describe the most crucial visual elements, focusing on the kitten’s powers,
             the chick’s reactions, and any important environmental details.
           - Make sure it is consistent with the Italian text above, but keep it strictly in English.
+          - Make it 8bit style, pixel art, or similar.
+          - Do not include any text or lettering in the image.
+          - Maintain an overall "cute" or "adorable" style.
+          - Keep the final output to a single paragraph, under about 200 words if possible.
+          - Convert any references to real-world, copyrighted, or trademarked items into generic equivalents. Avoid mentioning brand or product names.
+
 
           **Return ONLY valid JSON** (no markdown, no extra text) with exactly these keys:
           {
             "title": string,        // up to 60 characters, in Italian
-            "description": string,  // up to 250 characters, in Italian
-            "categories": [${typedObjectValues(Categories).join(', ')}]
+            "description": string,  // up to 350 characters, in Italian
+            "categories": [${typedObjectValues(Categories).join(', ')}],
+            "imageDescription": string  // up to 300 characters, in English
           }
         `,
       },
@@ -82,7 +89,7 @@ async function generateLogDetails({ description, answers }: Pick<Body, 'descript
     title: string
     description: string
     categories: string[]
-
+    imageDescription: string
   }
 }
 
@@ -104,6 +111,7 @@ export async function POST(request: Request) {
       title,
       description,
       categories,
+      imageDescription,
     } = await generateLogDetails(result.data)
 
     // Insert into your logs table (assuming 'log' schema matches these fields).
@@ -112,6 +120,7 @@ export async function POST(request: Request) {
     const [newLog] = await db.insert(log).values({
       title,
       description,
+      imageDescription,
       categories: JSON.stringify(categories),
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -120,6 +129,10 @@ export async function POST(request: Request) {
 
     // Revalidate any necessary paths
     revalidatePath('/', 'page')
+
+    fetch(`${NEXT_PUBLIC_APP_URL}/api/trigger/images`, {
+      method: 'POST',
+    })
 
     // Return success response, including the brand-new log ID
     // and the "imageDescription" you can use for image generation.
