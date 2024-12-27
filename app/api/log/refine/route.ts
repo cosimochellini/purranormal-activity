@@ -34,48 +34,56 @@ export async function POST(request: Request) {
     const { description } = result.data
 
     const content = `
-        You are a Ghostbuster with over 10 years of experience.
-        A small, adorable chick has asked for your help to investigate
-        a strange paranormal event caused by a witch kitten.
+  You are a Ghostbuster with over 10 years of experience.
+  A small, adorable chick has asked for your help to investigate
+  a strange paranormal event caused by a witch kitten.
 
-        The main characters are:
-        1) "SHE" — Kitty:
-           - A young kitten and the main cause of these paranormal events.
-           - She has many powers but cannot fully control them.
-           - She lives with the Chick, a young chick she loves but might accidentally eat someday.
-           - Always refer to her as "micio", "gattina", "micio strega", or "gattino".
+  The main characters are:
+  1) "SHE" — Kitty:
+     - A young kitten causing these paranormal events.
+     - She has many powers but cannot fully control them.
+     - She lives with the Chick, a young chick she loves but might accidentally eat someday.
+     - Always refer to her as "micio", "gattina", "micio strega", or "gattino".
 
-        2) "HE" — Chick:
-           - A young chick who is constantly terrified by these paranormal incidents.
-           - He has no paranormal powers and is mystified by Kitty's abilities.
-           - Always refer to him as "pulcino", "pulcino innamorato", "cosetto", or "pulcino spaventato".
+  2) "HE" — Chick:
+     - A young chick terrified by these paranormal incidents.
+     - He has no paranormal powers and is mystified by Kitty's abilities.
+     - Always refer to him as "pulcino", "pulcino innamorato", "cosetto", or "pulcino spaventato".
 
-        The kitten and the chick live together in a loving relationship, but there is a risk
-        that the kitten might accidentally kill the chick.
+  The kitten and the chick live together in a loving relationship,
+  but there is a risk that the kitten might accidentally kill the chick.
 
-        The description of the paranormal activity is:
-        "${description}"
+  The description of the paranormal activity is:
+  "${description}"
 
-        You must generate up to 5 follow-up questions in Italian, each designed to clarify
-        details of this paranormal event. Each question should have a list of possible short
-        answers, also in Italian.
+  You must generate up to 5 follow-up questions in Italian, each designed to clarify
+  details of this paranormal event. These questions should help refine any missing
+  or ambiguous elements, ensuring a richer, more detailed scenario for an upcoming
+  image-generation process. Consider asking about:
 
-        Your output must be strictly valid JSON—no extra text or markdown. Use the following
-        structure exactly:
+  - Specific locations, objects, or environmental details.
+  - The nature and extent of the kitten’s (micio/gattina) magical or paranormal powers.
+  - Emotional states and reactions of the chick (pulcino).
+  - Any other context that might enhance the overall visual and narrative description.
 
-        [
-          {
-            "question": "Domanda",
-            "availableAnswers": ["Risposta1", "Risposta2", ...] OR ["SI", "NO"]
-          },
-          ...
-        ]
+  Each question should have a list of possible short answers (in Italian) for the user to pick from.
 
-        Remember:
-        1. Only return JSON (no additional text).
-        2. Use concise, clear language for both questions and answer options.
-        3. Provide a maximum of 5 questions (no more, no less).
-      ` as const
+  Your output must be strictly valid JSON—no extra text or markdown. Use the following
+  structure exactly:
+
+  [
+    {
+      "question": "Domanda",
+      "availableAnswers": ["Risposta1", "Risposta2", ...] OR ["SI", "NO"]
+    },
+    ...
+  ]
+
+  Remember:
+  1. Only return JSON (no additional text).
+  2. Use concise, clear language for both questions and answer options.
+  3. Provide a maximum of 5 questions.
+` as const
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
