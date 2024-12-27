@@ -1,11 +1,12 @@
 import { Categories } from '@/data/enum/category'
+import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
 import { openai } from '@/instances/openai'
 import { ok } from '@/utils/http'
 import { typedObjectValues } from '@/utils/typed'
+import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { LogStatus } from '../../../../data/enum/logStatus'
 
 const submitFormSchema = z.object({
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
@@ -62,8 +63,7 @@ async function generateLogDetails({ description, answers }: Pick<Body, 'descript
           }
 
           Make sure the JSON is properly formatted and strictly follows the structure above.
-          Make sure that is clear that they are in love and that the kitten might accidentally kill the chick.
-
+          Make sure that is clear that they are in love and that they are a couple.
           `,
       },
     ],
@@ -88,17 +88,18 @@ export async function POST(request: Request) {
       })
     }
 
-    const { description, answers } = result.data
-    const logDetails = await generateLogDetails({ description, answers })
+    const { categories, title, description } = await generateLogDetails(result.data)
 
     const [newLog] = await db.insert(log).values({
-      title: logDetails.title,
-      description: logDetails.description,
-      categories: JSON.stringify(logDetails.categories),
+      title,
+      description,
+      categories: JSON.stringify(categories),
       createdAt: Date.now(),
       updatedAt: Date.now(),
       status: LogStatus.Created,
     }).returning()
+
+    revalidatePath('/', 'page')
 
     return ok<Response>({ success: true, id: newLog.id.toString() })
   }

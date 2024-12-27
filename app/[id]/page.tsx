@@ -2,7 +2,9 @@ import type { Categories } from '../../data/enum/category'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
+import { publicImage } from '@/utils/cloudflare'
 import { eq } from 'drizzle-orm'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
 interface PageProps {
@@ -32,7 +34,6 @@ export default async function LogPage({ params }: PageProps) {
     notFound()
 
   const { categories: rawCategories, description, title } = entry
-
   const categories = JSON.parse(rawCategories) as Categories[]
 
   return (
@@ -46,6 +47,16 @@ export default async function LogPage({ params }: PageProps) {
               DAY #
               {id * 2}
             </code>
+
+            <Image
+              src={publicImage(id)}
+              alt={`Cover image for log ${id}`}
+              width={600}
+              height={600}
+              priority
+              className="rounded-lg mx-auto"
+            />
+
             <h1 className="font-magical text-3xl animate-magical-glow text-balance">
               {title}
             </h1>

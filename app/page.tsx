@@ -1,5 +1,4 @@
 import { desc } from 'drizzle-orm'
-import { Suspense } from 'react'
 import { SpookyBackground } from '../components/background/SpookyBackground'
 import { EventCard } from '../components/events/EventCard'
 import { SpookyFooter } from '../components/footer/SpookyFooter'
@@ -30,11 +29,10 @@ function getLogs() {
     .orderBy(desc(log.id))
     .limit(4)
 }
-interface EventCardsProps {
-  promise: ReturnType<typeof getLogs>
-}
-async function EventCards({ promise }: EventCardsProps) {
-  const events = await promise
+
+async function EventCards() {
+  const events = await getLogs()
+
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {events.map(event => (
@@ -49,19 +47,14 @@ async function EventCards({ promise }: EventCardsProps) {
   )
 }
 
-const range = (n: number) => Array.from({ length: n }, (_, i) => i)
-
 async function RecentEvents() {
-  const eventsPromise = getLogs()
-
   return (
     <section className="w-full max-w-5xl animate-fade-in-up delay-1000">
       <h2 className="mb-6 text-2xl font-magical 'animate-magical-glow animate-ghost">
         Recent Supernatural Sightings
       </h2>
-      <Suspense fallback={range(4).map(i => <EventCard.Skeleton key={i} />)}>
-        <EventCards promise={eventsPromise} />
-      </Suspense>
+      <EventCards />
+
     </section>
   )
 }

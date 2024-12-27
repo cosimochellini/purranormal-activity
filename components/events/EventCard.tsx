@@ -1,7 +1,9 @@
 import classNames from 'classnames'
+import Link from 'next/link'
 import { EventImage } from './EventImage'
 
 interface EventCardProps {
+  id: number
   title: string
   description: string
   imageUrl: string
@@ -16,29 +18,24 @@ const cardClasses = classNames(
 )
 
 export function EventCard({
+  id,
   title,
   description,
   imageUrl,
   imageAlt,
 }: EventCardProps) {
   return (
-    <div className={cardClasses}>
-      <div className="relative flex justify-center">
-        <EventImage imageUrl={imageUrl} imageAlt={imageAlt} />
+    <Link href={`/${id}`} prefetch>
+      <div className={cardClasses}>
+        <div className="relative flex justify-center">
+          <EventImage imageUrl={imageUrl} imageAlt={imageAlt} />
 
+        </div>
+        <h3 className="font-medium mb-2 transition-colors">
+          {title}
+        </h3>
+        <p className="text-purple-200/80">{description}</p>
       </div>
-      <h3 className="font-medium mb-2 transition-colors">
-        {title}
-      </h3>
-      <p className="text-purple-200/80">{description}</p>
-    </div>
-  )
-}
-EventCard.Skeleton = function EventCardSkeleton() {
-  return (
-    <div className={classNames(cardClasses, 'animate-pulse my-4')}>
-      <div className="h-10 m-2 w-full bg-purple-700/30 rounded-full" />
-      <div className="h-10 m-2 w-full bg-purple-700/30 rounded-full" />
-    </div>
+    </Link>
   )
 }
