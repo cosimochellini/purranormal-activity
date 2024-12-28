@@ -1,13 +1,11 @@
-import { Categories } from '@/data/enum/category'
 import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
-import { openai } from '@/instances/openai'
+import { NEXT_PUBLIC_APP_URL } from '@/env/next'
+import { generateLogDetails } from '@/services/ai'
 import { ok } from '@/utils/http'
-import { typedObjectValues } from '@/utils/typed'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { NEXT_PUBLIC_APP_URL } from '../../../../env/next'
 
 const submitFormSchema = z.object({
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
@@ -16,82 +14,6 @@ const submitFormSchema = z.object({
     answer: z.string(),
   })).max(5, 'At least 5 follow-up answers are required'),
 })
-
-async function generateLogDetails({ description, answers }: Pick<Body, 'description' | 'answers'>) {
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
-      {
-        role: 'user',
-        content: `
-          You are an experienced Ghostbuster with more than 10 years of service.
-          Your task is to craft an official log entry describing a magical and inexplicable event,
-          focusing on two main characters (in Italian):
-
-          1) "SHE" — Kitty:
-             - A young kitten, the main cause of paranormal events.
-             - She possesses many powers but cannot fully control them.
-             - She lives with the Chick, a young chick she loves but might accidentally eat someday.
-             - Always refer to her as "micio", "gattina", "micio strega", or "gattino".
-
-          2) "ME" — Chick:
-             - A young chick who is constantly terrified by these paranormal incidents.
-             - He has no paranormal powers and is mystified by Kitty's abilities.
-             - Always refer to him as "pulcino", "pulcino innamorato", "cosetto", or "pulcino spaventato".
-
-          They live together in a loving relationship, though there's a risk
-          the kitten might harm the chick by accident.
-
-          Your response must include these elements in **Italian**:
-
-          1. A catchy title (up to 60 characters):
-             - Mysterious, paranormal, and cute, in the style of a newspaper headline.
-
-          2. A refined description (up to 350 characters):
-             - A brief summary of the event, focusing on the kitten's powers and the chick's reactions.
-
-          3. A list of fitting categories from the following:
-             ${typedObjectValues(Categories).join(', ')}
-
-          **Additional Context**:
-          - Original Description: "${description}"
-          - Extra Answers:
-            ${answers.map(a => `${a.question}: ${a.answer}`).join('\n')}
-
-          Also, provide an "imageDescription" in **English** (up to 300 characters),
-          which will be used for generating a visual scene:
-          - This field should describe the most crucial visual elements, focusing on the kitten’s powers,
-            the chick’s reactions, and any important environmental details.
-          - Make sure it is consistent with the Italian text above, but keep it strictly in English.
-          - Make it 8bit style, pixel art, or similar.
-          - Do not include any text or lettering in the image.
-          - Maintain an overall "cute" or "adorable" style.
-          - Keep the final output to a single paragraph, under about 200 words if possible.
-          - Convert any references to real-world, copyrighted, or trademarked items into generic equivalents. Avoid mentioning brand or product names.
-
-
-          **Return ONLY valid JSON** (no markdown, no extra text) with exactly these keys:
-          {
-            "title": string,        // up to 60 characters, in Italian
-            "description": string,  // up to 350 characters, in Italian
-            "categories": [${typedObjectValues(Categories).join(', ')}],
-            "imageDescription": string  // up to 300 characters, in English
-          }
-        `,
-      },
-    ],
-    // No streaming; we need the full JSON in one piece
-    response_format: { type: 'json_object' },
-  })
-
-  const content = completion.choices[0]?.message?.content || '{}'
-  return JSON.parse(content) as {
-    title: string
-    description: string
-    categories: string[]
-    imageDescription: string
-  }
-}
 
 export const runtime = 'edge'
 
@@ -112,7 +34,7 @@ export async function POST(request: Request) {
       description,
       categories,
       imageDescription,
-    } = await generateLogDetails(result.data)
+    } = await generateLogDetails(result.data.description, result.data.answers)
 
     // Insert into your logs table (assuming 'log' schema matches these fields).
     // If your schema doesn't include 'imageDescription',
