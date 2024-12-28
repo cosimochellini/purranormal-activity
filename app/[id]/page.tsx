@@ -1,14 +1,20 @@
+import type { Metadata } from 'next'
 import type { Categories } from '../../data/enum/category'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
-import { publicImage } from '@/utils/cloudflare'
 import { eq } from 'drizzle-orm'
-import Image from 'next/image'
 import { notFound } from 'next/navigation'
+import { EventImage } from '../../components/events/EventImage'
+import { NEXT_PUBLIC_APP_URL } from '../../env/next'
+import { publicImage } from '../../utils/cloudflare'
+
+interface Params {
+  id: string
+}
 
 interface PageProps {
-  params: Promise<{ id: number }>
+  params: Promise<Params>
 }
 
 export const runtime = 'edge'
@@ -22,22 +28,48 @@ async function getLog(id: number) {
   return logEntry
 }
 
-export default async function LogPage({ params }: PageProps) {
-  const id = Number((await params).id)
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const rawId = (await params).id
+  const entry = await getLog(Number(rawId))
 
-  if (Number.isNaN(id))
+  if (!entry) {
     notFound()
+  }
 
-  const entry = await getLog(id)
+  const { title, description, id } = entry
+
+  return {
+    title: `Day ${id * 2} - ${title} - Paranormal Kitten Logger`,
+    description,
+    openGraph: {
+      title: `${title} - Paranormal Kitten Logger`,
+      description,
+      type: 'article',
+      url: `${NEXT_PUBLIC_APP_URL}/${rawId}`,
+      images: [
+        {
+          url: publicImage(entry.id), // Assuming entry has an imageUrl field
+          width: 800,
+          height: 800,
+          alt: title,
+        },
+      ],
+    },
+  }
+}
+
+export default async function Page({ params }: PageProps) {
+  const rawId = (await params).id
+  const entry = await getLog(Number(rawId))
 
   if (!entry)
-    notFound()
+    return notFound()
 
-  const { categories: rawCategories, description, title } = entry
+  const { categories: rawCategories, description, title, id } = entry
   const categories = JSON.parse(rawCategories) as Categories[]
 
   return (
-    <div className="relative min-h-screen bg-deep-purple-900 p-4 xs:p-1 text-white">
+    <div className="relative min-h-screen bg-deep-purple-900 p-1 md:p-4 text-white">
       <SpookyBackground />
 
       <main className="relative mx-auto max-w-4xl p-6">
@@ -48,13 +80,12 @@ export default async function LogPage({ params }: PageProps) {
               {id * 2}
             </code>
 
-            <Image
-              src={publicImage(id)}
-              alt={`Cover image for log ${id}`}
+            <EventImage
               width={600}
               height={600}
               priority
               className="rounded-lg mx-auto"
+              log={entry}
             />
 
             <h1 className="font-magical text-3xl animate-magical-glow text-balance">

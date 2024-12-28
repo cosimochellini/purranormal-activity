@@ -30,10 +30,10 @@ interface RootLayoutProps {
 
 function RootLayout({ children }: Readonly<RootLayoutProps>) {
   return (
-    <html lang="en">
+    <html lang="en" className="min-h-screen min-w-screen">
       <body
         className={`${primaryFont.variable} ${accentFont.variable}
-          min-h-screen bg-gradient-to-b from-midnight-blue to-deep-purple
+          bg-gradient-to-b from-midnight-blue to-deep-purple
           text-ghost-white antialiased`}
       >
         {children}

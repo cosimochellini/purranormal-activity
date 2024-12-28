@@ -1,5 +1,5 @@
+import { randomItem } from '@/utils/random'
 import first from './1.webp'
-import tenth from './10.webp'
 import second from './2.webp'
 import third from './3.webp'
 import fourth from './4.webp'
@@ -8,6 +8,7 @@ import sixth from './6.webp'
 import seventh from './7.webp'
 import eighth from './8.webp'
 import ninth from './9.webp'
+import tenth from './10.webp'
 
 export const images = [
   first,
@@ -23,5 +24,5 @@ export const images = [
 ] as const
 
 export function randomImage() {
-  return images[Math.floor(Math.random() * images.length)]
+  return randomItem(images)
 }

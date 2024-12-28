@@ -5,7 +5,6 @@ import { SpookyFooter } from '../components/footer/SpookyFooter'
 import { HeroSection } from '../components/hero/HeroSection'
 import { log } from '../db/schema'
 import { db } from '../drizzle'
-import { publicImage } from '../utils/cloudflare'
 
 function Home() {
   return (
@@ -38,9 +37,7 @@ async function EventCards() {
       {events.map(event => (
         <EventCard
           key={event.title}
-          {...event}
-          imageUrl={publicImage(event.id)}
-          imageAlt={event.title}
+          log={event}
         />
       ))}
     </div>

@@ -9,4 +9,4 @@ export const BUCKET_NAME = 'purranormal-images'
 
 export const BUCKET_URL = `https://${ACCOUNT_ID}.r2.cloudflarestorage.com` as const
 
-export const CLOUDFLARE_PUBLIC_URL = process.env.CLOUDFLARE_PUBLIC_URL as string
+export const CLOUDFLARE_PUBLIC_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_PUBLIC_URL as string

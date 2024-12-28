@@ -1,14 +1,12 @@
+import type { Log } from '../../db/schema'
 import classNames from 'classnames'
 import Link from 'next/link'
 import { EventImage } from './EventImage'
 
 interface EventCardProps {
-  id: number
-  title: string
-  description: string
-  imageUrl: string
-  imageAlt: string
+  log: Log
 }
+
 const cardClasses = classNames(
   'bg-purple-900/30 backdrop-blur-sm rounded-lg p-6',
   'hover:transform hover:scale-[1.02] transition-all duration-300',
@@ -18,17 +16,14 @@ const cardClasses = classNames(
 )
 
 export function EventCard({
-  id,
-  title,
-  description,
-  imageUrl,
-  imageAlt,
+  log,
 }: EventCardProps) {
+  const { id, title, description } = log
   return (
     <Link href={`/${id}`} prefetch>
       <div className={cardClasses}>
         <div className="relative flex justify-center">
-          <EventImage imageUrl={imageUrl} imageAlt={imageAlt} />
+          <EventImage loading="lazy" width={240} height={240} log={log} className="mb-4 group-hover:animate-spooky-shake rounded-md" />
 
         </div>
         <h3 className="font-medium mb-2 transition-colors">
