@@ -4,6 +4,7 @@ import { ok } from '@/utils/http'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { eq } from 'drizzle-orm'
 
+import { revalidatePath } from 'next/cache'
 import { LogStatus } from '../../../../data/enum/logStatus'
 import { BUCKET_NAME } from '../../../../env/cloudflare'
 import { S3 } from '../../../../instances/s3'
@@ -65,6 +66,8 @@ export async function POST(request: Request) {
       .update(log)
       .set({ status: LogStatus.ImageGenerated })
       .where(eq(log.id, logId))
+
+    revalidatePath('/', 'layout')
 
     return ok({ success: true })
   }

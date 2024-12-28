@@ -1,6 +1,6 @@
 {
   "name": "purranormal-activity",
-  "version": "0.1.39",
+  "version": "0.1.40",
   "private": true,
   "scripts": {
     "pages:build": "npx @cloudflare/next-on-pages",
@@ -25,6 +25,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "sharp": "^0.33.5",
+    "sort-es": "^1.7.13",
     "vercel": "^39.2.2",
     "zod": "^3.24.1"
   },

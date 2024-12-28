@@ -1,5 +1,6 @@
 import type { FC, ReactNode } from 'react'
 import cn from 'classnames'
+import Link from 'next/link'
 
 interface SpookyLinkProps {
   href: string
@@ -9,7 +10,7 @@ interface SpookyLinkProps {
 
 export const SpookyLink: FC<SpookyLinkProps> = ({ href, children, className }) => {
   return (
-    <a
+    <Link
       href={href}
       className={cn(
         'group relative transform transition-all duration-300',
@@ -24,6 +25,6 @@ export const SpookyLink: FC<SpookyLinkProps> = ({ href, children, className }) =
           'bg-purple-500/20 opacity-0 group-hover:opacity-100',
         )}
       />
-    </a>
+    </Link>
   )
 }

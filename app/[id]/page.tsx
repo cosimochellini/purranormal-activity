@@ -39,10 +39,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { title, description, id } = entry
 
   return {
-    title: `Day ${id * 2} - ${title} - Paranormal Kitten Logger`,
+    title: `Day ${id * 2} - ${title}`,
     description,
     openGraph: {
-      title: `${title} - Paranormal Kitten Logger`,
+      title: `Day ${id * 2} - ${title}`,
       description,
       type: 'article',
       url: `${NEXT_PUBLIC_APP_URL}/${rawId}`,
@@ -58,6 +58,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
+// eslint-disable-next-line import/no-mutable-exports, prefer-const
+export let revalidate = 2 * 60 * 60 // 2 hours
+
 export default async function Page({ params }: PageProps) {
   const rawId = (await params).id
   const entry = await getLog(Number(rawId))
@@ -69,7 +72,7 @@ export default async function Page({ params }: PageProps) {
   const categories = JSON.parse(rawCategories) as Categories[]
 
   return (
-    <div className="relative min-h-screen bg-deep-purple-900 p-1 md:p-4 text-white">
+    <div className="relative min-h-full bg-deep-purple-900 p-1 md:p-4 text-white">
       <SpookyBackground />
 
       <main className="relative mx-auto max-w-4xl p-6">

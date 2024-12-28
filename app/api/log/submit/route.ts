@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     }).returning()
 
     // Revalidate any necessary paths
-    revalidatePath('/', 'page')
+    revalidatePath('/', 'layout')
 
     fetch(`${NEXT_PUBLIC_APP_URL}/api/trigger/images`, {
       method: 'POST',

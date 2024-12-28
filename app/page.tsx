@@ -6,6 +6,9 @@ import { HeroSection } from '../components/hero/HeroSection'
 import { log } from '../db/schema'
 import { db } from '../drizzle'
 
+// eslint-disable-next-line import/no-mutable-exports, prefer-const
+export let revalidate = 2 * 60 * 60 // 2 hours
+
 function Home() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-deep-purple-900 p-8 pb-20 text-white sm:p-20">
