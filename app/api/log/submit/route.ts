@@ -22,11 +22,15 @@ function triggerImages() {
   // Revalidate any necessary paths
   revalidatePath('/', 'layout')
 
-  const triggerUrl = `${NEXT_PUBLIC_APP_URL}/api/trigger/images`
+  const triggerUrl = `${NEXT_PUBLIC_APP_URL}/api/trigger/images` as const
 
   logger.info(`Triggering image generation at ${triggerUrl}`)
 
-  fetch(triggerUrl, { method: 'POST' })
+  setTimeout(async () => {
+    await fetch(triggerUrl, { method: 'POST' })
+      .then(logger.info)
+      .catch(logger.error)
+  })
 }
 
 export async function POST(request: Request) {
