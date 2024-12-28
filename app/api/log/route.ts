@@ -5,6 +5,7 @@ import { db } from '@/drizzle'
 import { ok } from '@/utils/http'
 import { z } from 'zod'
 import { LogStatus } from '../../../data/enum/logStatus'
+import { logger } from '../../../utils/logger'
 
 const logFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
@@ -44,7 +45,9 @@ export async function POST(request: Request) {
 
     return ok<Response>({ success: true })
   }
-  catch {
+  catch (error) {
+    logger.error('Failed to create log:', error)
+
     return ok<Response>({ success: false, errors: {} })
   }
 }

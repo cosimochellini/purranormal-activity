@@ -45,7 +45,9 @@ export async function POST() {
       processed: logs.length,
     })
   }
-  catch {
+  catch (error) {
+    logger.error('Failed to process logs:', error)
+
     return ok({
       success: false,
       error: 'Failed to process logs',

@@ -6,6 +6,7 @@ import { generateLogDetails } from '@/services/ai'
 import { ok } from '@/utils/http'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { logger } from '../../../../utils/logger'
 
 const submitFormSchema = z.object({
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
@@ -16,6 +17,17 @@ const submitFormSchema = z.object({
 })
 
 export const runtime = 'edge'
+
+function triggerImages() {
+  // Revalidate any necessary paths
+  revalidatePath('/', 'layout')
+
+  const triggerUrl = `${NEXT_PUBLIC_APP_URL}/api/trigger/images`
+
+  logger.info(`Triggering image generation at ${triggerUrl}`)
+
+  fetch(triggerUrl, { method: 'POST' })
+}
 
 export async function POST(request: Request) {
   try {
@@ -49,18 +61,15 @@ export async function POST(request: Request) {
       status: LogStatus.Created,
     }).returning()
 
-    // Revalidate any necessary paths
-    revalidatePath('/', 'layout')
-
-    fetch(`${NEXT_PUBLIC_APP_URL}/api/trigger/images`, {
-      method: 'POST',
-    })
+    triggerImages()
 
     // Return success response, including the brand-new log ID
     // and the "imageDescription" you can use for image generation.
     return ok<Response>({ success: true, id: newLog.id.toString() })
   }
   catch (error) {
+    logger.error('Failed to submit log:', error)
+
     return ok<Response>({
       success: false,
       errors: {

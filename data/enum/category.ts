@@ -4,4 +4,5 @@ export enum Categories {
   PremonitoryDreams = 'PremonitoryDreams',
   AlwaysRight = 'AlwaysRight',
   SpectralMischief = 'SpectralMischief',
+  WitchyFood = 'WitchyFood',
 }

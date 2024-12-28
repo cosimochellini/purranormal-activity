@@ -3,6 +3,7 @@ import { db } from '@/drizzle'
 import { ok } from '@/utils/http'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { logger } from '../../../../utils/logger'
 
 export const runtime = 'edge'
 
@@ -46,6 +47,8 @@ export async function GET(request: Request) {
     return ok<Response>({ success: true, data })
   }
   catch (error) {
+    logger.error('Failed to fetch log entry:', error)
+
     return ok<Response>({
       success: false,
       errors: { id: ['Failed to fetch log entry', JSON.stringify(error)] },

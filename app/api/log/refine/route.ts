@@ -1,6 +1,7 @@
 import { createQuestions } from '@/services/ai'
 import { ok } from '@/utils/http'
 import { z } from 'zod'
+import { logger } from '../../../../utils/logger'
 
 const schema = z.object({
   description: z.string().min(1, 'Description is required').max(1000, 'Description is too long'),
@@ -38,6 +39,8 @@ export async function POST(request: Request) {
     return ok<Response>({ success: true, content })
   }
   catch (error) {
+    logger.error('Failed to generate follow-up questions:', error)
+
     return ok<Response>({
       success: false,
       errors: {
