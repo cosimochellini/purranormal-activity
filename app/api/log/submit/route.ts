@@ -5,6 +5,7 @@ import { NEXT_PUBLIC_APP_URL } from '@/env/next'
 import { generateLogDetails } from '@/services/ai'
 import { ok } from '@/utils/http'
 import { revalidatePath } from 'next/cache'
+import { after } from 'next/server'
 import { z } from 'zod'
 import { logger } from '../../../../utils/logger'
 
@@ -20,13 +21,13 @@ export const runtime = 'edge'
 
 function triggerImages() {
   // Revalidate any necessary paths
-  revalidatePath('/', 'layout')
 
-  const triggerUrl = `${NEXT_PUBLIC_APP_URL}/api/trigger/images` as const
+  after(async () => {
+    revalidatePath('/', 'layout')
 
-  logger.info(`Triggering image generation at ${triggerUrl}`)
+    const triggerUrl = `${NEXT_PUBLIC_APP_URL}/api/trigger/images` as const
 
-  setTimeout(async () => {
+    logger.info(`Triggering image generation at ${triggerUrl}`)
     await fetch(triggerUrl, { method: 'POST' })
       .then(logger.info)
       .catch(logger.error)
