@@ -29,7 +29,7 @@ function getLogs() {
     .select()
     .from(log)
     .orderBy(desc(log.id))
-    .limit(4)
+    .limit(6)
 }
 
 async function EventCards() {

@@ -15,6 +15,7 @@ const cardClasses = classNames(
   'hover:shadow-[0_0_30px_rgba(168,85,247,0.3)]',
   'border border-purple-700/30',
   'group',
+  'h-full flex flex-col justify-between', // Added classes for fixed height and flexbox
 )
 
 export function EventCard({
@@ -29,19 +30,20 @@ export function EventCard({
       <div className={cardClasses}>
         <div className="relative flex justify-center">
           <EventImage
-            loading="lazy"
+            loading="eager"
             width={240}
             height={240}
+            quality={50}
             log={log}
             className="mb-4 group-hover:animate-spooky-shake rounded-md"
           />
-
         </div>
-        <h3 className="font-medium mb-2 transition-colors">
-          {title}
-        </h3>
-        <p className="text-purple-200/80">{description}</p>
-
+        <div className="flex-grow">
+          <h3 className="font-medium mb-2 transition-colors text-balance">
+            {title}
+          </h3>
+          <p className="text-purple-200/80 line-clamp-4 text-balance">{description}</p>
+        </div>
         <div className="flex flex-wrap gap-2 mt-4">
           {categories.map(category => (
             <Category key={category} category={category} iconOnly />
