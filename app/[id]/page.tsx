@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
-import type { Categories } from '../../data/enum/category'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
 import { eq } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
+import { Category } from '../../components/common/Category'
 import { EventImage } from '../../components/events/EventImage'
 import { NEXT_PUBLIC_APP_URL } from '../../env/next'
+import { getCategories } from '../../utils/categories'
 import { publicImage } from '../../utils/cloudflare'
 
 interface Params {
@@ -68,8 +69,8 @@ export default async function Page({ params }: PageProps) {
   if (!entry)
     return notFound()
 
-  const { categories: rawCategories, description, title, id } = entry
-  const categories = JSON.parse(rawCategories) as Categories[]
+  const { description, title, id } = entry
+  const categories = getCategories(entry)
 
   return (
     <div className="relative min-h-full bg-deep-purple-900 p-1 md:p-4 text-white">
@@ -106,12 +107,7 @@ export default async function Page({ params }: PageProps) {
             </h2>
             <div className="flex flex-wrap gap-2">
               {categories.map(category => (
-                <span
-                  key={category}
-                  className="rounded-full bg-purple-800/40 px-4 py-1 text-sm text-purple-200"
-                >
-                  {category}
-                </span>
+                <Category key={category} category={category} />
               ))}
             </div>
           </div>

@@ -1,6 +1,8 @@
 import type { Log } from '../../db/schema'
 import classNames from 'classnames'
 import Link from 'next/link'
+import { getCategories } from '../../utils/categories'
+import { Category } from '../common/Category'
 import { EventImage } from './EventImage'
 
 interface EventCardProps {
@@ -19,6 +21,9 @@ export function EventCard({
   log,
 }: EventCardProps) {
   const { id, title, description } = log
+
+  const categories = getCategories(log)
+
   return (
     <Link href={`/${id}`} prefetch>
       <div className={cardClasses}>
@@ -30,6 +35,12 @@ export function EventCard({
           {title}
         </h3>
         <p className="text-purple-200/80">{description}</p>
+
+        <div className="flex flex-wrap gap-2 mt-4">
+          {categories.map(category => (
+            <Category key={category} category={category} iconOnly />
+          ))}
+        </div>
       </div>
     </Link>
   )

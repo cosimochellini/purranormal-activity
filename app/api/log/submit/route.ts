@@ -4,10 +4,10 @@ import { db } from '@/drizzle'
 import { NEXT_PUBLIC_APP_URL } from '@/env/next'
 import { generateLogDetails } from '@/services/ai'
 import { ok } from '@/utils/http'
+import { logger } from '@/utils/logger'
 import { revalidatePath } from 'next/cache'
 import { after } from 'next/server'
 import { z } from 'zod'
-import { logger } from '../../../../utils/logger'
 
 const submitFormSchema = z.object({
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
@@ -28,6 +28,7 @@ function triggerImages() {
     const triggerUrl = `${NEXT_PUBLIC_APP_URL}/api/trigger/images` as const
 
     logger.info(`Triggering image generation at ${triggerUrl}`)
+
     await fetch(triggerUrl, { method: 'POST' })
       .then(logger.info)
       .catch(logger.error)
@@ -53,9 +54,6 @@ export async function POST(request: Request) {
       imageDescription,
     } = await generateLogDetails(result.data.description, result.data.answers)
 
-    // Insert into your logs table (assuming 'log' schema matches these fields).
-    // If your schema doesn't include 'imageDescription',
-    // you can omit storing it, or store it separately.
     const [newLog] = await db.insert(log).values({
       title,
       description,
@@ -68,8 +66,6 @@ export async function POST(request: Request) {
 
     triggerImages()
 
-    // Return success response, including the brand-new log ID
-    // and the "imageDescription" you can use for image generation.
     return ok<Response>({ success: true, id: newLog.id.toString() })
   }
   catch (error) {

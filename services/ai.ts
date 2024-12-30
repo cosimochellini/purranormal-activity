@@ -3,6 +3,14 @@ import { openai } from '../instances/openai'
 import { logger } from '../utils/logger'
 import { typedObjectValues } from '../utils/typed'
 
+const styles = [
+  'bitmap style',
+  '8bit style',
+  'video game retro style',
+] as const
+
+const randomStyle = () => styles[Math.floor(Math.random() * styles.length)]
+
 export async function createQuestions(description: string) {
   const content = `
       You are a Ghostbuster with over 10 years of experience.
@@ -69,80 +77,65 @@ export async function createQuestions(description: string) {
 }
 
 export async function generateLogDetails(description: string, answers: { question: string, answer: string }[]) {
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [
-      {
-        role: 'user',
-        content: `
-          You are an experienced Ghostbuster with more than 10 years of service.
-          Your task is to craft an official log entry describing a magical and inexplicable event,
-          focusing on two main characters (in Italian):
+  const content = `
+      You are an experienced Ghostbuster with more than 10 years of service.
+      Your task is to craft an official log entry **in Italian**, focusing primarily on rewriting the original description in a polished, narrative style.
+      Incorporate minimal elements from the extra answers, but ensure the **original description remains the main foundation** of the story.
 
-          1) "SHE" — Kitty:
-             - A young kitten, the main cause of paranormal events.
-             - She possesses many powers but cannot fully control them.
-             - She lives with the Chick, a young chick she loves but might accidentally eat someday.
-             - Always refer to her as "micio", "gattina", "micio strega", or "gattino".
+      1) "SHE" — Kitty ("micio", "gattina", "micio strega", "gattino"):
+         - Main cause of paranormal events
+         - Many powers, not fully controlled
+         - Lives with the Chick, though could accidentally eat him
 
-          2) "ME" — Chick:
-             - A young chick who is constantly terrified by these paranormal incidents.
-             - He has no paranormal powers and is mystified by Kitty's abilities.
-             - Always refer to him as "pulcino", "pulcino innamorato", "cosetto", or "pulcino spaventato".
+      2) "HE" — Chick ("pulcino", "pulcino innamorato", "cosetto", "pulcino spaventato"):
+         - Frightened by these paranormal events
+         - No paranormal powers
+         - Lives in a loving yet risky relationship with Kitty
 
-          They live together in a loving relationship, though there's a risk
-          the kitten might harm the chick by accident.
+      **Important**:
+      - The final result should be **mostly a refined version of the original description**:
+        Keep the spirit and details from "${description}" as the dominant content.
+      - Briefly weave in insights from the extra answers only if they enhance the core description:
+        ${answers.map(a => `- ${a.question}: ${a.answer}`).join('\n      ')}
 
-          Your response must include these elements in **Italian**:
-
-          1. A catchy title (up to 60 characters):
-             - Mysterious, paranormal, and cute, in the style of a newspaper headline.
-
-          2. A refined description (up to 350 characters):
-             - A brief summary of the event, focusing on the kitten's powers and the chick's reactions.
-
-          3. A list of fitting categories from the following:
-             ${typedObjectValues(Categories).join(', ')}
-
-          **Additional Context**:
-          - Original Description: "${description}"
-          - Extra Answers:
-            ${answers.map(a => `${a.question}: ${a.answer}`).join('\n')}
-
-          Also, provide an "imageDescription" in **English** (up to 300 characters),
-          which will be used for generating a visual scene:
-          - This field should describe the most crucial visual elements, focusing on the kitten’s powers,
+        Also, provide an "imageDescription" in **English** (up to 300 characters),
+        which will be used for generating a visual scene:
+        - This field should describe the most crucial visual elements, focusing on the kitten’s powers,
             the chick’s reactions, and any important environmental details.
-          - Make sure it is consistent with the Italian text above, but keep it strictly in English.
-          - Make it 8bit style, pixel art, or similar.
-          - Do not include any text or lettering in the image.
-          - Maintain an overall "cute" or "adorable" style.
-          - Keep the final output to a single paragraph, under about 200 words if possible.
-          - Convert any references to real-world, copyrighted, or trademarked items into generic equivalents. Avoid mentioning brand or product names.
+        - Make sure it is consistent with the Italian text above, but keep it strictly in English.
+        - Make it ${randomStyle()}
+        - Do not include any text or lettering in the image.
+        - Maintain an overall "cute" or "adorable" style.
+        - Keep the final output to a single paragraph, under about 200 words if possible.
+        - Convert any references to real-world, copyrighted, or trademarked items into generic equivalents. Avoid mentioning brand or product names.
 
+      **Required JSON** (strictly valid, no extra text, no markdown) with exactly these keys:
+      {
+        "title": string,        // up to 60 characters, in Italian (catchy newspaper-style headline)
+        "description": string,  // up to 350 characters, in Italian (refined rewrite of original description)
+        "categories": [${typedObjectValues(Categories).join(', ')}], // valid categories from your enum
+        "imageDescription": string  // up to 300 characters, in English (8bit/pixel-art style scene)
+      }
 
-          **Return ONLY valid JSON** (no markdown, no extra text) with exactly these keys:
-          {
-            "title": string,        // up to 60 characters, in Italian
-            "description": string,  // up to 350 characters, in Italian
-            "categories": [${typedObjectValues(Categories).join(', ')}],
-            "imageDescription": string  // up to 300 characters, in English
-          }
-        `,
-      },
-    ],
-    // No streaming; we need the full JSON in one piece
+      Remember: **No additional text or keys**. Only return this JSON structure.
+    ` as const
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [{ role: 'user', content }],
     response_format: { type: 'json_object' },
+    // other OpenAI parameters as needed
   })
 
-  const content = completion.choices[0]?.message?.content || '{}'
-  return JSON.parse(content) as {
+  const rawContent = completion.choices[0]?.message?.content || '{}'
+  return JSON.parse(rawContent) as {
     title: string
     description: string
     categories: string[]
     imageDescription: string
   }
 }
+
 export async function generateImage(imagePrompt: string) {
   try {
     const imageResponse = await openai.images.generate({
@@ -161,16 +154,10 @@ export async function generateImage(imagePrompt: string) {
   }
   catch (error) {
     logger.error('Error generating image:', error)
+
     throw new Error('Image generation failed')
   }
 }
-
-const styles = [
-  'bitmap style',
-  '8bit style',
-] as const
-
-const randomStyle = () => styles[Math.floor(Math.random() * styles.length)]
 
 export async function generateImagePrompt(description: string) {
   try {

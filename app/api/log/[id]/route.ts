@@ -1,9 +1,9 @@
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
 import { ok } from '@/utils/http'
+import { logger } from '@/utils/logger'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { logger } from '../../../../utils/logger'
 
 export const runtime = 'edge'
 
