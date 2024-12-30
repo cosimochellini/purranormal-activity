@@ -3,7 +3,7 @@
 import type { Log } from '../../db/schema'
 import Bug from '@/images/bug.jpg'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { LogStatus } from '../../data/enum/logStatus'
 import { randomImage } from '../../images/loading'
 import { publicImage } from '../../utils/cloudflare'
@@ -18,34 +18,49 @@ interface EventImageProps extends ImageProps {
 const fallbackImage = randomImage()
 
 export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt'>) {
-  const [internalLog, setInternalLog] = useState(log)
-  const { imageDescription, id } = internalLog
-  const imageUrl = publicImage(id)
+  const interval = useRef<NodeJS.Timeout>(undefined)
 
-  const [imageSrc, setImageSrc] = useState(imageUrl as string)
+  const [internalLog, setInternalLog] = useState(log)
+  const [imageError, setImageError] = useState(false)
+
+  const { imageDescription, id, status } = internalLog
+
+  const image = useMemo(() => {
+    if (status === LogStatus.Created)
+      return fallbackImage
+
+    if (status === LogStatus.Error)
+      return Bug.src
+
+    if (imageError)
+      return Bug.src
+
+    return publicImage(id)
+  }, [id, imageError, status])
 
   useEffect(() => {
-    if (internalLog.status !== LogStatus.Created)
-      return
+    if (status !== LogStatus.Created)
+      return clearInterval(interval.current)
 
     const fetchLog = fetcher<Log>(`/api/log/${internalLog.id}`)
-    const timeout = setTimeout(() => {
+
+    interval.current = setInterval(() => {
       fetchLog()
         .then(data => setInternalLog(data))
         .catch(console.error)
     }, 3000)
 
-    return () => clearTimeout(timeout)
-  }, [internalLog])
+    return () => clearInterval(interval.current)
+  }, [internalLog.id, status])
 
   const onImageError = () => {
-    setImageSrc(() => internalLog.status === LogStatus.Created ? fallbackImage.src : Bug.src)
+    setImageError(true)
   }
 
   return (
     <Image
       {...props}
-      src={imageSrc}
+      src={image}
       alt={imageDescription ?? ''}
       onError={onImageError}
     />

@@ -2,10 +2,12 @@ import type { FollowUpQuestion } from '@/app/api/log/refine/route'
 import type { Body, Response } from '@/app/api/log/submit/route'
 import type { FormValues } from '.'
 import { fetcher } from '@/utils/fetch'
+import { IconX } from '@tabler/icons-react'
 import cn from 'classnames'
 import { useState } from 'react'
 import { logger } from '../../utils/logger'
 import { SpookyButton } from '../common/SpookyButton'
+import { RadioOption } from '../inputs/RadioOption'
 
 interface RefinementSectionProps {
   description?: string
@@ -18,60 +20,6 @@ interface AnsweredQuestion extends FollowUpQuestion {
 }
 
 const submitLog = fetcher<Response, never, Body>('/api/log/submit', 'POST')
-
-interface RadioOptionProps {
-  question: string
-  answer: string
-  availableAnswer: string
-  onAnswerChange: (question: string, answer: string) => void
-}
-
-function RadioOption({ question, answer, availableAnswer, onAnswerChange }: RadioOptionProps) {
-  return (
-    <div className="flex items-center space-x-3 group/radio cursor-pointer">
-      <div className="relative flex items-center justify-center">
-        <input
-          type="radio"
-          value={availableAnswer}
-          checked={answer === availableAnswer}
-          onChange={() => onAnswerChange(question, availableAnswer)}
-          className="peer absolute opacity-0 w-full h-full cursor-pointer"
-        />
-        <div
-          className={cn(
-            'w-5 h-5 border-2 rounded-full transition-all duration-300',
-            'border-purple-500/50 bg-purple-900/30',
-            'group-hover/radio:border-purple-400/70',
-            answer === availableAnswer
-              ? [
-                  'border-purple-400 bg-purple-500/20',
-                  'shadow-[0_0_8px_rgba(168,85,247,0.3)]',
-                  'after:opacity-100 after:scale-100',
-                ]
-              : ['after:opacity-0 after:scale-0'],
-            // The "after" pseudo-element for the check indicator
-            'relative after:content-[""] after:absolute',
-            'after:w-2 after:h-2 after:rounded-full',
-            'after:bg-purple-400',
-            'after:transition-all after:duration-300',
-          )}
-        />
-      </div>
-      <label
-        className={cn(
-          'text-purple-200/70 transition-all duration-300 cursor-pointer select-none',
-          'group-hover/radio:text-purple-100',
-          answer === availableAnswer && [
-            'text-purple-100 font-medium',
-            'text-shadow-[0_0_10px_rgba(168,85,247,0.3)]',
-          ],
-        )}
-      >
-        {availableAnswer}
-      </label>
-    </div>
-  )
-}
 
 export function RefinementSection({ description, questions, onSubmitSuccess }: RefinementSectionProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -142,20 +90,7 @@ export function RefinementSection({ description, questions, onSubmitSuccess }: R
                   'focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50',
                 )}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <IconX />
               </button>
 
               <label className="block text-lg font-medium text-purple-100 mb-4">

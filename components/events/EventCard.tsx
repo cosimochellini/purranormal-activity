@@ -28,7 +28,13 @@ export function EventCard({
     <Link href={`/${id}`} prefetch>
       <div className={cardClasses}>
         <div className="relative flex justify-center">
-          <EventImage loading="lazy" width={240} height={240} log={log} className="mb-4 group-hover:animate-spooky-shake rounded-md" />
+          <EventImage
+            loading="lazy"
+            width={240}
+            height={240}
+            log={log}
+            className="mb-4 group-hover:animate-spooky-shake rounded-md"
+          />
 
         </div>
         <h3 className="font-medium mb-2 transition-colors">
