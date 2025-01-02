@@ -17,6 +17,7 @@ interface EventImageProps extends ImageProps {
 }
 
 const fallbackImage = randomImage()
+const fetchLog = fetcher<Log>(`/api/log/[id]`)
 
 export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt'>) {
   const interval = useRef<NodeJS.Timeout>(undefined)
@@ -45,16 +46,14 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
     if (status !== LogStatus.Created)
       return clearInterval(interval.current)
 
-    const fetchLog = fetcher<Log>(`/api/log/${internalLog.id}`)
-
     interval.current = setInterval(() => {
-      fetchLog()
+      fetchLog({ params: { id } })
         .then(setInternalLog)
         .catch(console.error)
     }, 6000)
 
     return () => clearInterval(interval.current)
-  }, [internalLog.id, status])
+  }, [id, status])
 
   const onImageError = () => {
     setImageError(true)

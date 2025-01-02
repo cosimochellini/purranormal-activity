@@ -1,4 +1,3 @@
-import { Categories } from '@/data/enum/category'
 import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
@@ -45,7 +44,7 @@ export async function GET(request: Request) {
 const schema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
-  categories: z.array(z.nativeEnum(Categories)),
+  categories: z.string().min(1),
   imageDescription: z.string().optional(),
 })
 
@@ -81,7 +80,7 @@ export async function PUT(request: Request) {
         ...currentLog,
         title,
         description,
-        categories: JSON.stringify(categories),
+        categories,
         imageDescription,
         updatedAt: Date.now(),
         status: imageDescription !== currentLog.imageDescription ? LogStatus.Created : LogStatus.ImageGenerated,
@@ -101,6 +100,29 @@ export async function PUT(request: Request) {
       errors: {
         title: ['Failed to update log'],
       },
+    })
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const url = new URL(request.url)
+    const id = Number(url.searchParams.get('id'))
+
+    await db
+      .delete(log)
+      .where(eq(log.id, id))
+
+    regenerateContents()
+
+    return ok({ success: true })
+  }
+  catch (error) {
+    logger.error('Failed to delete log:', error)
+
+    return ok({
+      success: false,
+      error: 'Failed to delete log',
     })
   }
 }

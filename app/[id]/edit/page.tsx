@@ -15,15 +15,16 @@ async function getLog(id: number) {
 
   return logEntry
 }
+interface Params {
+  id: string
+}
 
 interface PageProps {
-  params: {
-    id: string
-  }
+  params: Promise<Params>
 }
 
 export default async function EditLogPage({ params }: PageProps) {
-  const entry = await getLog(Number(params.id))
+  const entry = await getLog(Number((await params).id))
 
   if (!entry)
     return notFound()

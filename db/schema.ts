@@ -18,4 +18,3 @@ export const log = sqliteTable('log', {
 
 // Type definitions
 export type Log = typeof log.$inferSelect
-export type NewLog = typeof log.$inferInsert
