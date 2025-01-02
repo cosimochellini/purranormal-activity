@@ -3,6 +3,7 @@
 import type { Log } from '../../db/schema'
 import Bug from '@/images/bug.jpg'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { LogStatus } from '../../data/enum/logStatus'
 import { randomImage } from '../../images/loading'
@@ -19,6 +20,8 @@ const fallbackImage = randomImage()
 
 export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt'>) {
   const interval = useRef<NodeJS.Timeout>(undefined)
+  const clickCounter = useRef(0)
+  const router = useRouter()
 
   const [internalLog, setInternalLog] = useState(log)
   const [imageError, setImageError] = useState(false)
@@ -57,12 +60,20 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
     setImageError(true)
   }
 
+  const onImageClick = () => {
+    clickCounter.current += 1
+
+    if (clickCounter.current >= 5)
+      return router.push(`/${log.id}/edit`)
+  }
+
   return (
     <Image
       {...props}
       src={image}
       alt={imageDescription ?? ''}
       onError={onImageError}
+      onClick={onImageClick}
     />
   )
 }
