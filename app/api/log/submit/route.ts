@@ -1,12 +1,10 @@
 import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
-import { NEXT_PUBLIC_APP_URL } from '@/env/next'
 import { generateLogDetails } from '@/services/ai'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { revalidatePath } from 'next/cache'
-import { after } from 'next/server'
+import { regenerateContents } from '@/utils/next'
 import { z } from 'zod'
 
 const submitFormSchema = z.object({
@@ -18,22 +16,6 @@ const submitFormSchema = z.object({
 })
 
 export const runtime = 'edge'
-
-function triggerImages() {
-  // Revalidate any necessary paths
-
-  after(async () => {
-    revalidatePath('/', 'layout')
-
-    const triggerUrl = `${NEXT_PUBLIC_APP_URL}/api/trigger/images` as const
-
-    logger.info(`Triggering image generation at ${triggerUrl}`)
-
-    await fetch(triggerUrl, { method: 'POST' })
-      .then(logger.info)
-      .catch(logger.error)
-  })
-}
 
 export async function POST(request: Request) {
   try {
@@ -64,7 +46,7 @@ export async function POST(request: Request) {
       status: LogStatus.Created,
     }).returning()
 
-    triggerImages()
+    regenerateContents()
 
     return ok<Response>({ success: true, id: newLog.id.toString() })
   }

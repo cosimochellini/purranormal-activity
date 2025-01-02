@@ -46,9 +46,9 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
 
     interval.current = setInterval(() => {
       fetchLog()
-        .then(data => setInternalLog(data))
+        .then(setInternalLog)
         .catch(console.error)
-    }, 3000)
+    }, 6000)
 
     return () => clearInterval(interval.current)
   }, [internalLog.id, status])

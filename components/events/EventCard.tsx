@@ -30,7 +30,7 @@ export function EventCard({
       <div className={cardClasses}>
         <div className="relative flex justify-center">
           <EventImage
-            loading="eager"
+            loading="lazy"
             width={240}
             height={240}
             quality={50}

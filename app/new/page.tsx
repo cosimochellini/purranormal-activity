@@ -3,7 +3,7 @@ import { NewLogForm } from '@/components/newLog'
 
 export default function NewLogPage() {
   return (
-    <div className="relative min-h-screen bg-deep-purple-900 p-4 text-white">
+    <div className="min-h-screen w-full bg-deep-purple-900 p-4 text-white">
       <SpookyBackground />
 
       <main className="relative mx-auto flex flex-col items-center justify-center">

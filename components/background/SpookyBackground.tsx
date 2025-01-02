@@ -7,7 +7,7 @@ interface FogEffectProps {
 function FogEffect({ className }: FogEffectProps) {
   return (
     <div
-      className={`absolute w-96 h-96 bg-purple-600/5 rounded-full blur-3xl ${className}`}
+      className={`absolute w-96 h-96 bg-purple-600/5 rounded-full blur-xl ${className}`}
     />
   )
 }
@@ -36,8 +36,8 @@ export function SpookyBackground() {
   return (
     <div className="absolute inset-0 pointer-events-none">
       {/* Fog/Mist Effects */}
-      <FogEffect className="animate-fog-slow -top-20 -left-20" />
-      <FogEffect className="animate-fog-reverse -bottom-20 -right-20" />
+      <FogEffect className="animate-fog-slow top-0 left-0" />
+      <FogEffect className="animate-fog-reverse bottom-0 right-0" />
 
       {/* Floating Orbs */}
       <FloatingOrb

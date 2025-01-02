@@ -30,9 +30,10 @@ interface RootLayoutProps {
 
 function RootLayout({ children }: Readonly<RootLayoutProps>) {
   return (
-    <html lang="en" className="min-h-screen min-w-screen">
+    <html lang="en" className="h-full scrollbar-hidden">
       <body
         className={`${primaryFont.variable} ${accentFont.variable}
+          min-h-full w-full
           bg-gradient-to-b from-midnight-blue to-deep-purple
           text-ghost-white antialiased`}
       >
