@@ -1,35 +1,24 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { usePathname } from 'next/navigation'
+import { useEffect, useRef } from 'react'
 import { startViewTransition } from '../../utils/viewTransition'
 
-export function ViewTransitionLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
+export function ViewTransitionLayout() {
+  const pathname = usePathname()
+  const previousPathRef = useRef(pathname)
 
-  const handleClick = (e: MouseEvent) => {
-    const link = (e.target as HTMLElement).closest('a')
-    if (!link)
-      return
-
-    if (
-      link.href
-      && link.href.startsWith(window.location.origin)
-      && !e.ctrlKey
-      && !e.metaKey
-      && !e.altKey
-      && !e.shiftKey
-    ) {
-      e.preventDefault()
-      startViewTransition(() => router.push(link.href))
-    }
-  }
-
-  // Add event listener for link clicks
   useEffect(() => {
-    document.addEventListener('click', handleClick)
-    return () => document.removeEventListener('click', handleClick)
-  }, [])
+    // If the pathname changed, we can trigger a view transition
+    if (pathname !== previousPathRef.current) {
+      startViewTransition(() => {
+        // If you have code that needs to run just before or after
+        // the transition completes, put it here. For a typical
+        // route transition, you may not need to do anything inside.
+      })
+      previousPathRef.current = pathname
+    }
+  }, [pathname])
 
-  return children
+  return null
 }
