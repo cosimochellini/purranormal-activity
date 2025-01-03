@@ -37,5 +37,5 @@ body {
 }
 
 ::view-transition-group(root) {
-    animation-duration: 2s;
+    animation-duration: 0.2s;
 }

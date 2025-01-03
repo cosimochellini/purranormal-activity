@@ -2,6 +2,7 @@ import type { Log } from '../../db/schema'
 import classNames from 'classnames'
 import Link from 'next/link'
 import { getCategories } from '../../utils/categories'
+import { transitions } from '../../utils/viewTransition'
 import { Category } from '../common/Category'
 import { EventImage } from './EventImage'
 
@@ -24,9 +25,17 @@ export function EventCard({
   const { id, title, description } = log
 
   const categories = getCategories(log)
+  const styles = transitions(id)
 
   return (
-    <Link href={`/${id}`} prefetch rel="expect">
+    <Link
+      href={{
+        pathname: `/${id}`,
+        query: { animation: 'disable' },
+      }}
+      prefetch
+      rel="expect"
+    >
       <div className={cardClasses}>
         <div className="relative flex justify-center">
           <EventImage
@@ -36,24 +45,27 @@ export function EventCard({
             quality={50}
             log={log}
             className="mb-4 group-hover:animate-spooky-shake rounded-md w-full h-auto"
-            style={{ viewTransitionName: `event-image-${id}` }}
+            style={styles.image}
           />
         </div>
         <div className="flex-grow">
           <h3
             className="font-medium mb-2 transition-colors text-balance"
-            style={{ viewTransitionName: `event-title-${id}` }}
+            style={styles.title}
           >
             {title}
           </h3>
           <p
             className="text-purple-200/80 line-clamp-4 text-balance"
-            style={{ viewTransitionName: `event-description-${id}` }}
+            style={styles.description}
           >
             {description}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div
+          className="flex flex-wrap gap-2 mt-4"
+          style={styles.categories}
+        >
           {categories.map(category => (
             <Category key={category} category={category} iconOnly />
           ))}

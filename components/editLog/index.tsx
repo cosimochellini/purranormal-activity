@@ -6,6 +6,7 @@ import type { FormEvent } from 'react'
 import { fetcher } from '@/utils/fetch'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { transitions } from '../../utils/viewTransition'
 import { SpookyButton } from '../common/SpookyButton'
 import { CategorySelector } from './CategorySelector'
 
@@ -70,6 +71,8 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
     }
   }
 
+  const styles = transitions(initialData.id)
+
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-2xl space-y-6 p-4">
       {error && (
@@ -88,6 +91,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
           value={formData.title}
           onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
           className="w-full rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+          style={styles.title}
         />
       </div>
       <div className="space-y-2">
@@ -100,6 +104,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
           onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
           rows={6}
           className="w-full min-h-[150px] rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+          style={styles.description}
         />
       </div>
 
@@ -117,6 +122,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
       </div>
       <CategorySelector
         selected={JSON.parse(formData.categories)}
+        styles={styles.categories}
         onChange={categories => setFormData(prev => ({ ...prev, categories: JSON.stringify(categories) }))}
       />
 
