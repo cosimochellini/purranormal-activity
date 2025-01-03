@@ -31,3 +31,11 @@ body {
     -ms-overflow-style: none; /* IE and Edge */
   }
 }
+
+@view-transition {
+    navigation: auto;
+}
+
+::view-transition-group(root) {
+    animation-duration: 2s;
+}

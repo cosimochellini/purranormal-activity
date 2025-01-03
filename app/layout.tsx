@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Caveat, Quicksand } from 'next/font/google'
+import { ViewTransitionLayout } from '../components/common/ViewTransitionLayout'
 import './globals.css'
 
 const primaryFont = Quicksand({
@@ -37,7 +38,9 @@ function RootLayout({ children }: Readonly<RootLayoutProps>) {
           bg-gradient-to-b from-midnight-blue to-deep-purple
           text-ghost-white antialiased`}
       >
-        {children}
+        <ViewTransitionLayout>
+          {children}
+        </ViewTransitionLayout>
       </body>
     </html>
   )

@@ -77,7 +77,7 @@ export default async function Page({ params }: PageProps) {
       <SpookyBackground />
 
       <main className="relative mx-auto max-w-4xl p-6">
-        <div className="animate-fade-in-up space-y-8 rounded-2xl border border-purple-700/30 bg-purple-900/30 p-6 md:p-8 backdrop-blur-sm">
+        <div className="_animate-fade-in-up space-y-8 rounded-2xl border border-purple-700/30 bg-purple-900/30 p-6 md:p-8 backdrop-blur-sm">
           <div className="space-y-4">
             <code className="text-purple-200/80 text-sm">
               DAY #
@@ -88,15 +88,23 @@ export default async function Page({ params }: PageProps) {
               width={600}
               height={600}
               priority
-              className="rounded-lg mx-auto"
+              className="rounded-lg mx-auto w-full h-auto"
               log={entry}
+              style={{ viewTransitionName: `event-image-${id}` }}
             />
 
-            <h1 className="font-magical text-3xl animate-magical-glow text-balance">
+            <h1
+              className="font-magical text-3xl animate-magical-glow text-balance"
+              style={{ viewTransitionName: `event-title-${id}` }}
+
+            >
               {title}
             </h1>
 
-            <p className="text-purple-200/80 leading-relaxed text-balance">
+            <p
+              className="text-purple-200/80 leading-relaxed text-balance"
+              style={{ viewTransitionName: `event-description-${id}` }}
+            >
               {description}
             </p>
           </div>

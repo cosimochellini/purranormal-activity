@@ -26,7 +26,7 @@ export function EventCard({
   const categories = getCategories(log)
 
   return (
-    <Link href={`/${id}`} prefetch>
+    <Link href={`/${id}`} prefetch rel="expect">
       <div className={cardClasses}>
         <div className="relative flex justify-center">
           <EventImage
@@ -35,14 +35,23 @@ export function EventCard({
             height={240}
             quality={50}
             log={log}
-            className="mb-4 group-hover:animate-spooky-shake rounded-md"
+            className="mb-4 group-hover:animate-spooky-shake rounded-md w-full h-auto"
+            style={{ viewTransitionName: `event-image-${id}` }}
           />
         </div>
         <div className="flex-grow">
-          <h3 className="font-medium mb-2 transition-colors text-balance">
+          <h3
+            className="font-medium mb-2 transition-colors text-balance"
+            style={{ viewTransitionName: `event-title-${id}` }}
+          >
             {title}
           </h3>
-          <p className="text-purple-200/80 line-clamp-4 text-balance">{description}</p>
+          <p
+            className="text-purple-200/80 line-clamp-4 text-balance"
+            style={{ viewTransitionName: `event-description-${id}` }}
+          >
+            {description}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2 mt-4">
           {categories.map(category => (
