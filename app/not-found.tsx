@@ -2,7 +2,7 @@ import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { SpookyButton } from '@/components/common/SpookyButton'
 import { randomImage } from '@/images/notFound'
 import Image from 'next/image'
-import Link from 'next/link'
+import { SpookyLink } from '../components/common/SpookyLink'
 
 export default function NotFound() {
   const errorImage = randomImage()
@@ -40,11 +40,11 @@ export default function NotFound() {
           />
         </div>
 
-        <Link href="/" prefetch>
+        <SpookyLink href="/" prefetch>
           <SpookyButton>
             Return to Safety
           </SpookyButton>
-        </Link>
+        </SpookyLink>
       </main>
     </div>
   )

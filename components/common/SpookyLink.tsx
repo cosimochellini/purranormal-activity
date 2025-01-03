@@ -1,17 +1,19 @@
 import type { FC, ReactNode } from 'react'
 import cn from 'classnames'
-import Link from 'next/link'
+import { TransitionLink } from './TransitionLink'
 
 interface SpookyLinkProps {
   href: string
   children: ReactNode
   className?: string
+  prefetch?: boolean
 }
 
-export const SpookyLink: FC<SpookyLinkProps> = ({ href, children, className }) => {
+export const SpookyLink: FC<SpookyLinkProps> = ({ href, children, className, prefetch }) => {
   return (
-    <Link
+    <TransitionLink
       href={href}
+      prefetch={prefetch}
       className={cn(
         'group relative transform transition-all duration-300',
         'hover:scale-110 hover:text-purple-300',
@@ -25,6 +27,6 @@ export const SpookyLink: FC<SpookyLinkProps> = ({ href, children, className }) =
           'bg-purple-500/20 opacity-0 group-hover:opacity-100',
         )}
       />
-    </Link>
+    </TransitionLink>
   )
 }

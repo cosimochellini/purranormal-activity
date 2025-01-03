@@ -2,8 +2,8 @@
 
 import type { Log } from '../../db/schema'
 import Bug from '@/images/bug.jpg'
+import { useTransitionRouter } from 'next-view-transitions'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { LogStatus } from '../../data/enum/logStatus'
 import { randomImage } from '../../images/loading'
@@ -22,7 +22,7 @@ const fetchLog = fetcher<Log>(`/api/log/[id]`)
 export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt'>) {
   const interval = useRef<NodeJS.Timeout>(undefined)
   const clickCounter = useRef(0)
-  const router = useRouter()
+  const router = useTransitionRouter()
 
   const [internalLog, setInternalLog] = useState(log)
   const [imageError, setImageError] = useState(false)

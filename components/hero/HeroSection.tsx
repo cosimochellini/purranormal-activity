@@ -2,9 +2,9 @@ import type { FC } from 'react'
 import heroImage from '@/images/hero.webp'
 import cn from 'classnames'
 import Image from 'next/image'
-import Link from 'next/link'
 import { AnimatedWord } from '../common/AnimatedWord'
 import { SpookyButton } from '../common/SpookyButton'
+import { SpookyLink } from '../common/SpookyLink'
 
 interface HeroSectionProps {
   className?: string
@@ -54,11 +54,11 @@ export const HeroSection: FC<HeroSectionProps> = ({ className }) => {
         </div>
       </div>
 
-      <Link href="/new" prefetch>
+      <SpookyLink href="/new" prefetch>
         <SpookyButton className="mt-2">
           Add yet another log
         </SpookyButton>
-      </Link>
+      </SpookyLink>
     </section>
   )
 }

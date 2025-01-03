@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { ViewTransitions } from 'next-view-transitions'
 import { Caveat, Quicksand } from 'next/font/google'
 import { ViewTransitionLayout } from '../components/common/ViewTransitionLayout'
 import './globals.css'
@@ -31,7 +32,7 @@ interface RootLayoutProps {
 
 function RootLayout({ children }: Readonly<RootLayoutProps>) {
   return (
-    <>
+    <ViewTransitions>
       <html lang="en" className="h-full scrollbar-hidden">
         <body
           className={`${primaryFont.variable} ${accentFont.variable}
@@ -43,7 +44,7 @@ function RootLayout({ children }: Readonly<RootLayoutProps>) {
         </body>
       </html>
       <ViewTransitionLayout />
-    </>
+    </ViewTransitions>
   )
 }
 

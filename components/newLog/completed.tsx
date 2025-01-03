@@ -2,7 +2,7 @@ import { SpookyButton } from '@/components/common/SpookyButton'
 import { randomImage } from '@/images/insert/success'
 
 import Image from 'next/image'
-import Link from 'next/link'
+import { TransitionLink } from '../common/TransitionLink'
 
 interface CompletedSectionProps {
   logId?: string
@@ -28,17 +28,17 @@ export function CompletedSection({ logId }: CompletedSectionProps) {
       </div>
 
       <div className="flex gap-4 justify-center w-full">
-        <Link href="/">
+        <TransitionLink href="/">
           <SpookyButton>
             Go to home
           </SpookyButton>
-        </Link>
+        </TransitionLink>
 
-        <Link href={`/${logId}`}>
+        <TransitionLink href={`/${logId}`}>
           <SpookyButton>
             View log
           </SpookyButton>
-        </Link>
+        </TransitionLink>
       </div>
     </div>
   )

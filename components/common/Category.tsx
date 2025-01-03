@@ -1,11 +1,13 @@
 import type { IconProps } from '@tabler/icons-react'
 import type { Categories } from '../../data/enum/category'
+import classNames from 'classnames'
 import dynamic from 'next/dynamic'
-import { memo } from 'react'
 
 interface CategoryProps {
   category: Categories
   iconOnly?: boolean
+  selected?: boolean
+  onClick?: () => void
 }
 
 const categoryIcons = {
@@ -24,14 +26,20 @@ function normalizer(category: string) {
     .trim()
 }
 
-function CategoryComponent({ category, iconOnly = false }: CategoryProps) {
+export function Category({ category, iconOnly = false, selected, onClick }: CategoryProps) {
   const Icon = categoryIcons[category]
 
   return (
     <button
+      onClick={onClick}
       key={category}
       type="button"
-      className="group flex items-center space-x-2 rounded-full bg-purple-800/40 px-4 py-2 text-sm text-purple-200 transition-transform hover:scale-105 hover:bg-purple-700/60 focus:outline-none focus:ring-2 focus:ring-purple-400"
+      className={classNames(
+        'group flex items-center space-x-2 rounded-full ',
+        'bg-purple-800/40 px-4 py-2 text-sm text-purple-200 transition-transform ',
+        'hover:scale-105 hover:bg-purple-700/60 focus:outline-none focus:ring-2 focus:ring-purple-400',
+        selected && 'bg-purple-700/80 scale-150 ring-2 ring-purple-500',
+      )}
     >
       <div className="relative">
         <Icon className="h-5 w-5 text-purple-200 group-hover:animate-spin-slow" />
@@ -42,5 +50,3 @@ function CategoryComponent({ category, iconOnly = false }: CategoryProps) {
     </button>
   )
 }
-
-export const Category = memo(CategoryComponent)

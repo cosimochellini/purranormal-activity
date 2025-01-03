@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { Categories } from '@/data/enum/category'
 import { typedObjectEntries } from '@/utils/typed'
-import cn from 'classnames'
+import { Category } from '../common/Category'
 
 interface CategorySelectorProps {
   selected: Categories[]
@@ -25,20 +25,12 @@ export function CategorySelector({ selected, onChange, styles }: CategorySelecto
       </label>
       <div className="flex flex-wrap gap-2">
         {typedObjectEntries(Categories).map(([key, category]) => (
-          <button
+          <Category
             key={key}
-            type="button"
+            category={category}
+            selected={selected.includes(category)}
             onClick={() => toggleCategory(category)}
-            className={cn(
-              'rounded-full px-4 py-2 text-sm transition-colors',
-              'border border-purple-700/30',
-              selected.includes(category)
-                ? 'bg-purple-700/50 text-white'
-                : 'bg-purple-900/30 text-purple-300 hover:bg-purple-700/30',
-            )}
-          >
-            {category}
-          </button>
+          />
         ))}
       </div>
     </div>

@@ -1,9 +1,9 @@
 import type { Log } from '../../db/schema'
 import classNames from 'classnames'
-import Link from 'next/link'
 import { getCategories } from '../../utils/categories'
 import { transitions } from '../../utils/viewTransition'
 import { Category } from '../common/Category'
+import { TransitionLink } from '../common/TransitionLink'
 import { EventImage } from './EventImage'
 
 interface EventCardProps {
@@ -28,13 +28,9 @@ export function EventCard({
   const styles = transitions(id)
 
   return (
-    <Link
-      href={{
-        pathname: `/${id}`,
-        query: { animation: 'disable' },
-      }}
+    <TransitionLink
+      href={`/${id}?animation=disable`}
       prefetch
-      rel="expect"
     >
       <div className={cardClasses}>
         <div className="relative flex justify-center">
@@ -71,6 +67,6 @@ export function EventCard({
           ))}
         </div>
       </div>
-    </Link>
+    </TransitionLink>
   )
 }
