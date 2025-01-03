@@ -38,7 +38,7 @@ export function Category({ category, iconOnly = false, selected, onClick }: Cate
         'group flex items-center space-x-2 rounded-full ',
         'bg-purple-800/40 px-4 py-2 text-sm text-purple-200 transition-transform ',
         'hover:scale-105 hover:bg-purple-700/60 focus:outline-none focus:ring-2 focus:ring-purple-400',
-        selected && 'bg-purple-700/80 scale-150 ring-2 ring-purple-500',
+        selected && 'bg-purple-400/70',
       )}
     >
       <div className="relative">
