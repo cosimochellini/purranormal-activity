@@ -18,7 +18,6 @@ interface Params {
 
 interface PageProps {
   params: Promise<Params>
-  searchParams: Promise<{ animation?: 'disable' }>
 }
 
 export const runtime = 'edge'
@@ -65,9 +64,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // eslint-disable-next-line import/no-mutable-exports, prefer-const
 export let revalidate = 2 * 60 * 60 // 2 hours
 
-export default async function Page({ params, searchParams }: PageProps) {
+export default async function Page({ params }: PageProps) {
   const rawId = (await params).id
-  const search = await searchParams
   const entry = await getLog(Number(rawId))
 
   if (!entry)
@@ -85,7 +83,6 @@ export default async function Page({ params, searchParams }: PageProps) {
         <div
           className={classNames(
             'space-y-8 rounded-2xl border border-purple-700/30 bg-purple-900/30 p-6 md:p-8 backdrop-blur-sm',
-            !search.animation && 'animate-fade-in-up',
           )}
         >
           <div className="space-y-4">

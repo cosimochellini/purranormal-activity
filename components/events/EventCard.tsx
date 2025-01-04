@@ -29,7 +29,7 @@ export function EventCard({
 
   return (
     <TransitionLink
-      href={`/${id}?animation=disable`}
+      href={`/${id}`}
       prefetch
     >
       <div className={cardClasses}>

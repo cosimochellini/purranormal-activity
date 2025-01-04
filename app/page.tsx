@@ -49,7 +49,7 @@ async function EventCards() {
 
 async function RecentEvents() {
   return (
-    <section className="w-full max-w-5xl animate-fade-in-up delay-1000">
+    <section className="w-full max-w-5xl">
       <h2 className="mb-6 text-2xl font-magical 'animate-magical-glow animate-ghost">
         Recent Supernatural Sightings
       </h2>
