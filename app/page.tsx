@@ -37,10 +37,11 @@ async function EventCards() {
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {events.map(event => (
+      {events.map((event, index) => (
         <EventCard
           key={event.title}
           log={event}
+          priority={index === 0}
         />
       ))}
     </div>

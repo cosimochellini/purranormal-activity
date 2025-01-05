@@ -8,6 +8,7 @@ import { EventImage } from './EventImage'
 
 interface EventCardProps {
   log: Log
+  priority?: boolean
 }
 
 const cardClasses = classNames(
@@ -21,6 +22,7 @@ const cardClasses = classNames(
 
 export function EventCard({
   log,
+  priority,
 }: EventCardProps) {
   const { id, title, description } = log
 
@@ -35,7 +37,8 @@ export function EventCard({
       <div className={cardClasses}>
         <div className="relative flex justify-center">
           <EventImage
-            loading="lazy"
+            priority={priority}
+            loading={priority ? 'eager' : 'lazy'}
             width={240}
             height={240}
             quality={50}
