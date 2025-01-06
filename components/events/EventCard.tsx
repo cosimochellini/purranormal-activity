@@ -39,8 +39,8 @@ export function EventCard({
           <EventImage
             priority={priority}
             loading={priority ? 'eager' : 'lazy'}
-            width={240}
-            height={240}
+            width={150}
+            height={150}
             quality={50}
             log={log}
             className="mb-4 group-hover:animate-spooky-shake rounded-md w-full h-auto"

@@ -1,6 +1,8 @@
+import type { Log } from '@/db/schema'
 import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
+import { deleteFromR2 } from '@/utils/cloudflare'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 import { regenerateContents } from '@/utils/next'
@@ -11,7 +13,7 @@ export const runtime = 'edge'
 
 export type GetResponse = {
   success: true
-  data: typeof log['$inferSelect']
+  data: Log
 } | {
   success: false
 
@@ -50,7 +52,7 @@ const schema = z.object({
 
 export type PutResponse = {
   success: true
-  data: typeof log.$inferSelect
+  data: Log
 } | {
   success: false
   errors: Partial<Record<keyof typeof schema.shape, string[]>>
@@ -112,6 +114,8 @@ export async function DELETE(request: Request) {
     await db
       .delete(log)
       .where(eq(log.id, id))
+
+    await deleteFromR2(id)
 
     regenerateContents()
 

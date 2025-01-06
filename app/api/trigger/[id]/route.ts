@@ -1,43 +1,16 @@
+import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
-import { ok } from '@/utils/http'
-import { PutObjectCommand } from '@aws-sdk/client-s3'
-import { eq } from 'drizzle-orm'
+import { generateImage, generateImagePrompt } from '@/services/ai'
 
+import { uploadToR2 } from '@/utils/cloudflare'
+import { ok } from '@/utils/http'
+import { downloadImageAsBuffer, generateBlurDataURL } from '@/utils/image'
+import { logger } from '@/utils/logger'
+import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
-import { LogStatus } from '../../../../data/enum/logStatus'
-import { BUCKET_NAME } from '../../../../env/cloudflare'
-import { S3 } from '../../../../instances/s3'
-import { generateImage, generateImagePrompt } from '../../../../services/ai'
-import { logger } from '../../../../utils/logger'
 
 export const runtime = 'edge'
-
-async function downloadImageAsBuffer(url: string) {
-  const res = await fetch(url)
-  if (!res.ok) {
-    throw new Error(`Failed to fetch image from ${url}`)
-  }
-  const arrayBuffer = await res.arrayBuffer()
-  // eslint-disable-next-line node/prefer-global/buffer
-  return Buffer.from(arrayBuffer)
-}
-
-// eslint-disable-next-line node/prefer-global/buffer
-async function uploadToS3(buffer: Buffer, logId: number) {
-  try {
-    await S3.send(new PutObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: `${logId}/cover.webp`,
-      Body: buffer,
-      ContentType: 'image/webp',
-    }))
-  }
-  catch (error) {
-    logger.error('Error uploading to S3:', error)
-    throw new Error('S3 upload failed')
-  }
-}
 
 export async function POST(request: Request) {
   try {
@@ -59,12 +32,18 @@ export async function POST(request: Request) {
 
     const buffer = await downloadImageAsBuffer(imageData)
 
-    await uploadToS3(buffer, logId)
+    // Generate blur data URL
+    const blurDataURL = await generateBlurDataURL(buffer)
 
-    // Update log status
+    await uploadToR2(buffer, logId)
+
+    // Update log status and blurDataURL
     await db
       .update(log)
-      .set({ status: LogStatus.ImageGenerated })
+      .set({
+        status: LogStatus.ImageGenerated,
+        blurDataURL,
+      })
       .where(eq(log.id, logId))
 
     revalidatePath('/', 'layout')

@@ -23,7 +23,7 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
 
   const [imageError, setImageError] = useState(false)
 
-  const { imageDescription, id, status } = log
+  const { imageDescription, id, status, blurDataURL } = log
 
   const image = useMemo(() => {
     if (status === LogStatus.Created)
@@ -56,6 +56,8 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
       alt={imageDescription ?? ''}
       onError={onImageError}
       onClick={onImageClick}
+      placeholder={blurDataURL ? 'blur' : undefined}
+      blurDataURL={blurDataURL ?? undefined}
     />
   )
 }

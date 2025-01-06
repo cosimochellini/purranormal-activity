@@ -14,6 +14,7 @@ export const log = sqliteTable('log', {
   placeholder: text('placeholder'),
   error: text('error'),
   imageDescription: text('image_description'),
+  blurDataURL: text('blur_data_url'),
 })
 
 // Type definitions
