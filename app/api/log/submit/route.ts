@@ -6,6 +6,7 @@ import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 import { regenerateContents } from '@/utils/next'
 import { z } from 'zod'
+import { SECRET } from '../../../../env/secret'
 
 const submitFormSchema = z.object({
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
@@ -13,6 +14,9 @@ const submitFormSchema = z.object({
     question: z.string(),
     answer: z.string(),
   })).max(5, 'At least 5 follow-up answers are required'),
+  secret: z
+    .string()
+    .refine(val => val === SECRET, { message: 'Invalid secret' }),
 })
 
 export const runtime = 'edge'

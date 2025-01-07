@@ -1,6 +1,6 @@
 'use client'
 
-import type { PutResponse } from '@/app/api/log/[id]/route'
+import type { DeleteResponse, PutResponse } from '@/app/api/log/[id]/route'
 import type { Log } from '@/db/schema'
 import type { FormEvent } from 'react'
 import { fetcher } from '@/utils/fetch'
@@ -15,15 +15,18 @@ import { CategorySelector } from './CategorySelector'
 interface EditLogFormProps {
   initialData: Log
 }
+interface Secret {
+  secret: string
+}
 
-const updateLog = fetcher<PutResponse, never, Partial<Log>>('/api/log/[id]', 'PUT')
-const deleteLog = fetcher('/api/log/[id]', 'DELETE')
+const updateLog = fetcher<PutResponse, never, Partial<Log & Secret>>('/api/log/[id]', 'PUT')
+const deleteLog = fetcher<DeleteResponse, never, Secret>('/api/log/[id]', 'DELETE')
 
 export function EditLogForm({ initialData }: EditLogFormProps) {
   const router = useRouter()
   const [submitting, setSubmitting] = usePartialState({ form: false, delete: false })
   const [error, setError] = useState('')
-  const [formData, setFormData] = useState(initialData)
+  const [formData, setFormData] = useState(() => ({ ...initialData, secret: '' }))
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -58,9 +61,16 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
     setError('')
 
     try {
-      await deleteLog({
+      const response = await deleteLog({
         params: { id: initialData.id },
+        body: formData,
       })
+
+      if (!response.success) {
+        const errors = Object.values(response.errors).flat()
+        setError(errors[0] ?? 'Failed to update')
+        return
+      }
 
       router.push('/')
       router.refresh()
@@ -136,6 +146,19 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
           styles={styles.categories}
           onChange={categories => setFormData(prev => ({ ...prev, categories: JSON.stringify(categories) }))}
         />
+
+        <div className="space-y-2">
+          <label htmlFor="secret" className="block text-sm font-medium text-purple-200">
+            Secret
+          </label>
+          <input
+            id="secret"
+            type="password"
+            value={formData.secret}
+            onChange={e => setFormData(prev => ({ ...prev, secret: e.target.value }))}
+            className="w-full rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+          />
+        </div>
 
         <div className="flex justify-end gap-4">
           <SpookyButton

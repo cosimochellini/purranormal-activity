@@ -7,6 +7,7 @@ const styles = [
   'bitmap style',
   '8bit style',
   'video game retro style',
+  'cartoon style',
 ] as const
 
 const randomStyle = () => styles[Math.floor(Math.random() * styles.length)]
@@ -53,7 +54,7 @@ export async function createQuestions(description: string) {
       [
         {
           "question": "Domanda",
-          "availableAnswers": ["Risposta1", "Risposta2", ...] OR ["SI", "NO"]
+          "availableAnswers": ["Risposta1", "Risposta2", ...] OR ["Si", "No"]
         },
         ...
       ]

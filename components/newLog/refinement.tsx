@@ -26,6 +26,7 @@ export function RefinementSection({ description, questions, onSubmitSuccess }: R
   const [answers, setAnswers] = useState<AnsweredQuestion[]>(() =>
     questions?.map(q => ({ ...q, answer: '' })) ?? [],
   )
+  const [secret, setSecret] = useState('')
 
   const handleSubmit = async () => {
     if (!description)
@@ -33,7 +34,7 @@ export function RefinementSection({ description, questions, onSubmitSuccess }: R
 
     try {
       setIsSubmitting(true)
-      const response = await submitLog({ body: { description, answers } })
+      const response = await submitLog({ body: { description, answers, secret } })
 
       if (!response.success)
         throw new Error('Failed to submit')
@@ -109,6 +110,18 @@ export function RefinementSection({ description, questions, onSubmitSuccess }: R
               </div>
             </div>
           ))}
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="title" className="block text-sm font-medium text-purple-200">
+            Secret
+          </label>
+          <input
+            id="secret"
+            type="password"
+            value={secret}
+            onChange={e => setSecret(e.target.value)}
+            className="w-full rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+          />
         </div>
 
         <SpookyButton
