@@ -1,15 +1,7 @@
-import { desc } from 'drizzle-orm'
-import { SpookyBackground } from '../components/background/SpookyBackground'
-import { EventCard } from '../components/events/EventCard'
-import { SpookyFooter } from '../components/footer/SpookyFooter'
-import { HeroSection } from '../components/hero/HeroSection'
-import { log } from '../db/schema'
-import { db } from '../drizzle'
-
-// eslint-disable-next-line import/no-mutable-exports, prefer-const
-export let revalidate = 2 * 60 * 60 // 2 hours
-
-export const runtime = 'edge'
+import { SpookyBackground } from '@/components/background/SpookyBackground'
+import { InfiniteEvents } from '@/components/events/InfiniteEvents'
+import { SpookyFooter } from '@/components/footer/SpookyFooter'
+import { HeroSection } from '@/components/hero/HeroSection'
 
 function Home() {
   return (
@@ -26,38 +18,13 @@ function Home() {
   )
 }
 
-function getLogs() {
-  return db
-    .select()
-    .from(log)
-    .orderBy(desc(log.id))
-    .limit(6)
-}
-
-async function EventCards() {
-  const events = await getLogs()
-
-  return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {events.map((event, index) => (
-        <EventCard
-          key={event.title}
-          log={event}
-          priority={index === 0}
-        />
-      ))}
-    </div>
-  )
-}
-
 async function RecentEvents() {
   return (
     <section className="w-full max-w-5xl">
-      <h2 className="mb-6 text-2xl font-magical 'animate-magical-glow animate-ghost">
+      <h2 className="mb-6 text-2xl font-magical animate-ghost">
         Recent Supernatural Sightings
       </h2>
-      <EventCards />
-
+      <InfiniteEvents />
     </section>
   )
 }

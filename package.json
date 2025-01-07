@@ -1,6 +1,6 @@
 {
   "name": "purranormal-activity",
-  "version": "0.3.16",
+  "version": "0.3.17",
   "private": true,
   "scripts": {
     "pages:build": "npx @cloudflare/next-on-pages",
@@ -25,6 +25,7 @@
     "openai": "^4.77.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-intersection-observer": "^9.14.1",
     "sharp": "^0.33.5",
     "sort-es": "^1.7.14",
     "vercel": "^39.2.5",

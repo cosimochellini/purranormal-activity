@@ -1,5 +1,5 @@
+import type { Categories } from '@/data/enum/category'
 import type { IconProps } from '@tabler/icons-react'
-import type { Categories } from '../../data/enum/category'
 import classNames from 'classnames'
 import dynamic from 'next/dynamic'
 

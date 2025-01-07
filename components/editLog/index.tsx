@@ -3,13 +3,15 @@
 import type { DeleteResponse, PutResponse } from '@/app/api/log/[id]/route'
 import type { Log } from '@/db/schema'
 import type { FormEvent } from 'react'
+import { SpookyButton } from '@/components/common/SpookyButton'
+import { EventImage } from '@/components/events/EventImage'
+import { usePartialState } from '@/hooks/state'
 import { fetcher } from '@/utils/fetch'
+import { transitions } from '@/utils/viewTransition'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { usePartialState } from '../../hooks/state'
-import { transitions } from '../../utils/viewTransition'
-import { SpookyButton } from '../common/SpookyButton'
-import { EventImage } from '../events/EventImage'
+import { SpookyInput } from '../common/SpookyInput'
+import { SpookyTextarea } from '../common/SpookyTextarea'
 import { CategorySelector } from './CategorySelector'
 
 interface EditLogFormProps {
@@ -103,11 +105,9 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
         )}
 
         <div className="space-y-2">
-          <label htmlFor="title" className="block text-sm font-medium text-purple-200">
-            Title
-          </label>
-          <input
+          <SpookyInput
             id="title"
+            placeholder="Title"
             type="text"
             value={formData.title}
             onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
@@ -115,11 +115,9 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
             style={styles.title}
           />
         </div>
+
         <div className="space-y-2">
-          <label htmlFor="description" className="block text-sm font-medium text-purple-200">
-            Description
-          </label>
-          <textarea
+          <SpookyTextarea
             id="description"
             value={formData.description}
             onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -130,17 +128,16 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="imageDescription" className="block text-sm font-medium text-purple-200">
-            Image Description
-          </label>
-          <textarea
+          <SpookyTextarea
             id="imageDescription"
+            placeholder="Image Description"
             value={formData.imageDescription ?? ''}
             onChange={e => setFormData(prev => ({ ...prev, imageDescription: e.target.value }))}
             rows={6}
             className="w-full min-h-[150px] rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
           />
         </div>
+
         <CategorySelector
           selected={JSON.parse(formData.categories)}
           styles={styles.categories}
@@ -148,15 +145,12 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
         />
 
         <div className="space-y-2">
-          <label htmlFor="secret" className="block text-sm font-medium text-purple-200">
-            Secret
-          </label>
-          <input
+          <SpookyInput
             id="secret"
+            placeholder="Secret"
             type="password"
             value={formData.secret}
             onChange={e => setFormData(prev => ({ ...prev, secret: e.target.value }))}
-            className="w-full rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
           />
         </div>
 

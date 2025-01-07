@@ -7,6 +7,7 @@ import cn from 'classnames'
 import { useState } from 'react'
 import { logger } from '../../utils/logger'
 import { SpookyButton } from '../common/SpookyButton'
+import { SpookyInput } from '../common/SpookyInput'
 import { RadioOption } from '../inputs/RadioOption'
 
 interface RefinementSectionProps {
@@ -112,15 +113,12 @@ export function RefinementSection({ description, questions, onSubmitSuccess }: R
           ))}
         </div>
         <div className="space-y-2">
-          <label htmlFor="title" className="block text-sm font-medium text-purple-200">
-            Secret
-          </label>
-          <input
+          <SpookyInput
             id="secret"
+            label="Secret"
             type="password"
             value={secret}
             onChange={e => setSecret(e.target.value)}
-            className="w-full rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
           />
         </div>
 

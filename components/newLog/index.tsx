@@ -1,10 +1,10 @@
 'use client'
 
+import type { FollowUpQuestion } from '@/app/api/log/refine/route'
 import type { ComponentType } from 'react'
-import type { FollowUpQuestion } from '../../app/api/log/refine/route'
+import { usePartialState } from '@/hooks/state'
 import dynamic from 'next/dynamic'
 import { useState } from 'react'
-import { usePartialState } from '../../hooks/state'
 
 enum State {
   INITIAL = 'initial',

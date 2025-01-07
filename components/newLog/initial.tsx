@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { fetcher } from '../../utils/fetch'
 import { Loading } from '../common/Loading'
 import { SpookyButton } from '../common/SpookyButton'
+import { SpookyCard } from '../common/SpookyCard'
+import { SpookyTextarea } from '../common/SpookyTextarea'
 
 interface InitialSectionProps {
   onInitialSuccess?: (body: Partial<FormValues>) => void
@@ -40,32 +42,23 @@ export function InitialSection({ onInitialSuccess }: InitialSectionProps) {
     return <Loading />
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-6 rounded-lg bg-purple-900/30 p-6 backdrop-blur-sm"
-    >
-
+    <SpookyCard>
       {errorMessage && (
-        <div className="rounded-md p-4 bg-red-900/30">
+        <div className="rounded-md p-4 bg-red-900/30 text-red-200">
           {errorMessage}
         </div>
       )}
 
-      <div className="space-y-2">
-        <label htmlFor="description" className="block text-sm font-medium text-purple-200">
-          Description
-        </label>
-        <textarea
-          id="description"
-          name="description"
-          required
-          rows={4}
-          value={description}
-          onChange={e => setDescription(e.target.value)}
-          className="w-full rounded-md border min-h-56 border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
-          placeholder="Describe the paranormal occurrence..."
-        />
-      </div>
+      <SpookyTextarea
+        id="description"
+        label="Description"
+        required
+        rows={4}
+        value={description}
+        onChange={e => setDescription(e.target.value)}
+        placeholder="Describe the paranormal occurrence..."
+        className="min-h-56"
+      />
 
       <SpookyButton
         type="button"
@@ -74,6 +67,6 @@ export function InitialSection({ onInitialSuccess }: InitialSectionProps) {
       >
         Record Supernatural Event
       </SpookyButton>
-    </form>
+    </SpookyCard>
   )
 }

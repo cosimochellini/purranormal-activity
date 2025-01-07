@@ -1,5 +1,5 @@
+import { LogStatus } from '@/data/enum/logStatus'
 import { int, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { LogStatus } from '../data/enum/logStatus'
 
 export const log = sqliteTable('log', {
   id: int('id').primaryKey({ autoIncrement: true }),

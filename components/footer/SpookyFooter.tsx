@@ -1,4 +1,5 @@
 import { SpookyLink } from '../common/SpookyLink'
+import { Version } from './Version'
 
 interface FooterLink {
   text: string
@@ -22,6 +23,7 @@ export function SpookyFooter() {
             </li>
           ))}
         </ul>
+        <Version />
       </nav>
     </footer>
   )
