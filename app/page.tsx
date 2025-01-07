@@ -8,6 +8,8 @@ import { db } from '../drizzle'
 
 // eslint-disable-next-line import/no-mutable-exports, prefer-const
 export let revalidate = 2 * 60 * 60 // 2 hours
+export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
 
 function Home() {
   return (

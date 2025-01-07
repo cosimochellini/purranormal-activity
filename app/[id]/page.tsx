@@ -7,6 +7,8 @@ import { eq } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { Category } from '../../components/common/Category'
 import { EventImage } from '../../components/events/EventImage'
+import { Refetch } from '../../components/timer/refetch'
+import { LogStatus } from '../../data/enum/logStatus'
 import { NEXT_PUBLIC_APP_URL } from '../../env/next'
 import { getCategories } from '../../utils/categories'
 import { publicImage } from '../../utils/cloudflare'
@@ -71,12 +73,14 @@ export default async function Page({ params }: PageProps) {
   if (!entry)
     return notFound()
 
-  const { description, title, id } = entry
+  const { description, title, id, status } = entry
   const categories = getCategories(entry)
   const styles = transitions(id)
 
   return (
     <div className="relative min-h-full bg-deep-purple-900 p-1 md:p-4 text-white">
+      <Refetch interval={5000} shouldRefetch={status === LogStatus.Created} />
+
       <SpookyBackground />
 
       <main className="relative mx-auto max-w-4xl p-6">
