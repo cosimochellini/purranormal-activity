@@ -54,7 +54,7 @@ export const HeroSection: FC<HeroSectionProps> = ({ className }) => {
         </div>
       </div>
 
-      <SpookyLink href="/new" prefetch>
+      <SpookyLink href="/new">
         <SpookyButton className="mt-2">
           Add yet another log
         </SpookyButton>

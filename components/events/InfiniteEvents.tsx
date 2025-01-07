@@ -1,14 +1,14 @@
 'use client'
 
+import type { Response } from '@/app/api/log/all/route'
 import type { Log } from '@/db/schema'
-import type { Response } from '../../app/api/posts/route'
 import { fetcher } from '@/utils/fetch'
 import { useEffect, useState } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { EventCard } from './EventCard'
 import { EventCardSkeleton } from './EventCardSkeleton'
 
-const getPosts = fetcher<Response, { page: string }>('/api/posts')
+const getLogs = fetcher<Response, { page: string }>('/api/log/all')
 
 export function InfiniteEvents() {
   const [logs, setLogs] = useState<Log[]>([])
@@ -24,7 +24,7 @@ export function InfiniteEvents() {
 
       setIsLoading(true)
       try {
-        const response = await getPosts({ query: { page: `${page + 1}` } })
+        const response = await getLogs({ query: { page: `${page + 1}` } })
 
         if (response.success) {
           setLogs(prev => [...prev, ...response.data])
@@ -49,7 +49,8 @@ export function InfiniteEvents() {
         <EventCard
           key={log.id}
           log={log}
-          priority={index < 3}
+          priority={index < 1}
+          prefetch={index < 3}
         />
       ))}
 

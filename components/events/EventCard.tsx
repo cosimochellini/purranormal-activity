@@ -9,6 +9,7 @@ import { EventImage } from './EventImage'
 interface EventCardProps {
   log: Log
   priority?: boolean
+  prefetch?: boolean
 }
 
 const cardClasses = classNames(
@@ -23,6 +24,7 @@ const cardClasses = classNames(
 export function EventCard({
   log,
   priority,
+  prefetch = false,
 }: EventCardProps) {
   const { id, title, description } = log
 
@@ -32,7 +34,7 @@ export function EventCard({
   return (
     <TransitionLink
       href={`/${id}`}
-      prefetch
+      prefetch={prefetch}
     >
       <div className={cardClasses}>
         <div className="relative flex justify-center">
