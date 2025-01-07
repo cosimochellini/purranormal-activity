@@ -1,13 +1,4 @@
-export function startViewTransition(callback: () => void) {
-  if (!(document).startViewTransition) {
-    callback()
-    return
-  }
-
-  (document).startViewTransition(callback)
-}
-
-export function transitions(id: number) {
+export function transitions<const Id extends number>(id: Id) {
   return {
     image: { viewTransitionName: `event-image-${id}` },
     title: { viewTransitionName: `event-title-${id}` },

@@ -5,7 +5,7 @@ import { generateImage, generateImagePrompt } from '@/services/ai'
 
 import { uploadToR2 } from '@/utils/cloudflare'
 import { ok } from '@/utils/http'
-import { downloadImageAsBuffer, generateBlurDataURL } from '@/utils/image'
+import { downloadImageAsBuffer } from '@/utils/image'
 import { logger } from '@/utils/logger'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
@@ -32,9 +32,6 @@ export async function POST(request: Request) {
 
     const buffer = await downloadImageAsBuffer(imageData)
 
-    // Generate blur data URL
-    const blurDataURL = await generateBlurDataURL(buffer)
-
     await uploadToR2(buffer, logId)
 
     // Update log status and blurDataURL
@@ -42,7 +39,6 @@ export async function POST(request: Request) {
       .update(log)
       .set({
         status: LogStatus.ImageGenerated,
-        blurDataURL,
       })
       .where(eq(log.id, logId))
 
