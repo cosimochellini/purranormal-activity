@@ -2,6 +2,7 @@ import { SpookyButton } from '@/components/common/SpookyButton'
 import { randomImage } from '@/images/insert/success'
 
 import Image from 'next/image'
+import { useSound } from '../../hooks/useSound'
 import { TransitionLink } from '../common/TransitionLink'
 
 interface CompletedSectionProps {
@@ -10,6 +11,8 @@ interface CompletedSectionProps {
 
 export function CompletedSection({ logId }: CompletedSectionProps) {
   const successImage = randomImage()
+
+  useSound('/sounds/magic.mp3', { autoplay: true })
 
   return (
     <div className="flex flex-col w-full items-center justify-center gap-4">
