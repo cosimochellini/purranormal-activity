@@ -2,35 +2,40 @@ import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { InfiniteEvents } from '@/components/events/InfiniteEvents'
 import { SpookyFooter } from '@/components/footer/SpookyFooter'
 import { HeroSection } from '@/components/hero/HeroSection'
-import { Head } from 'next/document'
+import { desc } from 'drizzle-orm'
+import { log } from '../db/schema'
+import { db } from '../drizzle'
+
+export const revalidate = 60
 
 function Home() {
   return (
-    <>
-      <Head>
-        <link rel="prefetch" href="/api/log/all" />
-      </Head>
-      <div className="relative min-h-screen overflow-hidden bg-deep-purple-900 p-8 pb-20 text-white sm:p-20">
-        <SpookyBackground />
+    <div className="relative min-h-screen overflow-hidden bg-deep-purple-900 p-8 pb-20 text-white sm:p-20">
+      <SpookyBackground />
 
-        <main className="relative flex flex-col items-center gap-12">
-          <HeroSection />
-          <RecentEvents />
-        </main>
+      <main className="relative flex flex-col items-center gap-12">
+        <HeroSection />
+        <RecentEvents />
+      </main>
 
-        <SpookyFooter />
-      </div>
-    </>
+      <SpookyFooter />
+    </div>
   )
 }
 
-function RecentEvents() {
+async function RecentEvents() {
+  const logs = await db
+    .select()
+    .from(log)
+    .orderBy(desc(log.createdAt))
+    .limit(6)
+
   return (
     <section className="w-full max-w-5xl">
       <h2 className="mb-6 text-2xl font-magical animate-ghost">
         Recent Supernatural Sightings
       </h2>
-      <InfiniteEvents />
+      <InfiniteEvents initialLogs={logs} />
     </section>
   )
 }

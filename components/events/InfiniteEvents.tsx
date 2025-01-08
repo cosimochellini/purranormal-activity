@@ -10,9 +10,13 @@ import { EventCardSkeleton } from './EventCardSkeleton'
 
 const getLogs = fetcher<Response, { page: string }>('/api/log/all')
 
-export function InfiniteEvents() {
-  const [logs, setLogs] = useState<Log[]>([])
-  const [page, setPage] = useState(0)
+interface InfiniteEventsProps {
+  initialLogs: Log[]
+}
+
+export function InfiniteEvents({ initialLogs }: InfiniteEventsProps) {
+  const [logs, setLogs] = useState(initialLogs)
+  const [page, setPage] = useState(Math.ceil(initialLogs.length / 6))
   const [hasMore, setHasMore] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const { ref, inView } = useInView()

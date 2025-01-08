@@ -33,9 +33,9 @@ body {
 }
 
 @view-transition {
-    navigation: auto;
+  navigation: auto;
 }
 
 ::view-transition-group(root) {
-    animation-duration: 0.2s;
+  animation-duration: 0.2s;
 }
