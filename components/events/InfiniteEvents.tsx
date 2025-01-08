@@ -3,8 +3,11 @@
 import type { Response } from '@/app/api/log/all/route'
 import type { Log } from '@/db/schema'
 import { fetcher } from '@/utils/fetch'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
+import { byNumber, byValue } from 'sort-es'
+import { usePartialState } from '../../hooks/state'
+import { distinctBy } from '../../utils/array'
 import { EventCard } from './EventCard'
 import { EventCardSkeleton } from './EventCardSkeleton'
 
@@ -13,12 +16,21 @@ const getLogs = fetcher<Response, { page: string }>('/api/log/all')
 interface InfiniteEventsProps {
   initialLogs: Log[]
 }
+interface InfiniteEventsState {
+  logs: Log[]
+  page: number
+  hasMore: boolean
+  isLoading: boolean
+}
 
 export function InfiniteEvents({ initialLogs }: InfiniteEventsProps) {
-  const [logs, setLogs] = useState(initialLogs)
-  const [page, setPage] = useState(Math.ceil(initialLogs.length / 6))
-  const [hasMore, setHasMore] = useState(true)
-  const [isLoading, setIsLoading] = useState(false)
+  const [{ logs, page, hasMore, isLoading }, setState] = usePartialState<InfiniteEventsState>({
+    logs: initialLogs,
+    page: Math.ceil(initialLogs.length / 6) + 1,
+    hasMore: true,
+    isLoading: false,
+  })
+
   const { ref, inView } = useInView()
 
   useEffect(() => {
@@ -26,26 +38,30 @@ export function InfiniteEvents({ initialLogs }: InfiniteEventsProps) {
       if (!inView || isLoading || !hasMore)
         return
 
-      setIsLoading(true)
+      setState({ isLoading: true })
+
       try {
-        const response = await getLogs({ query: { page: `${page + 1}` } })
+        const response = await getLogs({ query: { page: page.toString() } })
 
         if (response.success) {
-          setLogs(prev => [...prev, ...response.data])
-          setHasMore(response.hasMore)
-          setPage(prev => prev + 1)
+          const { data, hasMore } = response
+          const newLogs = distinctBy([...logs, ...data], l => l.id.toString())
+            .sort(byValue(l => l.id, byNumber({ desc: true })))
+
+          setState({ logs: newLogs, hasMore, page: page + 1 })
         }
       }
-      catch (error) {
-        console.error('Failed to load more logs:', error)
+      catch {
+        // TODO: handle error
       }
       finally {
-        setIsLoading(false)
+        setTimeout(() => setState({ isLoading: false }), 500)
       }
     }
 
     loadMore()
-  }, [inView, isLoading, hasMore, page])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inView, hasMore, page, isLoading])
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -60,10 +76,9 @@ export function InfiniteEvents({ initialLogs }: InfiniteEventsProps) {
 
       {hasMore && (
         <>
-          <div ref={ref} className="h-1" />
-          <EventCardSkeleton />
-          <EventCardSkeleton />
-          <EventCardSkeleton />
+          <EventCardSkeleton ref={ref} iconCount={2} />
+          <EventCardSkeleton iconCount={3} />
+          <EventCardSkeleton iconCount={2} />
         </>
       )}
     </div>

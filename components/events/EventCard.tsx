@@ -1,5 +1,6 @@
 import type { Log } from '../../db/schema'
 import classNames from 'classnames'
+import { memo } from 'react'
 import { getCategories } from '../../utils/categories'
 import { transitions } from '../../utils/viewTransition'
 import { Category } from '../common/Category'
@@ -21,7 +22,7 @@ const cardClasses = classNames(
   'h-full flex flex-col justify-between', // Added classes for fixed height and flexbox
 )
 
-export function EventCard({
+function EventCardComponent({
   log,
   priority,
   prefetch = false,
@@ -75,3 +76,5 @@ export function EventCard({
     </TransitionLink>
   )
 }
+
+export const EventCard = memo(EventCardComponent)
