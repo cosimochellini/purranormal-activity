@@ -1,6 +1,6 @@
 import type { Log } from '@/db/schema'
 import { LogStatus } from '@/data/enum/logStatus'
-import { log } from '@/db/schema'
+import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
 import { deleteFromR2 } from '@/utils/cloudflare'
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
 const schema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
-  categories: z.string().min(1, 'Categories is required'),
+  categories: z.array(z.number()).min(1, 'Categories are required'),
   imageDescription: z.string().optional(),
   secret: z
     .string()
@@ -97,7 +97,6 @@ export async function PUT(request: Request) {
         ...currentLog,
         title,
         description,
-        categories,
         imageDescription,
         updatedAt: Date.now(),
         status: imageDescription !== currentLog.imageDescription
@@ -106,6 +105,9 @@ export async function PUT(request: Request) {
       })
       .where(eq(log.id, id))
       .returning()
+
+    await db.delete(logCategory).where(eq(logCategory.logId, id))
+    await db.insert(logCategory).values(categories.map(category => ({ logId: id, categoryId: category })))
 
     regenerateContents()
 

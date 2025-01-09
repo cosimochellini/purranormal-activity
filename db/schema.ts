@@ -19,7 +19,6 @@ export const log = sqliteTable('log', {
   id: int('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(),
   description: text('description').notNull(),
-  categories: text('categories').notNull(),
   createdAt: int('created_at').notNull(),
   updatedAt: int('updated_at').notNull(),
   status: text('status').notNull().default(LogStatus.Created),

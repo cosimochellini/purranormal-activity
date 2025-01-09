@@ -1,2 +1,2 @@
 /* eslint-disable node/prefer-global/process */
-export const SECRET = process.env.SECRET
+export const SECRET = process.env.SECRET as string

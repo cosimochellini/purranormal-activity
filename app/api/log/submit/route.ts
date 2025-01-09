@@ -49,16 +49,13 @@ export async function POST(request: Request) {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       status: LogStatus.Created,
-      categories: '[]',
     }).returning({ id: log.id })
 
-    if (categories.length > 0) {
-      const categoriesToInsert = categories
-        .map(category => ({ logId: newLog.id, categoryId: category.id }))
-        .filter(category => !allCategories.some(c => c.id === category.categoryId))
+    const categoriesToInsert = categories
+      .map(category => ({ logId: newLog.id, categoryId: category.id }))
+      .filter(category => !allCategories.some(c => c.id === category.categoryId))
 
-      await db.insert(logCategory).values(categoriesToInsert)
-    }
+    await db.insert(logCategory).values(categoriesToInsert)
 
     regenerateContents()
 
