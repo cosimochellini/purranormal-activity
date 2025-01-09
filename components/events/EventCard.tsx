@@ -19,7 +19,7 @@ const cardClasses = classNames(
   'hover:shadow-[0_0_30px_rgba(168,85,247,0.3)]',
   'border border-purple-700/30',
   'group',
-  'h-full flex flex-col justify-between', // Added classes for fixed height and flexbox
+  'h-full flex flex-col justify-between',
 )
 
 function EventCardComponent({
@@ -28,7 +28,6 @@ function EventCardComponent({
   prefetch = false,
 }: EventCardProps) {
   const { id, title, description } = log
-
   const categories = getCategories(log)
   const styles = transitions(id)
 
@@ -42,12 +41,13 @@ function EventCardComponent({
           <EventImage
             priority={priority}
             loading={priority ? 'eager' : 'lazy'}
-            width={150}
-            height={150}
-            quality={50}
+            width={300}
+            height={300}
+            quality={75}
             log={log}
             className="mb-4 group-hover:animate-spooky-shake rounded-md w-full h-auto"
             style={styles.image}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         </div>
         <div className="flex-grow">
