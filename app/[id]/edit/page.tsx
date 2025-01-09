@@ -1,20 +1,10 @@
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { EditLogForm } from '@/components/editLog'
-import { log } from '@/db/schema'
-import { db } from '@/drizzle'
-import { eq } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
+import { getLog } from '../../../services/log'
 
 export const runtime = 'edge'
 
-async function getLog(id: number) {
-  const [logEntry] = await db
-    .select()
-    .from(log)
-    .where(eq(log.id, id))
-
-  return logEntry
-}
 interface Params {
   id: string
 }

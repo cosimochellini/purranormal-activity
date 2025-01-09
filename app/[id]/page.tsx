@@ -1,16 +1,14 @@
 import type { Metadata } from 'next'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
-import { log } from '@/db/schema'
-import { db } from '@/drizzle'
 import classNames from 'classnames'
-import { eq } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { Category } from '../../components/common/Category'
 import { EventImage } from '../../components/events/EventImage'
 import { Refetch } from '../../components/timer/refetch'
 import { LogStatus } from '../../data/enum/logStatus'
 import { NEXT_PUBLIC_APP_URL } from '../../env/next'
-import { getCategories } from '../../utils/categories'
+
+import { getLog } from '../../services/log'
 import { publicImage } from '../../utils/cloudflare'
 import { transitions } from '../../utils/viewTransition'
 
@@ -24,21 +22,13 @@ interface PageProps {
 
 export const runtime = 'edge'
 
-async function getLog(id: number) {
-  const [logEntry] = await db
-    .select()
-    .from(log)
-    .where(eq(log.id, id))
-
-  return logEntry
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const rawId = (await params).id
+
   const entry = await getLog(Number(rawId))
 
   if (!entry) {
-    notFound()
+    return {}
   }
 
   const { title, description, id } = entry
@@ -53,7 +43,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       url: `${NEXT_PUBLIC_APP_URL}/${rawId}`,
       images: [
         {
-          url: publicImage(entry.id), // Assuming entry has an imageUrl field
+          url: publicImage(id),
           width: 800,
           height: 800,
           alt: title,
@@ -68,13 +58,12 @@ export let revalidate = 2 * 60 * 60 // 2 hours
 
 export default async function Page({ params }: PageProps) {
   const rawId = (await params).id
-  const entry = await getLog(Number(rawId))
+  const log = await getLog(Number(rawId))
 
-  if (!entry)
+  if (!log)
     return notFound()
 
-  const { description, title, id, status } = entry
-  const categories = getCategories(entry)
+  const { description, title, id, status } = log
   const styles = transitions(id)
 
   return (
@@ -100,7 +89,7 @@ export default async function Page({ params }: PageProps) {
               height={600}
               priority
               className="rounded-lg mx-auto w-full h-auto"
-              log={entry}
+              log={log}
               style={styles.image}
             />
 
@@ -124,8 +113,8 @@ export default async function Page({ params }: PageProps) {
               Paranormal Categories
             </h2>
             <div className="flex flex-wrap gap-2" style={styles.categories}>
-              {categories.map(category => (
-                <Category key={category} category={category} />
+              {log.categories.map(category => (
+                <Category key={category.id} category={category} />
               ))}
             </div>
           </div>

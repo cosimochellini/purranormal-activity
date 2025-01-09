@@ -1,7 +1,7 @@
 'use client'
 
 import type { Response } from '@/app/api/log/all/route'
-import type { Log } from '@/db/schema'
+import type { LogWithCategories } from '@/db/schema'
 import { fetcher } from '@/utils/fetch'
 import { useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
@@ -14,10 +14,11 @@ import { EventCardSkeleton } from './EventCardSkeleton'
 const getLogs = fetcher<Response, { page: string }>('/api/log/all')
 
 interface InfiniteEventsProps {
-  initialLogs: Log[]
+  initialLogs: LogWithCategories[]
 }
+
 interface InfiniteEventsState {
-  logs: Log[]
+  logs: LogWithCategories[]
   page: number
   hasMore: boolean
   isLoading: boolean

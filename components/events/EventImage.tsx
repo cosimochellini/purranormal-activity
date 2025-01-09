@@ -1,6 +1,6 @@
 'use client'
 
-import type { Log } from '@/db/schema'
+import type { LogWithCategories } from '@/db/schema'
 import { LogStatus } from '@/data/enum/logStatus'
 import Bug from '@/images/bug.jpg'
 import { randomImage } from '@/images/loading'
@@ -12,7 +12,7 @@ import { useMemo, useRef, useState } from 'react'
 type ImageProps = React.ComponentProps<typeof Image>
 
 interface EventImageProps extends ImageProps {
-  log: Log
+  log: LogWithCategories
 }
 
 const fallbackImage = randomImage()

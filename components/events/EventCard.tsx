@@ -1,14 +1,15 @@
-import type { Log } from '../../db/schema'
+import type { LogWithCategories } from '../../db/schema'
 import classNames from 'classnames'
 import { memo } from 'react'
-import { getCategories } from '../../utils/categories'
+
 import { transitions } from '../../utils/viewTransition'
 import { Category } from '../common/Category'
 import { TransitionLink } from '../common/TransitionLink'
 import { EventImage } from './EventImage'
 
 interface EventCardProps {
-  log: Log
+  log: LogWithCategories
+
   priority?: boolean
   prefetch?: boolean
 }
@@ -27,8 +28,8 @@ function EventCardComponent({
   priority,
   prefetch = false,
 }: EventCardProps) {
-  const { id, title, description } = log
-  const categories = getCategories(log)
+  const { id, title, description, categories } = log
+
   const styles = transitions(id)
 
   return (
@@ -69,7 +70,7 @@ function EventCardComponent({
           style={styles.categories}
         >
           {categories.map(category => (
-            <Category key={category} category={category} iconOnly />
+            <Category key={category.id} category={category} iconOnly />
           ))}
         </div>
       </div>

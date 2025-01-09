@@ -18,7 +18,7 @@ const completed = dynamic(() => import('./completed').then(mod => mod.CompletedS
 export interface FormValues {
   description: string
   questions: FollowUpQuestion[]
-  logId: string
+  logId: number
 }
 
 interface InitialSectionProps {
@@ -26,7 +26,7 @@ interface InitialSectionProps {
   onSubmitSuccess?: (body: Partial<FormValues>) => void
   description?: string
   questions?: FollowUpQuestion[]
-  logId?: string
+  logId?: number
 }
 
 const stateMap = {

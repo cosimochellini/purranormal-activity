@@ -1,38 +1,39 @@
-import type { Categories } from '@/data/enum/category'
-import type { IconProps } from '@tabler/icons-react'
+import type { SlimCategory } from '@/db/schema'
+import {
+  IconAlien,
+  IconCheck,
+  IconChessKnightFilled,
+  IconClock,
+  IconGhost,
+  IconMoon,
+  type IconProps,
+  IconQuestionMark,
+} from '@tabler/icons-react'
 import classNames from 'classnames'
-import dynamic from 'next/dynamic'
 
 interface CategoryProps {
-  category: Categories
+  category: SlimCategory
   iconOnly?: boolean
   selected?: boolean
   onClick?: () => void
 }
 
 const categoryIcons = {
-  AbsurdCoincidences: dynamic(() => import('@tabler/icons-react').then(mod => mod.IconAlien)),
-  PerfectTiming: dynamic(() => import('@tabler/icons-react').then(mod => mod.IconClock)),
-  AlwaysRight: dynamic(() => import('@tabler/icons-react').then(mod => mod.IconCheck)),
-  PremonitoryDreams: dynamic(() => import('@tabler/icons-react').then(mod => mod.IconMoon)),
-  SpectralMischief: dynamic(() => import('@tabler/icons-react').then(mod => mod.IconGhost)),
-  WitchyFood: dynamic(() => import('@tabler/icons-react').then(mod => mod.IconChessKnightFilled)),
-} as const satisfies Record<Categories, React.ComponentType<IconProps>>
-
-function normalizer(category: string) {
-  return category
-    .replace(/([A-Z])/g, ' $1')
-    .replace(/^./, str => str.toUpperCase())
-    .trim()
-}
+  AbsurdCoincidences: IconAlien,
+  PerfectTiming: IconClock,
+  AlwaysRight: IconCheck,
+  PremonitoryDreams: IconMoon,
+  SpectralMischief: IconGhost,
+  WitchyFood: IconChessKnightFilled,
+} as const satisfies Record<string, React.ComponentType<IconProps>>
 
 export function Category({ category, iconOnly = false, selected, onClick }: CategoryProps) {
-  const Icon = categoryIcons[category]
+  const Icon = categoryIcons[category.icon as keyof typeof categoryIcons] ?? IconQuestionMark
 
   return (
     <button
       onClick={onClick}
-      key={category}
+      key={category.id}
       type="button"
       className={classNames(
         'group flex items-center space-x-2 rounded-full ',
@@ -46,7 +47,7 @@ export function Category({ category, iconOnly = false, selected, onClick }: Cate
         <div className="absolute inset-0 animate-pulse rounded-full bg-purple-500/10 blur-xl" />
         <div className="absolute inset-0 animate-pulse delay-300 rounded-full bg-purple-600/5 blur-lg" />
       </div>
-      {!iconOnly && <span>{normalizer(category)}</span>}
+      {!iconOnly && <span>{category.name}</span>}
     </button>
   )
 }

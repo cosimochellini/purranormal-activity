@@ -1,12 +1,12 @@
 import { LogStatus } from '@/data/enum/logStatus'
-import { log } from '@/db/schema'
+import { category, log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
+import { SECRET } from '@/env/secret'
 import { generateLogDetails } from '@/services/ai'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 import { regenerateContents } from '@/utils/next'
 import { z } from 'zod'
-import { SECRET } from '../../../../env/secret'
 
 const submitFormSchema = z.object({
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
@@ -38,21 +38,31 @@ export async function POST(request: Request) {
       description,
       categories,
       imageDescription,
+      missingCategories,
     } = await generateLogDetails(result.data.description, result.data.answers)
+    const allCategories = await db.select({ id: category.id }).from(category)
 
     const [newLog] = await db.insert(log).values({
       title,
       description,
       imageDescription,
-      categories: JSON.stringify(categories),
       createdAt: Date.now(),
       updatedAt: Date.now(),
       status: LogStatus.Created,
-    }).returning()
+      categories: '[]',
+    }).returning({ id: log.id })
+
+    if (categories.length > 0) {
+      const categoriesToInsert = categories
+        .map(category => ({ logId: newLog.id, categoryId: category.id }))
+        .filter(category => !allCategories.some(c => c.id === category.categoryId))
+
+      await db.insert(logCategory).values(categoriesToInsert)
+    }
 
     regenerateContents()
 
-    return ok<Response>({ success: true, id: newLog.id.toString() })
+    return ok<Response>({ success: true, id: newLog.id, missingCategories })
   }
   catch (error) {
     logger.error('Failed to submit log:', error)
@@ -66,11 +76,11 @@ export async function POST(request: Request) {
   }
 }
 
-// Extend response type to include imageDescription on success
 export type Response =
   | {
     success: true
-    id: string
+    id: number
+    missingCategories: string[]
   }
   | {
     success: false

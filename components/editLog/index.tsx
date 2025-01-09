@@ -1,7 +1,7 @@
 'use client'
 
 import type { DeleteResponse, PutResponse } from '@/app/api/log/[id]/route'
-import type { Log } from '@/db/schema'
+import type { LogWithCategories } from '@/db/schema'
 import type { FormEvent } from 'react'
 import { SpookyButton } from '@/components/common/SpookyButton'
 import { EventImage } from '@/components/events/EventImage'
@@ -9,19 +9,19 @@ import { usePartialState } from '@/hooks/state'
 import { fetcher } from '@/utils/fetch'
 import { transitions } from '@/utils/viewTransition'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { SpookyInput } from '../common/SpookyInput'
 import { SpookyTextarea } from '../common/SpookyTextarea'
 import { CategorySelector } from './CategorySelector'
 
 interface EditLogFormProps {
-  initialData: Log
+  initialData: LogWithCategories
 }
 interface Secret {
   secret: string
 }
 
-const updateLog = fetcher<PutResponse, never, Partial<Log & Secret>>('/api/log/[id]', 'PUT')
+const updateLog = fetcher<PutResponse, never, Partial<LogWithCategories & Secret>>('/api/log/[id]', 'PUT')
 const deleteLog = fetcher<DeleteResponse, never, Secret>('/api/log/[id]', 'DELETE')
 
 export function EditLogForm({ initialData }: EditLogFormProps) {
@@ -138,11 +138,13 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
           />
         </div>
 
-        <CategorySelector
-          selected={JSON.parse(formData.categories)}
-          styles={styles.categories}
-          onChange={categories => setFormData(prev => ({ ...prev, categories: JSON.stringify(categories) }))}
-        />
+        <Suspense fallback={<CategorySelector.Skeleton />}>
+          <CategorySelector
+            selected={formData.categories}
+            styles={styles.categories}
+            onChange={categories => setFormData(prev => ({ ...prev, categories }))}
+          />
+        </Suspense>
 
         <div className="space-y-2">
           <SpookyInput

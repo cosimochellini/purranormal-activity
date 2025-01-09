@@ -6,7 +6,7 @@ import { useSound } from '../../hooks/useSound'
 import { TransitionLink } from '../common/TransitionLink'
 
 interface CompletedSectionProps {
-  logId?: string
+  logId?: number
 }
 
 export function CompletedSection({ logId }: CompletedSectionProps) {

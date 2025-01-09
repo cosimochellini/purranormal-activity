@@ -1,22 +1,25 @@
-import type { Log } from '@/db/schema'
-import { log } from '@/db/schema'
-import { db } from '@/drizzle'
+import type { LogWithCategories } from '@/db/schema'
+
+import { getLogs } from '@/services/log'
 import { ok } from '@/utils/http'
-import { desc } from 'drizzle-orm'
 
 export const runtime = 'edge'
 
 const ITEMS_PER_PAGE = 6
 
-export type Response = {
+interface SuccessResponse {
   success: true
-  data: Log[]
+  data: LogWithCategories[]
   hasMore: boolean
   nextPage: number | null
-} | {
+}
+
+interface ErrorResponse {
   success: false
   error: string
 }
+
+export type Response = SuccessResponse | ErrorResponse
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -24,18 +27,13 @@ export async function GET(request: Request) {
   const skip = (page - 1) * ITEMS_PER_PAGE
 
   try {
-    const logs = await db
-      .select()
-      .from(log)
-      .orderBy(desc(log.id))
-      .limit(ITEMS_PER_PAGE)
-      .offset(skip)
+    const data = await getLogs(skip, ITEMS_PER_PAGE)
 
-    const hasMore = logs.length === ITEMS_PER_PAGE
+    const hasMore = data.length === ITEMS_PER_PAGE
 
     return ok<Response>({
       success: true,
-      data: logs,
+      data,
       hasMore,
       nextPage: hasMore ? page + 1 : null,
     })
