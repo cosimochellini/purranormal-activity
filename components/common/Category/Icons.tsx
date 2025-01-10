@@ -1,14 +1,14 @@
 import type { IconProps } from '@tabler/icons-react'
 import {
-    IconAlien,
-    IconCheck,
-    IconChessKnightFilled,
-    IconClock,
-    IconGhost,
-    IconMoon,
-    IconQuestionMark,
-    IconRobot,
-    IconZzz,
+  IconAlien,
+  IconCheck,
+  IconChessKnightFilled,
+  IconClock,
+  IconGhost,
+  IconMoon,
+  IconQuestionMark,
+  IconRobot,
+  IconZzz,
 } from '@tabler/icons-react'
 
 export const categoryIcons = {
