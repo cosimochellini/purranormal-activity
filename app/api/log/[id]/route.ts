@@ -107,7 +107,10 @@ export async function PUT(request: Request) {
       .returning()
 
     await db.delete(logCategory).where(eq(logCategory.logId, id))
-    await db.insert(logCategory).values(categories.map(category => ({ logId: id, categoryId: category })))
+
+    if (categories.length > 0) {
+      await db.insert(logCategory).values(categories.map(category => ({ logId: id, categoryId: category })))
+    }
 
     regenerateContents()
 

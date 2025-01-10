@@ -40,7 +40,7 @@ export function RefinementSection({ description, questions, onSubmitSuccess }: R
       if (!response.success)
         throw new Error('Failed to submit')
 
-      onSubmitSuccess?.({ logId: response.id })
+      onSubmitSuccess?.({ logId: response.id, missingCategories: response.missingCategories })
     }
     catch (error) {
       logger.error('Failed to submit log:', error)

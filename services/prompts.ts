@@ -51,7 +51,7 @@ export function CREATE_QUESTIONS_PROMPT(description: string) {
   - Emotional states and reactions of the chick (pulcino).
   - Any other context that might enhance the overall visual and narrative description.
 
-  Each question should have a list of possible short answers (in English) for the user to pick from.
+  Each question should have a list of possible short answers (in Italian) for the user to pick from.
 
   Your output must be strictly valid JSON—no extra text or markdown. Use the following
   structure exactly:
@@ -98,7 +98,7 @@ export function GENERATE_LOG_DETAILS_PROMPT({
     "title": string,        // A catchy, newspaper-style headline in Italian (max 60 chars)
     "description": string,  // A whimsical retelling in Italian, maintaining the original story's essence (max 350 chars)
     "categories": [${categories.map(c => `{ "id": ${c.id}, "name": "${c.name}" }`).join(', ')}],
-    "missingCategories": string[],  // Suggest up to 3 new categories that could be added
+    "missingCategories": string[],  // Based on the categories, suggest up to 2 new categories that could be added, only if indeed there is an interesting category
     "imageDescription": string      // A detailed scene description in English for DALL-E (max 300 chars)
   }
 

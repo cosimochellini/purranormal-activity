@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { logger } from '../utils/logger'
 
 interface UseSoundOptions {
   volume?: number
@@ -37,9 +38,7 @@ export function useSound(soundPath: string, options: UseSoundOptions = {}) {
 
     // Reset the audio to start if it's already playing
     audioRef.current.currentTime = 0
-    audioRef.current.play().catch((error) => {
-      console.error('Error playing sound:', error)
-    })
+    audioRef.current.play().catch(logger.error)
   }
 
   const pause = () => {

@@ -19,6 +19,7 @@ export interface FormValues {
   description: string
   questions: FollowUpQuestion[]
   logId: number
+  missingCategories: string[]
 }
 
 interface InitialSectionProps {
@@ -27,6 +28,7 @@ interface InitialSectionProps {
   description?: string
   questions?: FollowUpQuestion[]
   logId?: number
+  missingCategories?: string[]
 }
 
 const stateMap = {
@@ -46,9 +48,9 @@ export function NewLogForm() {
     setBody({ description, questions })
   }
 
-  const handleRefinementSuccess = ({ logId }: Partial<FormValues>) => {
+  const handleRefinementSuccess = ({ logId, missingCategories }: Partial<FormValues>) => {
     setState(State.COMPLETED)
-    setBody({ logId })
+    setBody({ logId, missingCategories })
   }
 
   return (
@@ -59,6 +61,7 @@ export function NewLogForm() {
       description={body?.description}
       questions={body?.questions}
       logId={body?.logId}
+      missingCategories={body?.missingCategories}
     />
   )
 }

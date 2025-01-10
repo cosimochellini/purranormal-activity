@@ -55,7 +55,9 @@ export async function POST(request: Request) {
       .map(category => ({ logId: newLog.id, categoryId: category.id }))
       .filter(category => !allCategories.some(c => c.id === category.categoryId))
 
-    await db.insert(logCategory).values(categoriesToInsert)
+    if (categoriesToInsert.length > 0) {
+      await db.insert(logCategory).values(categoriesToInsert)
+    }
 
     regenerateContents()
 

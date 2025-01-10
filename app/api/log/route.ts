@@ -39,7 +39,9 @@ export async function POST(request: Request) {
       status: LogStatus.Created,
     }).returning()
 
-    await db.insert(logCategory).values(result.data.categories.map(category => ({ logId: created.id, categoryId: category })))
+    if (result.data.categories.length > 0) {
+      await db.insert(logCategory).values(result.data.categories.map(category => ({ logId: created.id, categoryId: category })))
+    }
 
     return ok<Response>({ success: true })
   }
