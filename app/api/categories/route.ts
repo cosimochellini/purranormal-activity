@@ -1,8 +1,16 @@
+import type { Category } from '@/db/schema'
 import { category } from '@/db/schema'
 import { db } from '@/drizzle'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 import { z } from 'zod'
+
+export type GetResponse = Category[]
+export async function GET() {
+  const categories = await db.select().from(category)
+
+  return ok<GetResponse>(categories)
+}
 
 const schema = z.object({
   categories: z.array(z.string()).min(1, 'At least one category is required'),

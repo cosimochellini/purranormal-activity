@@ -40,7 +40,11 @@ export async function POST(request: Request) {
       imageDescription,
       missingCategories,
     } = await generateLogDetails(result.data.description, result.data.answers)
-    const allCategories = await db.select({ id: category.id }).from(category)
+
+    const allCategories = (await db
+      .select({ id: category.id })
+      .from(category))
+      .map(category => category.id)
 
     const [newLog] = await db.insert(log).values({
       title,
@@ -52,8 +56,8 @@ export async function POST(request: Request) {
     }).returning({ id: log.id })
 
     const categoriesToInsert = categories
-      .map(category => ({ logId: newLog.id, categoryId: category.id }))
-      .filter(category => !allCategories.some(c => c.id === category.categoryId))
+      .map(({ id }) => ({ logId: newLog.id, categoryId: id }))
+      .filter(({ categoryId }) => allCategories.includes(categoryId))
 
     if (categoriesToInsert.length > 0) {
       await db.insert(logCategory).values(categoriesToInsert)
