@@ -4,6 +4,8 @@ import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 import { z } from 'zod'
 
+export const runtime = 'edge'
+
 const schema = z.object({
   categories: z.array(z.number()).min(1, 'At least one category is required'),
 })
