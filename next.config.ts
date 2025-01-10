@@ -18,13 +18,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
 
-  // Enable production source maps for better debugging
-  productionBrowserSourceMaps: true,
-
   experimental: {
     optimizePackageImports: ['@tabler/icons-react'],
-    optimizeCss: true,
-    inlineCss: true,
   },
 }
 

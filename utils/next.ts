@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache'
 import { after } from 'next/server'
 import { NEXT_PUBLIC_APP_URL } from '../env/next'
+import { redeploy } from './cloudflare'
 import { logger } from './logger'
 
 const triggerUrl = `${NEXT_PUBLIC_APP_URL}/api/trigger/images` as const
@@ -16,8 +17,8 @@ export function regenerateContents() {
       .then(logger.info)
       .catch(logger.error)
 
-    // await redeploy()
-    //  .then(logger.info)
-    //  .catch(logger.error)
+    await redeploy()
+      .then(logger.info)
+      .catch(logger.error)
   })
 }
