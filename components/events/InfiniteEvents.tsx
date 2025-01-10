@@ -7,7 +7,7 @@ import { useEffect } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { byNumber, byValue } from 'sort-es'
 import { usePartialState } from '../../hooks/state'
-import { distinctBy } from '../../utils/array'
+import { distinctBy, range } from '../../utils/array'
 import { EventCard } from './EventCard'
 import { EventCardSkeleton } from './EventCardSkeleton'
 
@@ -82,6 +82,20 @@ export function InfiniteEvents({ initialLogs }: InfiniteEventsProps) {
           <EventCardSkeleton iconCount={2} />
         </>
       )}
+    </div>
+  )
+}
+
+interface InfiniteEventsSkeletonProps {
+  iconCount: number
+}
+
+export function InfiniteEventsSkeleton({ iconCount }: InfiniteEventsSkeletonProps) {
+  return (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {range(iconCount).map(index => (
+        <EventCardSkeleton key={index} />
+      ))}
     </div>
   )
 }

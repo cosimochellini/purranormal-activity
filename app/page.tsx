@@ -1,8 +1,8 @@
 import { SpookyBackground } from '@/components/background/SpookyBackground'
-import { InfiniteEvents } from '@/components/events/InfiniteEvents'
 import { SpookyFooter } from '@/components/footer/SpookyFooter'
 import { HeroSection } from '@/components/hero/HeroSection'
-import { getLogs } from '../services/log'
+import { Suspense } from 'react'
+import { EventsSection, EventsSectionSkeleton } from '../components/events/EventsSection'
 
 export const revalidate = 60
 
@@ -22,14 +22,14 @@ function Home() {
 }
 
 async function RecentEvents() {
-  const logs = await getLogs(0, 6)
-
   return (
     <section className="w-full max-w-5xl">
       <h2 className="mb-6 text-2xl font-magical animate-ghost">
         Recent Supernatural Sightings
       </h2>
-      <InfiniteEvents initialLogs={logs} />
+      <Suspense fallback={<EventsSectionSkeleton />}>
+        <EventsSection />
+      </Suspense>
     </section>
   )
 }

@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation'
 import { Suspense, useState } from 'react'
 import { SpookyInput } from '../common/SpookyInput'
 import { SpookyTextarea } from '../common/SpookyTextarea'
-import { CategorySelector } from './CategorySelector'
+import { CategorySelector, CategorySelectorSkeleton } from './CategorySelector'
 
 interface EditLogFormProps {
   initialData: LogWithCategories
@@ -138,7 +138,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
           />
         </div>
 
-        <Suspense fallback={<CategorySelector.Skeleton />}>
+        <Suspense fallback={<CategorySelectorSkeleton />}>
           <CategorySelector
             selected={formData.categories}
             styles={styles.categories}

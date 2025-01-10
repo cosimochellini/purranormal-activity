@@ -45,15 +45,17 @@ export function CategorySelector({ selected, onChange, styles }: CategorySelecto
   )
 }
 
-CategorySelector.Skeleton = () => (
-  <div className="flex flex-wrap gap-2">
-    {range(4).map(index => (
-      <CategoryComponent
-        key={index}
-        category={{ id: index, name: '...' } as Category}
-        selected={false}
-        onClick={() => {}}
-      />
-    ))}
-  </div>
-)
+export function CategorySelectorSkeleton() {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {range(4).map(index => (
+        <CategoryComponent
+          key={index}
+          category={{ id: index, name: '...' } as Category}
+          selected={false}
+          onClick={() => {}}
+        />
+      ))}
+    </div>
+  )
+}
