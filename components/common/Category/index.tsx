@@ -1,15 +1,6 @@
 import type { SlimCategory } from '@/db/schema'
-import {
-  IconAlien,
-  IconCheck,
-  IconChessKnightFilled,
-  IconClock,
-  IconGhost,
-  IconMoon,
-  type IconProps,
-  IconQuestionMark,
-} from '@tabler/icons-react'
 import classNames from 'classnames'
+import { use } from 'react'
 
 interface CategoryProps {
   category: SlimCategory
@@ -18,23 +9,24 @@ interface CategoryProps {
   onClick?: () => void
 }
 
-const categoryIcons = {
-  AbsurdCoincidences: IconAlien,
-  PerfectTiming: IconClock,
-  AlwaysRight: IconCheck,
-  PremonitoryDreams: IconMoon,
-  SpectralMischief: IconGhost,
-  WitchyFood: IconChessKnightFilled,
-} as const satisfies Record<string, React.ComponentType<IconProps>>
-
+const categoryIconsPromise = import('./Icons').then(module => module.categoryIcons)
+const emptyIcon = () => null
 export function Category({ category, iconOnly = false, selected, onClick }: CategoryProps) {
-  const Icon = categoryIcons[category.icon as keyof typeof categoryIcons] ?? IconQuestionMark
+  const categoryIcons = use(categoryIconsPromise)
+
+  const Icon = categoryIcons[category.icon as keyof typeof categoryIcons] ?? emptyIcon
+
+  const buttonLabel = selected
+    ? `Deselect ${category.name} category`
+    : `Select ${category.name} category`
 
   return (
     <button
       onClick={onClick}
       key={category.id}
       type="button"
+      aria-label={buttonLabel}
+      aria-pressed={selected}
       className={classNames(
         'group flex items-center space-x-2 rounded-full ',
         'bg-purple-800/40 px-4 py-2 text-sm text-purple-200 transition-transform ',
