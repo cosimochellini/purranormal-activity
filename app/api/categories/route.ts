@@ -5,6 +5,7 @@ import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 import { z } from 'zod'
 
+export const runtime = 'edge'
 export type GetResponse = Category[]
 export async function GET() {
   const categories = await db.select().from(category)
