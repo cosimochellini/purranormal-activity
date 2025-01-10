@@ -11,7 +11,7 @@ export const category = sqliteTable('category', {
 })
 
 export const logCategory = sqliteTable('log_category', {
-  logId: int('log_id').notNull().references(() => log.id),
+  logId: int('log_id').notNull().references(() => log.id, { onDelete: 'cascade' }),
   categoryId: int('category_id').notNull().references(() => category.id),
 })
 
