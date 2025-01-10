@@ -50,7 +50,7 @@ const schema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
   categories: z.array(z.number()).min(1, 'Categories are required'),
-  imageDescription: z.string().optional(),
+  imageDescription: z.string().nullable(),
   secret: z
     .string()
     .refine(val => val === SECRET, { message: 'Invalid secret' }),
@@ -127,6 +127,8 @@ export async function PUT(request: Request) {
     })
   }
 }
+
+export type PutBody = z.infer<typeof schema>
 
 /**
  * For the DELETE route, we similarly need to check `secret`. We'll parse the

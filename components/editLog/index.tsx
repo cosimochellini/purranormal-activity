@@ -1,6 +1,6 @@
 'use client'
 
-import type { DeleteResponse, PutResponse } from '@/app/api/log/[id]/route'
+import type { DeleteResponse, PutBody, PutResponse } from '@/app/api/log/[id]/route'
 import type { LogWithCategories } from '@/db/schema'
 import type { FormEvent } from 'react'
 import { SpookyButton } from '@/components/common/SpookyButton'
@@ -21,7 +21,7 @@ interface Secret {
   secret: string
 }
 
-const updateLog = fetcher<PutResponse, never, Partial<LogWithCategories & Secret>>('/api/log/[id]', 'PUT')
+const updateLog = fetcher<PutResponse, never, PutBody>('/api/log/[id]', 'PUT')
 const deleteLog = fetcher<DeleteResponse, never, Secret>('/api/log/[id]', 'DELETE')
 
 export function EditLogForm({ initialData }: EditLogFormProps) {
@@ -37,7 +37,10 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
 
     try {
       const response = await updateLog({
-        body: formData,
+        body: {
+          ...formData,
+          categories: formData.categories.map(category => category.id),
+        },
         params: { id: initialData.id },
       })
 
