@@ -1,30 +1,32 @@
+'use client'
+
 import type { LogWithCategories } from '@/db/schema'
 import type { Query, Response } from '../../app/api/log/all/route'
-import type { ExploreFiltersState } from './ExploreSection'
+
 import { fetcher } from '@/utils/fetch'
 import { useEffect, useState } from 'react'
+import { useExploreData } from '../../hooks/useExporeData'
 import { Loading } from '../common/Loading'
 import { EventCard } from '../events/EventCard'
-
-interface ExploreResultsProps {
-  filters: ExploreFiltersState
-}
+import { NoLogsFound } from './NoLogsFound'
 
 const searchLogs = fetcher<Response, Query>('/api/log/all')
 
-export function ExploreResults({ filters }: ExploreResultsProps) {
+export function ExploreResults() {
+  const [{ page, limit, search, categories, sortBy, timeRange }] = useExploreData()
   const [logs, setLogs] = useState<LogWithCategories[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    const search = async () => {
+    const getItems = async () => {
       setIsLoading(true)
       try {
-        const response = await searchLogs({ query: filters })
+        const response = await searchLogs({ query: { page, limit, search, categories, sortBy, timeRange } })
 
-        if (response.success) {
-          setLogs(response.data)
-        }
+        if (!response.success)
+          throw new Error(response.error)
+
+        setLogs(response.data)
       }
       catch (error) {
         console.error('Failed to search logs:', error)
@@ -38,22 +40,15 @@ export function ExploreResults({ filters }: ExploreResultsProps) {
     if (isLoading)
       return
 
-    search()
+    getItems()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters])
+  }, [page, limit, search, categories, sortBy, timeRange])
 
   if (isLoading)
     return <Loading />
 
-  if (logs.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-purple-200/80">
-          No supernatural events found matching your criteria...
-        </p>
-      </div>
-    )
-  }
+  if (!logs.length)
+    return <NoLogsFound />
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

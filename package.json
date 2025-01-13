@@ -1,6 +1,6 @@
 {
   "name": "purranormal-activity",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "private": true,
   "scripts": {
     "pages:build": "npx @cloudflare/next-on-pages",
@@ -23,6 +23,7 @@
     "drizzle-orm": "^0.38.3",
     "next": "15.1.4",
     "next-view-transitions": "^0.3.4",
+    "nuqs": "^2.3.0",
     "openai": "^4.77.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
