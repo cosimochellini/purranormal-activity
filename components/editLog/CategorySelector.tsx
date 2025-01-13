@@ -10,11 +10,12 @@ interface CategorySelectorProps {
   selected: Category[]
   onChange: (categories: Category[]) => void
   styles?: CSSProperties
+  iconsOnly?: boolean
 }
 
 const getCategories = fetcher<GetResponse>('/api/categories')()
 
-export function CategorySelector({ selected, onChange, styles }: CategorySelectorProps) {
+export function CategorySelector({ selected, onChange, styles, iconsOnly }: CategorySelectorProps) {
   const categories = use(getCategories)
   const selectedIds = selected.map(c => c.id)
 
@@ -38,6 +39,7 @@ export function CategorySelector({ selected, onChange, styles }: CategorySelecto
             category={category}
             selected={selectedIds.includes(category.id)}
             onClick={() => toggleCategory(category)}
+            iconOnly={iconsOnly}
           />
         ))}
       </div>

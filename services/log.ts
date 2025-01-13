@@ -1,8 +1,26 @@
+import type { SQL } from 'drizzle-orm'
 import type { Category, Log, LogWithCategories } from '../db/schema'
-import { desc, eq, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray, like, or, sql } from 'drizzle-orm'
 import { log, logCategory } from '../db/schema'
 import { db } from '../drizzle'
+import { SortBy, TimeRange } from '../types/search'
+import { time } from '../utils/time'
 import { getCategoriesMap } from './categories'
+
+const sorting = {
+  [SortBy.Recent]: [desc(log.id)],
+  [SortBy.Oldest]: [asc(log.id)],
+  [SortBy.Title]: [asc(log.title)],
+} as const satisfies Record<SortBy, SQL[]>
+
+const now = Date.now()
+
+const ranges = {
+  [TimeRange.All]: 0,
+  [TimeRange.Day]: now - time({ days: 1 }),
+  [TimeRange.Week]: now - time({ days: 7 }),
+  [TimeRange.Month]: now - time({ days: 30 }),
+} as const satisfies Record<TimeRange, number>
 
 async function addCategories(logs: Log[]) {
   const categoriesMap = await getCategoriesMap()
@@ -44,11 +62,54 @@ export async function getLog(id: number) {
   return result
 }
 
-export async function getLogs(skip: number, limit: number) {
+interface GetLogsOptions {
+  skip?: number
+  limit?: number
+  search?: string
+  categories?: number[]
+  sortBy?: SortBy
+  timeRange?: TimeRange
+}
+
+export async function getLogs({
+  skip = 0,
+  limit = 10,
+  search = '',
+  categories = [],
+  sortBy = SortBy.Recent,
+  timeRange = TimeRange.All,
+}: GetLogsOptions) {
+  const categoryCondition = categories.length > 0
+    ? sql`
+    ${log.id} IN (${db
+      .select({ logId: logCategory.logId })
+      .from(logCategory)
+      .where(inArray(logCategory.categoryId, categories))
+      .groupBy(logCategory.logId)})
+      `
+    : undefined
+
+  const searchCondition = search
+    ? or(
+        like(log.title, `%${search}%`),
+        like(log.description, `%${search}%`),
+      )
+    : undefined
+
+  const timeRangeCondition = timeRange !== TimeRange.All
+    ? gte(log.createdAt, ranges[timeRange])
+    : undefined
+
   const logs = await db
     .select()
     .from(log)
-    .orderBy(desc(log.id))
+    .where(and(
+      gte(log.id, 1),
+      searchCondition,
+      categoryCondition,
+      timeRangeCondition,
+    ))
+    .orderBy(...sorting[sortBy])
     .limit(limit)
     .offset(skip)
 
