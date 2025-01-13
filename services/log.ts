@@ -1,11 +1,10 @@
 import type { SQL } from 'drizzle-orm'
-import type { Category, Log, LogWithCategories } from '../db/schema'
+import type { Log, LogWithCategories } from '../db/schema'
 import { and, asc, desc, eq, gte, inArray, like, or, sql } from 'drizzle-orm'
 import { log, logCategory } from '../db/schema'
 import { db } from '../drizzle'
 import { SortBy, TimeRange } from '../types/search'
 import { time } from '../utils/time'
-import { getCategoriesMap } from './categories'
 
 const sorting = {
   [SortBy.Recent]: [desc(log.id)],
@@ -23,8 +22,6 @@ const ranges = {
 } as const satisfies Record<TimeRange, number>
 
 async function addCategories(logs: Log[]) {
-  const categoriesMap = await getCategoriesMap()
-
   const logIds = logs.map(log => log.id)
   const categoryRelations = await db
     .select({
@@ -39,8 +36,7 @@ async function addCategories(logs: Log[]) {
   for (const log of logs) {
     const categories = categoryRelations
       .filter(({ logId }) => logId === log.id)
-      .map(({ categoryId }) => categoriesMap.get(categoryId))
-      .filter(Boolean) as Category[]
+      .map(({ categoryId }) => categoryId)
 
     data.push({ ...log, categories })
   }

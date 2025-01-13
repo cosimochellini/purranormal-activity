@@ -1,9 +1,9 @@
-import type { SlimCategory } from '@/db/schema'
 import classNames from 'classnames'
 import { use } from 'react'
+import { getCategories } from '../../../static/promise'
 
 interface CategoryProps {
-  category: SlimCategory
+  category: number
   iconOnly?: boolean
   selected?: boolean
   onClick?: () => void
@@ -14,17 +14,20 @@ const emptyIcon = () => null
 
 export function Category({ category, iconOnly = false, selected, onClick }: CategoryProps) {
   const categoryIcons = use(categoryIconsPromise)
-  const Icon = categoryIcons[category.icon as keyof typeof categoryIcons] ?? emptyIcon
+  const categories = use(getCategories)
+
+  const currentCategory = categories.find(c => c.id === category)
+  const Icon = categoryIcons[currentCategory?.icon as keyof typeof categoryIcons] ?? emptyIcon
 
   const buttonLabel = selected
-    ? `Deselect ${category.name} category`
-    : `Select ${category.name} category`
+    ? `Deselect ${currentCategory?.name} category`
+    : `Select ${currentCategory?.name} category`
 
   return (
     <div className="group/tooltip relative">
       <button
         onClick={onClick}
-        key={category.id}
+        key={currentCategory?.id}
         type="button"
         aria-label={buttonLabel}
         aria-pressed={selected}
@@ -68,7 +71,7 @@ export function Category({ category, iconOnly = false, selected, onClick }: Cate
             selected && 'font-medium',
           )}
           >
-            {category.name}
+            {currentCategory?.name}
           </span>
         )}
       </button>
@@ -84,7 +87,7 @@ export function Category({ category, iconOnly = false, selected, onClick }: Cate
         'shadow-[0_0_15px_rgba(168,85,247,0.2)]',
       )}
       >
-        {category.name}
+        {currentCategory?.name}
         {/* Tooltip arrow */}
         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-purple-900/90 rotate-45 border-r border-b border-purple-400/30" />
       </div>

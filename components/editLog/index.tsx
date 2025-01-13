@@ -37,10 +37,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
 
     try {
       const response = await updateLog({
-        body: {
-          ...formData,
-          categories: formData.categories.map(category => category.id),
-        },
+        body: formData,
         params: { id: initialData.id },
       })
 

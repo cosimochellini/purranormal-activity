@@ -1,28 +1,23 @@
 import type { CSSProperties } from 'react'
-import type { GetResponse } from '../../app/api/categories/route'
-import type { Category } from '../../db/schema'
 import { use } from 'react'
+import { getCategories } from '../../static/promise'
 import { range } from '../../utils/array'
-import { fetcher } from '../../utils/fetch'
 import { Category as CategoryComponent } from '../common/Category'
 
 interface CategorySelectorProps {
-  selected: Category[]
-  onChange: (categories: Category[]) => void
+  selected: number[]
+  onChange: (categories: number[]) => void
   styles?: CSSProperties
   iconsOnly?: boolean
 }
 
-const getCategories = fetcher<GetResponse>('/api/categories')()
-
 export function CategorySelector({ selected, onChange, styles, iconsOnly }: CategorySelectorProps) {
   const categories = use(getCategories)
-  const selectedIds = selected.map(c => c.id)
 
-  const toggleCategory = (category: Category) => {
-    const newCategories = selectedIds.includes(category.id)
-      ? selected.filter(c => c.id !== category.id)
-      : [...selected, category]
+  const toggleCategory = (categoryId: number) => {
+    const newCategories = selected.includes(categoryId)
+      ? selected.filter(c => c !== categoryId)
+      : [...selected, categoryId]
 
     onChange(newCategories)
   }
@@ -33,15 +28,17 @@ export function CategorySelector({ selected, onChange, styles, iconsOnly }: Cate
         Categories
       </label>
       <div className="flex flex-wrap gap-2">
-        {categories.map(category => (
-          <CategoryComponent
-            key={category.id}
-            category={category}
-            selected={selectedIds.includes(category.id)}
-            onClick={() => toggleCategory(category)}
-            iconOnly={iconsOnly}
-          />
-        ))}
+        {categories
+          .map(x => x.id)
+          .map(category => (
+            <CategoryComponent
+              key={category}
+              category={category}
+              selected={selected.includes(category)}
+              onClick={() => toggleCategory(category)}
+              iconOnly={iconsOnly}
+            />
+          ))}
       </div>
     </div>
   )
@@ -53,7 +50,7 @@ export function CategorySelectorSkeleton() {
       {range(4).map(index => (
         <CategoryComponent
           key={index}
-          category={{ id: index, name: '...' } as Category}
+          category={index}
           selected={false}
           onClick={() => {}}
         />

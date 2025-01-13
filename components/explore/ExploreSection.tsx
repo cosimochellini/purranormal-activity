@@ -1,6 +1,5 @@
 'use client'
 
-import type { Category } from '@/db/schema'
 import { useDeferredValue } from 'react'
 import { usePartialState } from '../../hooks/state'
 import { SortBy, TimeRange } from '../../types/search'
@@ -8,13 +7,17 @@ import { ExploreFilters } from './ExploreFilters'
 import { ExploreResults } from './ExploreResults'
 
 export interface ExploreFiltersState {
+  page: number
+  limit: number
   search: string
-  categories: Category[]
+  categories: number[]
   sortBy: SortBy
   timeRange: TimeRange
 }
 
 const defaultFilters = {
+  page: 1,
+  limit: 10,
   search: '',
   categories: [],
   sortBy: SortBy.Recent,

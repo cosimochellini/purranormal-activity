@@ -19,7 +19,10 @@ export async function getCategory(id: number) {
   return categories.get(id)
 }
 
-export async function getCategories() {
+export async function getCategories(ids: number[] | null = null) {
   const categories = await getCategoriesMap()
-  return Array.from(categories.values())
+
+  return ids
+    ? (ids.map(id => categories.get(id)).filter(Boolean) as Category[])
+    : Array.from(categories.values())
 }

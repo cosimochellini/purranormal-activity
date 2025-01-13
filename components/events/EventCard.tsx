@@ -70,7 +70,7 @@ function EventCardComponent({
           style={styles.categories}
         >
           {categories.map(category => (
-            <Category key={category.id} category={category} iconOnly />
+            <Category key={category} category={category} iconOnly />
           ))}
         </div>
       </div>

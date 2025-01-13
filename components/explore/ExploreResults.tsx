@@ -3,8 +3,6 @@ import type { Query, Response } from '../../app/api/log/all/route'
 import type { ExploreFiltersState } from './ExploreSection'
 import { fetcher } from '@/utils/fetch'
 import { useEffect, useState } from 'react'
-import { byNumber, byValue } from 'sort-es'
-import { SortBy } from '../../types/search'
 import { Loading } from '../common/Loading'
 import { EventCard } from '../events/EventCard'
 
@@ -16,26 +14,16 @@ const searchLogs = fetcher<Response, Query>('/api/log/all')
 
 export function ExploreResults({ filters }: ExploreResultsProps) {
   const [logs, setLogs] = useState<LogWithCategories[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     const search = async () => {
       setIsLoading(true)
       try {
-        const response = await searchLogs({
-          query: {
-            search: filters.search,
-            categories: filters.categories.map(c => c.id).join(',').toString(),
-            sortBy: filters.sortBy,
-            timeRange: filters.timeRange,
-          },
-        })
+        const response = await searchLogs({ query: filters })
 
         if (response.success) {
-          const sortedLogs = response.data.sort(
-            byValue(l => l.id, byNumber({ desc: filters.sortBy === SortBy.Recent })),
-          )
-          setLogs(sortedLogs)
+          setLogs(response.data)
         }
       }
       catch (error) {
@@ -47,7 +35,11 @@ export function ExploreResults({ filters }: ExploreResultsProps) {
       }
     }
 
+    if (isLoading)
+      return
+
     search()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters])
 
   if (isLoading)

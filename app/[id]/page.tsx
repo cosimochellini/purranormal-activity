@@ -2,12 +2,13 @@ import type { Metadata } from 'next'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import classNames from 'classnames'
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import { Category } from '../../components/common/Category'
 import { EventImage } from '../../components/events/EventImage'
 import { Refetch } from '../../components/timer/refetch'
 import { LogStatus } from '../../data/enum/logStatus'
-import { NEXT_PUBLIC_APP_URL } from '../../env/next'
 
+import { NEXT_PUBLIC_APP_URL } from '../../env/next'
 import { getLog } from '../../services/log'
 import { publicImage } from '../../utils/cloudflare'
 import { transitions } from '../../utils/viewTransition'
@@ -113,9 +114,11 @@ export default async function Page({ params }: PageProps) {
               Paranormal Categories
             </h2>
             <div className="flex flex-wrap gap-2" style={styles.categories}>
-              {log.categories.map(category => (
-                <Category key={category.id} category={category} />
-              ))}
+              <Suspense>
+                {log.categories.map(category => (
+                  <Category key={category} category={category} />
+                ))}
+              </Suspense>
             </div>
           </div>
 

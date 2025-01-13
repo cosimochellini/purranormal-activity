@@ -31,5 +31,5 @@ export const log = sqliteTable('log', {
 export type Log = typeof log.$inferSelect
 export type Category = typeof category.$inferSelect
 export type SlimCategory = Pick<Category, 'id' | 'name' | 'icon'>
-export type LogWithCategories = Omit<Log, 'categories'> & { categories: Category[] }
+export type LogWithCategories = Log & { categories: number[] }
 export type LogCategory = typeof logCategory.$inferSelect
