@@ -28,7 +28,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
   const router = useRouter()
   const [submitting, setSubmitting] = usePartialState({ form: false, delete: false })
   const [error, setError] = useState('')
-  const [formData, setFormData] = useState(() => ({ ...initialData, secret: '' }))
+  const [formData, setFormData] = usePartialState(() => ({ ...initialData, secret: '' }))
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -113,7 +113,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
             placeholder="Title"
             type="text"
             value={formData.title}
-            onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
+            onChange={e => setFormData({ title: e.target.value })}
             className="w-full rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
             style={styles.title}
           />
@@ -123,7 +123,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
           <SpookyTextarea
             id="description"
             value={formData.description}
-            onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
+            onChange={e => setFormData({ description: e.target.value })}
             rows={6}
             className="w-full min-h-[150px] rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
             style={styles.description}
@@ -135,7 +135,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
             id="imageDescription"
             placeholder="Image Description"
             value={formData.imageDescription ?? ''}
-            onChange={e => setFormData(prev => ({ ...prev, imageDescription: e.target.value }))}
+            onChange={e => setFormData({ imageDescription: e.target.value })}
             rows={6}
             className="w-full min-h-[150px] rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
           />
@@ -145,7 +145,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
           <CategorySelector
             selected={formData.categories}
             styles={styles.categories}
-            onChange={categories => setFormData(prev => ({ ...prev, categories }))}
+            onChange={categories => setFormData({ categories })}
           />
         </Suspense>
 
@@ -155,7 +155,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
             placeholder="Secret"
             type="password"
             value={formData.secret}
-            onChange={e => setFormData(prev => ({ ...prev, secret: e.target.value }))}
+            onChange={e => setFormData({ secret: e.target.value })}
           />
         </div>
 

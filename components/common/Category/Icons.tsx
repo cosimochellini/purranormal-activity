@@ -2,10 +2,11 @@ import type { IconProps } from '@tabler/icons-react'
 import {
   IconAlien,
   IconCheck,
-  IconChessKnightFilled,
   IconClock,
   IconGhost,
   IconMoon,
+  IconPizza,
+  IconPlayCardStarFilled,
   IconQuestionMark,
   IconRobot,
   IconZzz,
@@ -17,8 +18,9 @@ export const categoryIcons = {
   check: IconCheck,
   moon: IconMoon,
   ghost: IconGhost,
-  food: IconChessKnightFilled,
+  food: IconPizza,
   robot: IconRobot,
   zzz: IconZzz,
   questionMark: IconQuestionMark,
+  fortune: IconPlayCardStarFilled,
 } as const satisfies Record<string, React.ComponentType<IconProps>>
