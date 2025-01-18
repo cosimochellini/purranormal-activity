@@ -67,7 +67,7 @@ export async function uploadToR2(buffer: Buffer, logId: number) {
   }
   catch (error) {
     logger.error('Error uploading to R2:', error)
-    throw new Error('R2 upload failed')
+    throw new Error(`R2 upload failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`)
   }
 }
 

@@ -9,13 +9,15 @@ import { downloadImageAsBuffer } from '@/utils/image'
 import { logger } from '@/utils/logger'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { setLogError } from '../../../../services/log'
 
 export const runtime = 'edge'
 
 export async function POST(request: Request) {
+  let logId: number | undefined
   try {
     const url = new URL(request.url)
-    const logId = Number(url.searchParams.get('id'))
+    logId = Number(url.searchParams.get('id'))
 
     // Get log details
     const [logEntry] = await db
@@ -48,6 +50,7 @@ export async function POST(request: Request) {
   }
   catch (error) {
     logger.error('Failed to generate image:', error)
+    await setLogError(logId, error)
 
     return ok({
       success: false,

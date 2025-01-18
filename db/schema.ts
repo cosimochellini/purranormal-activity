@@ -22,7 +22,6 @@ export const log = sqliteTable('log', {
   createdAt: int('created_at').notNull(),
   updatedAt: int('updated_at').notNull(),
   status: text('status').notNull().default(LogStatus.Created),
-  placeholder: text('placeholder'),
   error: text('error'),
   imageDescription: text('image_description'),
 })

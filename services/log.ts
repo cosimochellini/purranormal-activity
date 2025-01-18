@@ -111,3 +111,13 @@ export async function getLogs({
 
   return addCategories(logs)
 }
+
+export async function setLogError(id: number | undefined, error: unknown) {
+  if (!id)
+    return
+
+  await db
+    .update(log)
+    .set({ error: error instanceof Error ? error.message : JSON.stringify(error) })
+    .where(eq(log.id, id))
+}

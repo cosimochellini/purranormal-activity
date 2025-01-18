@@ -104,6 +104,13 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
           </div>
         )}
 
+        {initialData.error && (
+          <div className="rounded-md bg-red-900/30 p-4 text-red-200">
+            <h3 className="mb-2 font-bold">Generation Error:</h3>
+            <p className="text-sm">{initialData.error}</p>
+          </div>
+        )}
+
         <div className="space-y-2">
           <SpookyInput
             id="title"
