@@ -26,6 +26,7 @@ const deleteLog = fetcher<DeleteResponse, never, Secret>('/api/log/[id]', 'DELET
 
 export function EditLogForm({ initialData }: EditLogFormProps) {
   const router = useRouter()
+
   const [submitting, setSubmitting] = usePartialState({ form: false, delete: false })
   const [error, setError] = useState('')
   const [formData, setFormData] = usePartialState(() => ({ ...initialData, secret: '' }))
@@ -60,6 +61,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
 
   const handleDelete = async () => {
     setSubmitting({ delete: true })
+
     setError('')
 
     try {
