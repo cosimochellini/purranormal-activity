@@ -1,6 +1,6 @@
 {
   "name": "purranormal-activity",
-  "version": "0.6.9",
+  "version": "0.6.10",
   "private": true,
   "scripts": {
     "pages:build": "npx @cloudflare/next-on-pages",
@@ -17,6 +17,7 @@
     "@aws-sdk/client-s3": "3.726.1",
     "@libsql/client": "^0.14.0",
     "@tabler/icons-react": "^3.29.0",
+    "@tailwindcss/postcss": "^4.0.0",
     "classnames": "^2.5.1",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.39.0",
