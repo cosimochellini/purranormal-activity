@@ -15,6 +15,8 @@
 body {
   color: var(--foreground);
   background: var(--background);
+  min-height: 100vh;
+  background-image: radial-gradient(circle at center, rgba(156, 77, 204, 0.1) 0%, rgba(106, 27, 154, 0.2) 100%);
   font-family: Arial, Helvetica, sans-serif;
 }
 
