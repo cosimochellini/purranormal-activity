@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     const categories = await db.insert(category).values(
       newCategories.map(name => ({
         name,
-        icon: 'QuestionMark', // Default icon for new categories
+        icon: 'questionMark', // Default icon for new categories
         createdAt: Date.now(),
         updatedAt: Date.now(),
       })),

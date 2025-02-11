@@ -10,14 +10,14 @@ interface CategoryProps {
 }
 
 const categoryIconsPromise = import('./Icons').then(module => module.categoryIcons)
-const emptyIcon = () => null
+
+const promises = Promise.all([categoryIconsPromise, getCategories])
 
 export function Category({ category, iconOnly = false, selected, onClick }: CategoryProps) {
-  const categoryIcons = use(categoryIconsPromise)
-  const categories = use(getCategories)
+  const [categoryIcons, categories] = use(promises)
 
   const currentCategory = categories.find(c => c.id === category)
-  const Icon = categoryIcons[currentCategory?.icon as keyof typeof categoryIcons] ?? emptyIcon
+  const Icon = categoryIcons[currentCategory?.icon as keyof typeof categoryIcons] ?? categoryIcons.questionMark
 
   const buttonLabel = selected
     ? `Deselect ${currentCategory?.name} category`
