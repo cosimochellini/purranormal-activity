@@ -56,7 +56,7 @@ export function InfiniteEvents({ initialLogs }: InfiniteEventsProps) {
         // TODO: handle error
       }
       finally {
-        setTimeout(() => setState({ isLoading: false }), 500)
+        requestAnimationFrame(() => setState({ isLoading: false }))
       }
     }
 

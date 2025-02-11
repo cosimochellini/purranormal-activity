@@ -17,6 +17,14 @@ import { SpookyInput } from '../common/SpookyInput'
 import { SpookyTextarea } from '../common/SpookyTextarea'
 import { CategorySelector, CategorySelectorSkeleton } from './CategorySelector'
 
+interface Secret {
+  secret: string
+}
+
+const updateLog = fetcher<PutResponse, never, PutBody>('/api/log/[id]', 'PUT')
+const deleteLog = fetcher<DeleteResponse, never, Secret>('/api/log/[id]', 'DELETE')
+const uploadImage = fetcher<UploadResponse, never, FormData>('/api/upload/[id]', 'POST')
+
 interface UpdateImageButtonProps {
   id: number
 }
@@ -53,6 +61,7 @@ function UpdateImageButton({ id }: UpdateImageButtonProps) {
       }
 
       router.push(`/${id}`)
+
       setError('')
     }
     catch (err) {
@@ -95,14 +104,6 @@ function UpdateImageButton({ id }: UpdateImageButtonProps) {
     </>
   )
 }
-
-interface Secret {
-  secret: string
-}
-
-const updateLog = fetcher<PutResponse, never, PutBody>('/api/log/[id]', 'PUT')
-const deleteLog = fetcher<DeleteResponse, never, Secret>('/api/log/[id]', 'DELETE')
-const uploadImage = fetcher<UploadResponse, never, FormData>('/api/upload/[id]', 'POST')
 
 interface EditLogFormProps {
   initialData: LogWithCategories

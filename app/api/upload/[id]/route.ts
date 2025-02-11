@@ -1,4 +1,5 @@
-import { NextRequest } from 'next/server'
+/* eslint-disable node/prefer-global/buffer */
+import type { NextRequest } from 'next/server'
 import { uploadToR2 } from '@/utils/cloudflare'
 import { badRequest, ok } from '../../../../utils/http'
 
@@ -7,7 +8,7 @@ export interface UploadResponse {
   errors?: Record<string, string[]>
 }
 
-interface RequestParams  {
+interface RequestParams {
   id: string
 }
 
@@ -27,6 +28,6 @@ export async function POST(request: NextRequest, { params }: { params: RequestPa
     return ok({ success: true, result })
   }
   catch (error) {
-    return badRequest('Failed to upload file ' + error)
+    return badRequest(`Failed to upload file ${error}`)
   }
 }
