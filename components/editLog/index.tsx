@@ -1,28 +1,112 @@
 'use client'
 
 import type { DeleteResponse, PutBody, PutResponse } from '@/app/api/log/[id]/route'
+import type { UploadResponse } from '@/app/api/upload/[id]/route'
 import type { LogWithCategories } from '@/db/schema'
-import type { FormEvent } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
 import { SpookyButton } from '@/components/common/SpookyButton'
 import { EventImage } from '@/components/events/EventImage'
 import { usePartialState } from '@/hooks/state'
 import { fetcher } from '@/utils/fetch'
 import { transitions } from '@/utils/viewTransition'
+import { IconRefresh } from '@tabler/icons-react'
+import classNames from 'classnames'
 import { useRouter } from 'next/navigation'
-import { Suspense, useState } from 'react'
+import { Suspense, useRef, useState } from 'react'
 import { SpookyInput } from '../common/SpookyInput'
 import { SpookyTextarea } from '../common/SpookyTextarea'
 import { CategorySelector, CategorySelectorSkeleton } from './CategorySelector'
 
-interface EditLogFormProps {
-  initialData: LogWithCategories
+interface UpdateImageButtonProps {
+  id: number
 }
+
+function UpdateImageButton({ id }: UpdateImageButtonProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [error, setError] = useState('')
+  const router = useRouter()
+
+  const handleClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file)
+      return
+
+    setIsLoading(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const data = await uploadImage({
+        params: { id },
+        body: formData,
+      })
+
+      if (!data.success) {
+        const errors = Object.values(data.errors ?? {}).flat()
+        setError(errors[0] ?? 'Failed to upload image')
+        return
+      }
+
+      router.push(`/${id}`)
+      setError('')
+    }
+    catch (err) {
+      console.error('Failed to upload image:', err)
+      setError('Failed to upload image')
+    }
+    finally {
+      setIsLoading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  return (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      <button
+        onClick={handleClick}
+        className="absolute bottom-1 right-1 bg-purple-900/80 backdrop-blur-sm rounded-full p-1.5
+          border border-purple-400/30 shadow-lg transform transition-all duration-300
+          hover:scale-110 group/tooltip"
+        type="button"
+        aria-label="Update image"
+      >
+        <IconRefresh className={classNames('w-4 h-4 text-purple-200', { 'animate-spin': isLoading })} />
+      </button>
+
+      {error && (
+        <div className="rounded-md bg-red-900/30 p-4 text-red-200">
+          {error}
+        </div>
+      )}
+    </>
+  )
+}
+
 interface Secret {
   secret: string
 }
 
 const updateLog = fetcher<PutResponse, never, PutBody>('/api/log/[id]', 'PUT')
 const deleteLog = fetcher<DeleteResponse, never, Secret>('/api/log/[id]', 'DELETE')
+const uploadImage = fetcher<UploadResponse, never, FormData>('/api/upload/[id]', 'POST')
+
+interface EditLogFormProps {
+  initialData: LogWithCategories
+}
 
 export function EditLogForm({ initialData }: EditLogFormProps) {
   const router = useRouter()
@@ -91,13 +175,16 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
 
   return (
     <>
-      <EventImage
-        log={initialData}
-        className="mb-8"
-        width={200}
-        height={200}
-        style={styles.image}
-      />
+      <div className="relative group">
+        <EventImage
+          log={initialData}
+          className="pb-8"
+          width={200}
+          height={200}
+          style={styles.image}
+        />
+        <UpdateImageButton id={initialData.id} />
+      </div>
 
       <form onSubmit={handleSubmit} className="w-full max-w-2xl space-y-6 p-4">
         {error && (

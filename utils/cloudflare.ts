@@ -58,7 +58,7 @@ export async function uploadToCloudflareImages(imageUrl: string, metadata?: Reco
 
 export async function uploadToR2(buffer: Buffer, logId: number) {
   try {
-    await S3.send(new PutObjectCommand({
+   return S3.send(new PutObjectCommand({
       Bucket: BUCKET_NAME,
       Key: `${logId}/cover.webp`,
       Body: buffer,

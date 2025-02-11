@@ -2,15 +2,18 @@ import { typedObjectEntries } from './typed'
 
 type Methods = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
 
-const headers = {
+const defaultHeaders = {
   'Content-Type': 'application/json',
 }
+const formDataHeaders = {}
+
 type QueryValues = string | null | number | undefined | QueryValues[]
 
 interface FetchOptions<TQuery extends Record<string, QueryValues> = never, TBody = never> {
   query?: Record<keyof TQuery, QueryValues>
   body?: TBody
   params?: Record<string, string | null | number>
+
 }
 
 export function fetcher<
@@ -27,10 +30,14 @@ export function fetcher<
         .map(([key, value]) => [key, value?.toString() ?? '']),
     )
 
+    const isFormData = (options?.body instanceof FormData)
+    const headers = isFormData ? formDataHeaders : defaultHeaders
+    const body = (isFormData ? options?.body : JSON.stringify(options?.body)) as BodyInit
+
     return fetch(`${replacedUrl}?${params.toString()}`, {
       method,
       headers,
-      body: JSON.stringify(options?.body),
+      body,
     })
       .then(r => (r.ok ? (r.json() as Promise<TResult>) : Promise.reject(r)))
       .catch((e) => { throw e })
