@@ -8,6 +8,7 @@ export interface UploadResponse {
   errors?: Record<string, string[]>
 }
 
+export const runtime = 'edge'
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
