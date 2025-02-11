@@ -8,20 +8,19 @@ export interface UploadResponse {
   errors?: Record<string, string[]>
 }
 
-interface RequestParams {
-  id: string
-}
-
-export async function POST(request: NextRequest, { params }: { params: RequestParams }) {
+export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File
+    const logId = Number(request.nextUrl.searchParams.get('id'))
 
     if (!file)
       return badRequest('File is required')
 
+    if (Number.isNaN(logId))
+      return badRequest('Invalid log ID')
+
     const buffer = Buffer.from(await file.arrayBuffer())
-    const logId = Number(params.id)
 
     const result = await uploadToR2(buffer, logId)
 
