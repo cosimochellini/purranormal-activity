@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { FloatingMenu } from '@/components/common/FloatingMenu'
 import { ViewTransitions } from 'next-view-transitions'
 import { Caveat, Quicksand } from 'next/font/google'
 import './globals.css'
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: Readonly<RootLayoutProps>) {
         bg-gradient-to-b from-midnight-blue to-deep-purple
         text-ghost-white antialiased`}
         >
+          <FloatingMenu />
           {children}
         </body>
       </html>
