@@ -78,7 +78,7 @@ export async function generateImage(imagePrompt: string) {
       size: '1024x1024',
     })
 
-    const imageData = imageResponse?.data[0]?.url
+    const imageData = imageResponse?.data?.[0]?.url
 
     if (!imageData)
       throw new Error('Failed to generate image data')
