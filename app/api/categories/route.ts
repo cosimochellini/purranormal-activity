@@ -17,13 +17,15 @@ const schema = z.object({
   categories: z.array(z.string()).min(1, 'At least one category is required'),
 })
 
-export type PostResponse = {
-  success: true
-  categories: { id: number, name: string }[]
-} | {
-  success: false
-  errors: Partial<Record<keyof typeof schema.shape, string[]>>
-}
+export type PostResponse =
+  | {
+      success: true
+      categories: { id: number; name: string }[]
+    }
+  | {
+      success: false
+      errors: Partial<Record<keyof typeof schema.shape, string[]>>
+    }
 
 export async function POST(request: Request) {
   try {
@@ -39,21 +41,23 @@ export async function POST(request: Request) {
 
     const { categories: newCategories } = result.data
 
-    const categories = await db.insert(category).values(
-      newCategories.map(name => ({
-        name,
-        icon: 'questionMark', // Default icon for new categories
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      })),
-    ).returning({
-      id: category.id,
-      name: category.name,
-    })
+    const categories = await db
+      .insert(category)
+      .values(
+        newCategories.map((name) => ({
+          name,
+          icon: 'questionMark', // Default icon for new categories
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        })),
+      )
+      .returning({
+        id: category.id,
+        name: category.name,
+      })
 
     return ok<PostResponse>({ success: true, categories })
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to create categories:', error)
 
     return ok<PostResponse>({

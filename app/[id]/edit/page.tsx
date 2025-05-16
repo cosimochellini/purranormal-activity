@@ -16,8 +16,7 @@ interface PageProps {
 export default async function EditLogPage({ params }: PageProps) {
   const entry = await getLog(Number((await params).id))
 
-  if (!entry)
-    return notFound()
+  if (!entry) return notFound()
 
   return (
     <div className="min-h-screen w-full bg-deep-purple-900 p-4 text-white">

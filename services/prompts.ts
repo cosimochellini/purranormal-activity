@@ -68,8 +68,8 @@ export function CREATE_QUESTIONS_PROMPT(description: string) {
 
 interface GenerateLogDetailsPromptParams {
   description: string
-  answers: { question: string, answer: string }[]
-  categories: { id: number, name: string }[]
+  answers: { question: string; answer: string }[]
+  categories: { id: number; name: string }[]
   currentStyle: ImageStyle
 }
 
@@ -91,13 +91,13 @@ export function GENERATE_LOG_DETAILS_PROMPT({
   "${description}"
 
   Additional information, use it just in case, no need to mention if are not relevant:
-  ${answers.map(a => `- ${a.question}: ${a.answer}`).join('\n  ')}
+  ${answers.map((a) => `- ${a.question}: ${a.answer}`).join('\n  ')}
 
   Required Output (strictly valid JSON, no additional text):
   {
     "title": string,        // A catchy, newspaper-style headline in Italian (max 60 chars)
     "description": string,  // A whimsical retelling in Italian, maintaining the original story's essence (max 350 chars)
-    "categories": [${categories.map(c => `{ "id": ${c.id}, "name": "${c.name}" }`).join(', ')}],
+    "categories": [${categories.map((c) => `{ "id": ${c.id}, "name": "${c.name}" }`).join(', ')}],
     "missingCategories": string[],  // Based on the categories, suggest up to 2 new categories that could be added, only if indeed there is an interesting category
     "imageDescription": string      // A detailed scene description in English for DALL-E (max 300 chars)
   }

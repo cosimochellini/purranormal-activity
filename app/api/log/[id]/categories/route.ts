@@ -10,12 +10,14 @@ const schema = z.object({
   categories: z.array(z.number()).min(1, 'At least one category is required'),
 })
 
-export type Response = {
-  success: true
-} | {
-  success: false
-  errors: Partial<Record<keyof typeof schema.shape, string[]>>
-}
+export type Response =
+  | {
+      success: true
+    }
+  | {
+      success: false
+      errors: Partial<Record<keyof typeof schema.shape, string[]>>
+    }
 
 export async function POST(request: Request) {
   try {
@@ -34,15 +36,14 @@ export async function POST(request: Request) {
     const { categories } = result.data
 
     await db.insert(logCategory).values(
-      categories.map(categoryId => ({
+      categories.map((categoryId) => ({
         logId,
         categoryId,
       })),
     )
 
     return ok<Response>({ success: true })
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to add categories to log:', error)
 
     return ok<Response>({

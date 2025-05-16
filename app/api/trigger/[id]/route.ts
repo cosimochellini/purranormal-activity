@@ -20,15 +20,12 @@ export async function POST(request: Request) {
     logId = Number(url.searchParams.get('id'))
 
     // Get log details
-    const [logEntry] = await db
-      .select()
-      .from(log)
-      .where(eq(log.id, logId))
+    const [logEntry] = await db.select().from(log).where(eq(log.id, logId))
 
-    if (!logEntry)
-      return ok({ success: false, error: 'Log not found' })
+    if (!logEntry) return ok({ success: false, error: 'Log not found' })
 
-    const imagePrompt = logEntry.imageDescription ?? await generateImagePrompt(logEntry.description)
+    const imagePrompt =
+      logEntry.imageDescription ?? (await generateImagePrompt(logEntry.description))
 
     const imageData = await generateImage(imagePrompt)
 
@@ -47,8 +44,7 @@ export async function POST(request: Request) {
     revalidatePath('/', 'layout')
 
     return ok({ success: true })
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to generate image:', error)
     await setLogError(logId, error)
 

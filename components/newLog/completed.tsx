@@ -50,31 +50,20 @@ export function CompletedSection({ logId, missingCategories }: CompletedSectionP
 
         {(missingCategories?.length ?? 0) > 0 && (
           <div className="w-full max-w-md rounded-lg border border-amber-500/30 bg-amber-900/30 p-4 backdrop-blur-sm">
-            <p className="mb-2 font-magical text-amber-200">
-              Mystical Categories Discovered!
-            </p>
-            <SpookyButton
-              variant="primary"
-              onClick={() => setIsModalOpen(true)}
-              className="w-full"
-            >
+            <p className="mb-2 font-magical text-amber-200">Mystical Categories Discovered!</p>
+            <SpookyButton variant="primary" onClick={() => setIsModalOpen(true)} className="w-full">
               View New Categories
             </SpookyButton>
-
           </div>
         )}
 
         <div className="flex gap-4 justify-center w-full">
           <TransitionLink href="/">
-            <SpookyButton>
-              Home
-            </SpookyButton>
+            <SpookyButton>Home</SpookyButton>
           </TransitionLink>
 
           <TransitionLink href={`/${logId}`}>
-            <SpookyButton>
-              View log
-            </SpookyButton>
+            <SpookyButton>View log</SpookyButton>
           </TransitionLink>
         </div>
       </div>
@@ -85,7 +74,6 @@ export function CompletedSection({ logId, missingCategories }: CompletedSectionP
         onClose={() => setIsModalOpen(false)}
         open={isModalOpen}
       />
-
     </>
   )
 }

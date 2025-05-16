@@ -10,7 +10,11 @@ const querySchema = z.object({
   page: z.string().optional().default('1').transform(Number),
   limit: z.string().optional().default('10').transform(Number),
   search: z.string().optional().default(''),
-  categories: z.string().optional().default('').transform(v => v.split(',').map(Number).filter(Boolean)),
+  categories: z
+    .string()
+    .optional()
+    .default('')
+    .transform((v) => v.split(',').map(Number).filter(Boolean)),
   sortBy: z.nativeEnum(SortBy).optional().default(SortBy.Recent),
   timeRange: z.nativeEnum(TimeRange).optional().default(TimeRange.All),
 })
@@ -63,8 +67,7 @@ export async function GET(request: Request) {
       hasMore,
       nextPage: hasMore ? page + 1 : null,
     })
-  }
-  catch (error) {
+  } catch (error) {
     return ok<Response>({
       success: false,
       error: `Failed to fetch logs: ${error}`,

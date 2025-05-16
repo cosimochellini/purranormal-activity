@@ -1,5 +1,5 @@
-import type { FC, ReactNode } from 'react'
 import cn from 'classnames'
+import type { FC, ReactNode } from 'react'
 import { TransitionLink } from './TransitionLink'
 
 interface SpookyLinkProps {

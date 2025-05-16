@@ -11,8 +11,7 @@ interface RefetchProps {
 export function Refetch({ interval, shouldRefetch }: RefetchProps) {
   const router = useRouter()
   useEffect(() => {
-    if (!shouldRefetch)
-      return
+    if (!shouldRefetch) return
 
     const intervalId = setInterval(router.refresh, interval)
 

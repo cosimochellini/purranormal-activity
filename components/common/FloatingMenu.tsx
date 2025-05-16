@@ -1,9 +1,9 @@
 'use client'
 
-import type { ReactNode } from 'react'
 import { IconCat, IconCrystalBall, IconMenu2, IconSearch } from '@tabler/icons-react'
 import cn from 'classnames'
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 import { memo, useState } from 'react'
 
 interface MenuItem {
@@ -51,10 +51,7 @@ const menuStyles = {
     'transition-all duration-500 ease-out hover:translate-x-2',
     'relative overflow-hidden',
   ],
-  icon: [
-    'h-5 w-5 transition-transform duration-500',
-    'group-hover:animate-spin-slow',
-  ],
+  icon: ['h-5 w-5 transition-transform duration-500', 'group-hover:animate-spin-slow'],
 } as const
 
 interface MenuItemProps extends MenuItem {
@@ -100,10 +97,7 @@ export function FloatingMenu() {
         className={cn(buttonStyles.base, buttonStyles.glow, buttonStyles.size)}
       >
         <IconMenu2
-          className={cn(
-            'h-6 w-6 transition-transform duration-500',
-            { 'rotate-90': isOpen },
-          )}
+          className={cn('h-6 w-6 transition-transform duration-500', { 'rotate-90': isOpen })}
         />
       </button>
 
@@ -111,18 +105,11 @@ export function FloatingMenu() {
         id="main-menu"
         className={cn(
           menuStyles.container,
-          isOpen
-            ? 'opacity-100 translate-x-0'
-            : 'opacity-0 pointer-events-none -translate-x-4',
+          isOpen ? 'opacity-100 translate-x-0' : 'opacity-0 pointer-events-none -translate-x-4',
         )}
       >
         {menuItems.map((item, index) => (
-          <MenuItemComponent
-            key={item.label}
-            {...item}
-            isOpen={isOpen}
-            index={index}
-          />
+          <MenuItemComponent key={item.label} {...item} isOpen={isOpen} index={index} />
         ))}
       </div>
     </nav>

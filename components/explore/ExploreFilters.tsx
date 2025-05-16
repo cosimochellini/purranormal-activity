@@ -21,7 +21,7 @@ export function ExploreFilters() {
             id="search"
             label="Search Mysteries"
             value={filters.search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={(e) => setSearch(e.target.value)}
             placeholder="Search for supernatural events..."
           />
 
@@ -29,7 +29,7 @@ export function ExploreFilters() {
             id="sortBy"
             label="Sort By"
             value={filters.sortBy}
-            onChange={e => setSortBy(e.target.value as SortBy)}
+            onChange={(e) => setSortBy(e.target.value as SortBy)}
             options={[
               { value: SortBy.Recent, label: 'Most Recent' },
               { value: SortBy.Oldest, label: 'Oldest First' },
@@ -41,7 +41,7 @@ export function ExploreFilters() {
             id="timeRange"
             label="Time Range"
             value={filters.timeRange}
-            onChange={e => setTimeRange(e.target.value as TimeRange)}
+            onChange={(e) => setTimeRange(e.target.value as TimeRange)}
             options={[
               { value: TimeRange.All, label: 'All Time' },
               { value: TimeRange.Day, label: 'Past 24 Hours' },
@@ -54,11 +54,7 @@ export function ExploreFilters() {
         {/* Categories section */}
         <div className="space-y-2">
           <div className="flex justify-start">
-            <CategorySelector
-              selected={filters.categories}
-              onChange={setCategories}
-              iconsOnly
-            />
+            <CategorySelector selected={filters.categories} onChange={setCategories} iconsOnly />
           </div>
         </div>
       </div>

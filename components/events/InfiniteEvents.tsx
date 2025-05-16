@@ -36,8 +36,7 @@ export function InfiniteEvents({ initialLogs }: InfiniteEventsProps) {
 
   useEffect(() => {
     const loadMore = async () => {
-      if (!inView || isLoading || !hasMore)
-        return
+      if (!inView || isLoading || !hasMore) return
 
       setState({ isLoading: true })
 
@@ -46,33 +45,27 @@ export function InfiniteEvents({ initialLogs }: InfiniteEventsProps) {
 
         if (response.success) {
           const { data, hasMore } = response
-          const newLogs = distinctBy([...logs, ...data], l => l.id.toString())
-            .sort(byValue(l => l.id, byNumber({ desc: true })))
+          const newLogs = distinctBy([...logs, ...data], (l) => l.id.toString()).sort(
+            byValue((l) => l.id, byNumber({ desc: true })),
+          )
 
           setState({ logs: newLogs, hasMore, page: page + 1 })
         }
-      }
-      catch {
+      } catch {
         // TODO: handle error
-      }
-      finally {
+      } finally {
         requestAnimationFrame(() => setState({ isLoading: false }))
       }
     }
 
     loadMore()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inView, hasMore, page, isLoading])
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {logs.map((log, index) => (
-        <EventCard
-          key={log.id}
-          log={log}
-          priority={index < 1}
-          prefetch={index < 3}
-        />
+        <EventCard key={log.id} log={log} priority={index < 1} prefetch={index < 3} />
       ))}
 
       {hasMore && (
@@ -93,7 +86,7 @@ interface InfiniteEventsSkeletonProps {
 export function InfiniteEventsSkeleton({ iconCount }: InfiniteEventsSkeletonProps) {
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {range(iconCount).map(index => (
+      {range(iconCount).map((index) => (
         <EventCardSkeleton key={index} />
       ))}
     </div>

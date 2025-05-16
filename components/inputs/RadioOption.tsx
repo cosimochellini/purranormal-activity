@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
 import cn from 'classnames'
+import type { ReactNode } from 'react'
 
 interface RadioOptionProps {
   question: string
@@ -20,9 +20,7 @@ const activeClasses = cn(
   'after:opacity-100 after:scale-100',
 )
 
-const defaultClasses = cn(
-  'after:opacity-0 after:scale-0',
-)
+const defaultClasses = cn('after:opacity-0 after:scale-0')
 
 function RadioInput({ availableAnswer, answer, onChange }: RadioInputProps) {
   const active = answer === availableAnswer
@@ -73,9 +71,12 @@ function RadioLabel({ availableAnswer, answer, children }: RadioLabelProps) {
   )
 }
 
-export function RadioOption(
-  { question, answer, availableAnswer, onAnswerChange }: RadioOptionProps,
-) {
+export function RadioOption({
+  question,
+  answer,
+  availableAnswer,
+  onAnswerChange,
+}: RadioOptionProps) {
   const handleChange = () => onAnswerChange(question, availableAnswer)
 
   return (

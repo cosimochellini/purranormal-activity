@@ -24,9 +24,7 @@ function Home() {
 async function RecentEvents() {
   return (
     <section className="w-full max-w-5xl">
-      <h2 className="mb-6 text-2xl font-magical animate-ghost">
-        Recent Supernatural Sightings
-      </h2>
+      <h2 className="mb-6 text-2xl font-magical animate-ghost">Recent Supernatural Sightings</h2>
       <Suspense fallback={<EventsSectionSkeleton />}>
         <EventsSection />
       </Suspense>

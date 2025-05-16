@@ -1,5 +1,5 @@
-import type { ComponentPropsWithoutRef } from 'react'
 import cn from 'classnames'
+import type { ComponentPropsWithoutRef } from 'react'
 
 interface Option<T extends string> {
   value: T
@@ -45,12 +45,8 @@ export function SpookySelect<T extends string>({
           )}
           {...props}
         >
-          {options.map(option => (
-            <option
-              key={option.value}
-              value={option.value}
-              className="bg-purple-900"
-            >
+          {options.map((option) => (
+            <option key={option.value} value={option.value} className="bg-purple-900">
               {option.label}
             </option>
           ))}
@@ -65,9 +61,7 @@ export function SpookySelect<T extends string>({
         <div className="absolute -top-2 right-1/4 h-1 w-1 animate-sparkle rounded-full bg-purple-300/80 blur-[1px]" />
         <div className="absolute -bottom-1 left-1/3 h-1 w-1 animate-sparkle delay-300 rounded-full bg-purple-300/80 blur-[1px]" />
       </div>
-      {error && (
-        <p className="text-sm text-red-400">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-400">{error}</p>}
     </div>
   )
 }

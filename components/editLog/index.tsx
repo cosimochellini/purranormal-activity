@@ -2,16 +2,16 @@
 
 import type { DeleteResponse, PutBody, PutResponse } from '@/app/api/log/[id]/route'
 import type { UploadResponse } from '@/app/api/upload/[id]/route'
-import type { LogWithCategories } from '@/db/schema'
-import type { ChangeEvent, FormEvent } from 'react'
 import { SpookyButton } from '@/components/common/SpookyButton'
 import { EventImage } from '@/components/events/EventImage'
+import type { LogWithCategories } from '@/db/schema'
 import { usePartialState } from '@/hooks/state'
 import { fetcher } from '@/utils/fetch'
 import { transitions } from '@/utils/viewTransition'
 import { IconRefresh } from '@tabler/icons-react'
 import classNames from 'classnames'
 import { useRouter } from 'next/navigation'
+import type { ChangeEvent, FormEvent } from 'react'
 import { Suspense, useRef, useState } from 'react'
 import { SpookyInput } from '../common/SpookyInput'
 import { SpookyTextarea } from '../common/SpookyTextarea'
@@ -41,8 +41,7 @@ function UpdateImageButton({ id }: UpdateImageButtonProps) {
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file)
-      return
+    if (!file) return
 
     setIsLoading(true)
     try {
@@ -63,12 +62,10 @@ function UpdateImageButton({ id }: UpdateImageButtonProps) {
       router.push(`/${id}`)
 
       setError('')
-    }
-    catch (err) {
+    } catch (err) {
       console.error('Failed to upload image:', err)
       setError('Failed to upload image')
-    }
-    finally {
+    } finally {
       setIsLoading(false)
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
@@ -93,14 +90,12 @@ function UpdateImageButton({ id }: UpdateImageButtonProps) {
         type="button"
         aria-label="Update image"
       >
-        <IconRefresh className={classNames('w-4 h-4 text-purple-200', { 'animate-spin': isLoading })} />
+        <IconRefresh
+          className={classNames('w-4 h-4 text-purple-200', { 'animate-spin': isLoading })}
+        />
       </button>
 
-      {error && (
-        <div className="rounded-md bg-red-900/30 p-4 text-red-200">
-          {error}
-        </div>
-      )}
+      {error && <div className="rounded-md bg-red-900/30 p-4 text-red-200">{error}</div>}
     </>
   )
 }
@@ -135,11 +130,9 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
 
       router.push(`/${initialData.id}`)
       router.refresh()
-    }
-    catch (err) {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update')
-    }
-    finally {
+    } finally {
       setSubmitting({ delete: false, form: false })
     }
   }
@@ -163,11 +156,9 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
 
       router.push('/')
       router.refresh()
-    }
-    catch (err) {
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete')
-    }
-    finally {
+    } finally {
       setSubmitting({ delete: false, form: false })
     }
   }
@@ -188,11 +179,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="w-full max-w-2xl space-y-6 p-4">
-        {error && (
-          <div className="rounded-md bg-red-900/30 p-4 text-red-200">
-            {error}
-          </div>
-        )}
+        {error && <div className="rounded-md bg-red-900/30 p-4 text-red-200">{error}</div>}
 
         {initialData.error && (
           <div className="rounded-md bg-red-900/30 p-4 text-red-200">
@@ -207,7 +194,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
             placeholder="Title"
             type="text"
             value={formData.title}
-            onChange={e => setFormData({ title: e.target.value })}
+            onChange={(e) => setFormData({ title: e.target.value })}
             className="w-full rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
             style={styles.title}
           />
@@ -217,7 +204,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
           <SpookyTextarea
             id="description"
             value={formData.description}
-            onChange={e => setFormData({ description: e.target.value })}
+            onChange={(e) => setFormData({ description: e.target.value })}
             rows={6}
             className="w-full min-h-[150px] rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
             style={styles.description}
@@ -229,7 +216,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
             id="imageDescription"
             placeholder="Image Description"
             value={formData.imageDescription ?? ''}
-            onChange={e => setFormData({ imageDescription: e.target.value })}
+            onChange={(e) => setFormData({ imageDescription: e.target.value })}
             rows={6}
             className="w-full min-h-[150px] rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
           />
@@ -239,7 +226,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
           <CategorySelector
             selected={formData.categories}
             styles={styles.categories}
-            onChange={categories => setFormData({ categories })}
+            onChange={(categories) => setFormData({ categories })}
           />
         </Suspense>
 
@@ -249,7 +236,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
             placeholder="Secret"
             type="password"
             value={formData.secret}
-            onChange={e => setFormData({ secret: e.target.value })}
+            onChange={(e) => setFormData({ secret: e.target.value })}
           />
         </div>
 
@@ -263,11 +250,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
           >
             Delete
           </SpookyButton>
-          <SpookyButton
-            type="submit"
-            disabled={submitting.form}
-            isLoading={submitting.form}
-          >
+          <SpookyButton type="submit" disabled={submitting.form} isLoading={submitting.form}>
             Save Changes
           </SpookyButton>
         </div>

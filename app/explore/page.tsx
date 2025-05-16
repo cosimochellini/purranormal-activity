@@ -1,7 +1,7 @@
-import type { Metadata } from 'next'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { ExploreSection } from '@/components/explore/ExploreSection'
 import { ExploreSkeleton } from '@/components/explore/ExploreSkeleton'
+import type { Metadata } from 'next'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import { Suspense } from 'react'
 
@@ -20,9 +20,7 @@ export default function ExplorePage() {
 
         <main className="relative mx-auto flex max-w-7xl flex-col items-center gap-8">
           <div className="text-center">
-            <h1 className="mb-4 text-4xl font-magical animate-magical-glow">
-              Paranormal Archives
-            </h1>
+            <h1 className="mb-4 text-4xl font-magical animate-magical-glow">Paranormal Archives</h1>
             <p className="text-purple-200/80">
               Delve into the mystical records of our enchanted encounters...
             </p>

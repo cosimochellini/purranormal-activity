@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+# Source the init.sh file if it exists
+[ -f ~/.config/husky/init.sh ] && . ~/.config/husky/init.sh
+
+npx lint-staged

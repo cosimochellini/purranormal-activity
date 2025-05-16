@@ -1,7 +1,7 @@
 'use client'
 
-import type { LogWithCategories } from '@/db/schema'
 import { LogStatus } from '@/data/enum/logStatus'
+import type { LogWithCategories } from '@/db/schema'
 import Bug from '@/images/bug.jpg'
 import { randomImage } from '@/images/loading'
 import { publicImage } from '@/utils/cloudflare'
@@ -26,14 +26,11 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
   const { imageDescription, id, status } = log
 
   const image = useMemo(() => {
-    if (status === LogStatus.Created)
-      return fallbackImage.src
+    if (status === LogStatus.Created) return fallbackImage.src
 
-    if (status === LogStatus.Error)
-      return Bug.src
+    if (status === LogStatus.Error) return Bug.src
 
-    if (imageError)
-      return Bug.src
+    if (imageError) return Bug.src
 
     return publicImage(id)
   }, [id, imageError, status])
@@ -45,8 +42,7 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
   const onImageClick = () => {
     clickCounter.current += 1
 
-    if (clickCounter.current >= 5)
-      return router.push(`/${log.id}/edit`)
+    if (clickCounter.current >= 5) return router.push(`/${log.id}/edit`)
   }
 
   return (

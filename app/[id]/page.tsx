@@ -1,6 +1,6 @@
-import type { Metadata } from 'next'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import classNames from 'classnames'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { Category } from '../../components/common/Category'
@@ -54,15 +54,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
-// eslint-disable-next-line import/no-mutable-exports, prefer-const
+// biome-ignore lint/style/useConst: otherwise it's not working
 export let revalidate = 2 * 60 * 60 // 2 hours
 
 export default async function Page({ params }: PageProps) {
   const rawId = (await params).id
   const log = await getLog(Number(rawId))
 
-  if (!log)
-    return notFound()
+  if (!log) return notFound()
 
   const { description, title, id, status } = log
   const styles = transitions(id)
@@ -80,10 +79,7 @@ export default async function Page({ params }: PageProps) {
           )}
         >
           <div className="space-y-4">
-            <code className="text-purple-200/80 text-sm">
-              DAY #
-              {id * 2}
-            </code>
+            <code className="text-purple-200/80 text-sm">DAY #{id * 2}</code>
 
             <EventImage
               width={600}
@@ -110,12 +106,10 @@ export default async function Page({ params }: PageProps) {
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-xl font-magical text-purple-300">
-              Paranormal Categories
-            </h2>
+            <h2 className="text-xl font-magical text-purple-300">Paranormal Categories</h2>
             <div className="flex flex-wrap gap-2" style={styles.categories}>
               <Suspense>
-                {log.categories.map(category => (
+                {log.categories.map((category) => (
                   <Category key={category} category={category} />
                 ))}
               </Suspense>

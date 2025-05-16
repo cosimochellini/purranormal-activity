@@ -5,11 +5,7 @@ interface FogEffectProps {
 }
 
 function FogEffect({ className }: FogEffectProps) {
-  return (
-    <div
-      className={`absolute w-96 h-96 bg-purple-600/5 rounded-full blur-xl ${className}`}
-    />
-  )
+  return <div className={`absolute w-96 h-96 bg-purple-600/5 rounded-full blur-xl ${className}`} />
 }
 
 interface FloatingOrbProps {
@@ -50,10 +46,7 @@ export function SpookyBackground() {
         className="top-40 right-[30%] w-3 h-3 bg-purple-300/20"
         blur
       />
-      <FloatingOrb
-        animation="sparkle"
-        className="top-60 left-[40%] w-2 h-2 bg-white/40"
-      />
+      <FloatingOrb animation="sparkle" className="top-60 left-[40%] w-2 h-2 bg-white/40" />
 
       <SpookyEyes position="top-[30%] right-[15%]" />
       <SpookyEyes position="top-[60%] left-[10%]" delay="delay-500" />

@@ -25,11 +25,10 @@ export function NoLogsFound() {
       </div>
 
       <div className="relative space-y-4 text-center">
-        <h2 className="text-2xl font-magical animate-magical-glow">
-          No Mystical Mischief Found
-        </h2>
+        <h2 className="text-2xl font-magical animate-magical-glow">No Mystical Mischief Found</h2>
         <p className="text-balance text-lg text-purple-200/80 max-w-md mx-auto">
-          Our magical kitten hasn&apos;t caused any supernatural events matching your criteria... yet!
+          Our magical kitten hasn&apos;t caused any supernatural events matching your criteria...
+          yet!
         </p>
       </div>
     </div>

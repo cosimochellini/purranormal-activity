@@ -17,7 +17,7 @@ export function SpookyFooter() {
     <footer className="w-full mt-20 py-6 border-t border-purple-800/30">
       <nav className="container mx-auto px-4">
         <ul className="flex gap-6 justify-center items-center animate-fade-in-up motion-safe:animate-duration-700">
-          {footerLinks.map(link => (
+          {footerLinks.map((link) => (
             <li key={link.text}>
               <SpookyLink href={link.href}>{link.text}</SpookyLink>
             </li>

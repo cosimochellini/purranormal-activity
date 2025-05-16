@@ -1,5 +1,5 @@
-import type { ComponentPropsWithoutRef } from 'react'
 import cn from 'classnames'
+import type { ComponentPropsWithoutRef } from 'react'
 
 type TextareaProps = ComponentPropsWithoutRef<'textarea'> & {
   label?: string
@@ -13,13 +13,7 @@ const baseClasses = [
   'focus:border-magical-accent focus:outline-none focus:ring-2 focus:ring-magical-accent/20',
 ]
 
-export function SpookyTextarea({
-  label,
-  error,
-  className,
-  id,
-  ...props
-}: TextareaProps) {
+export function SpookyTextarea({ label, error, className, id, ...props }: TextareaProps) {
   return (
     <div className="space-y-2">
       {label && (
@@ -36,9 +30,7 @@ export function SpookyTextarea({
         )}
         {...props}
       />
-      {error && (
-        <p className="text-sm text-red-400">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-400">{error}</p>}
     </div>
   )
 }

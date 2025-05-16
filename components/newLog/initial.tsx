@@ -1,6 +1,6 @@
 import type { Body, Response } from '@/app/api/log/refine/route'
-import type { FormValues } from '.'
 import { useState } from 'react'
+import type { FormValues } from '.'
 import { fetcher } from '../../utils/fetch'
 import { Loading } from '../common/Loading'
 import { SpookyButton } from '../common/SpookyButton'
@@ -29,24 +29,18 @@ export function InitialSection({ onInitialSuccess }: InitialSectionProps) {
       const questions = response.content
 
       onInitialSuccess?.({ description, questions })
-    }
-    catch (error) {
-      if (error instanceof Error)
-        setErrorMessage(error.message)
-      else
-        setErrorMessage(JSON.stringify(error))
+    } catch (error) {
+      if (error instanceof Error) setErrorMessage(error.message)
+      else setErrorMessage(JSON.stringify(error))
     }
   }
 
-  if (isSubmitting)
-    return <Loading />
+  if (isSubmitting) return <Loading />
 
   return (
     <SpookyCard>
       {errorMessage && (
-        <div className="rounded-md p-4 bg-red-900/30 text-red-200">
-          {errorMessage}
-        </div>
+        <div className="rounded-md p-4 bg-red-900/30 text-red-200">{errorMessage}</div>
       )}
 
       <SpookyTextarea
@@ -55,16 +49,12 @@ export function InitialSection({ onInitialSuccess }: InitialSectionProps) {
         required
         rows={4}
         value={description}
-        onChange={e => setDescription(e.target.value)}
+        onChange={(e) => setDescription(e.target.value)}
         placeholder="Describe the paranormal occurrence..."
         className="min-h-56"
       />
 
-      <SpookyButton
-        type="button"
-        fullWidth
-        onClick={handleSubmit}
-      >
+      <SpookyButton type="button" fullWidth onClick={handleSubmit}>
         Record Supernatural Event
       </SpookyButton>
     </SpookyCard>

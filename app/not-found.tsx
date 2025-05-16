@@ -13,9 +13,7 @@ export default function NotFound() {
 
       <main className="relative mx-auto flex max-w-2xl flex-col items-center justify-center gap-8 pt-20 text-center">
         <h1 className="text-balance text-6xl font-magical animate-magical-glow">
-          <code>
-            404
-          </code>
+          <code>404</code>
         </h1>
 
         <p className="text-balance text-xl text-purple-200/80">
@@ -41,9 +39,7 @@ export default function NotFound() {
         </div>
 
         <SpookyLink href="/" prefetch>
-          <SpookyButton>
-            Return to Safety
-          </SpookyButton>
+          <SpookyButton>Return to Safety</SpookyButton>
         </SpookyLink>
       </main>
     </div>

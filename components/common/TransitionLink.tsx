@@ -1,14 +1,10 @@
-import type { ComponentProps } from 'react'
 import { Link } from 'next-view-transitions'
+import type { ComponentProps } from 'react'
 
 interface TransitionLinkProps extends ComponentProps<typeof Link> {
   children: React.ReactNode
 }
 
 export function TransitionLink({ children, ...props }: TransitionLinkProps) {
-  return (
-    <Link {...props}>
-      {children}
-    </Link>
-  )
+  return <Link {...props}>{children}</Link>
 }

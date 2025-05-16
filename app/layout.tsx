@@ -1,5 +1,5 @@
-import type { Metadata, Viewport } from 'next'
 import { FloatingMenu } from '@/components/common/FloatingMenu'
+import type { Metadata, Viewport } from 'next'
 import { ViewTransitions } from 'next-view-transitions'
 import { Caveat, Quicksand } from 'next/font/google'
 import './globals.css'

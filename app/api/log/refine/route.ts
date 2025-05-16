@@ -12,13 +12,15 @@ export interface FollowUpQuestion {
   availableAnswers: string[]
 }
 
-export type Response = {
-  success: true
-  content: FollowUpQuestion[]
-} | {
-  success: false
-  errors: Partial<Record<keyof typeof schema.shape, string[]>>
-}
+export type Response =
+  | {
+      success: true
+      content: FollowUpQuestion[]
+    }
+  | {
+      success: false
+      errors: Partial<Record<keyof typeof schema.shape, string[]>>
+    }
 
 export const runtime = 'edge'
 
@@ -37,8 +39,7 @@ export async function POST(request: Request) {
     const content = await createQuestions(description)
 
     return ok<Response>({ success: true, content })
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to generate follow-up questions:', error)
 
     return ok<Response>({

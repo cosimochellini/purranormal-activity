@@ -1,11 +1,16 @@
-import type { ComponentPropsWithoutRef } from 'react'
 import cn from 'classnames'
+import type { ComponentPropsWithoutRef } from 'react'
 
 interface SpookyCardProps extends ComponentPropsWithoutRef<'div'> {
   variant?: 'default' | 'hover'
 }
 
-export function SpookyCard({ className, variant = 'default', children, ...props }: SpookyCardProps) {
+export function SpookyCard({
+  className,
+  variant = 'default',
+  children,
+  ...props
+}: SpookyCardProps) {
   return (
     <div
       className={cn(

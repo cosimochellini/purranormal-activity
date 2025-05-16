@@ -29,11 +29,8 @@ export function ExploreSkeleton() {
           <div className="space-y-2">
             <div className="h-5 w-24 bg-purple-800/30 rounded" />
             <div className="flex flex-wrap gap-2">
-              {range(4).map(i => (
-                <div
-                  key={i}
-                  className="h-9 w-24 bg-purple-800/30 rounded-full animate-pulse"
-                />
+              {range(4).map((i) => (
+                <div key={i} className="h-9 w-24 bg-purple-800/30 rounded-full animate-pulse" />
               ))}
             </div>
           </div>
@@ -42,7 +39,7 @@ export function ExploreSkeleton() {
 
       {/* Results skeleton */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {range(6).map(i => (
+        {range(6).map((i) => (
           <EventCardSkeleton key={i} iconCount={3} />
         ))}
       </div>

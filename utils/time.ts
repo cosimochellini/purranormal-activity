@@ -12,9 +12,11 @@ const day = hour * 24
 const month = day * 30
 
 export function time({ seconds, minutes, hours, days, months }: TimeProps) {
-  return (seconds ?? 0) * second
-    + (minutes ?? 0) * minute
-    + (hours ?? 0) * hour
-    + (days ?? 0) * day
-    + (months ?? 0) * month
+  return (
+    (seconds ?? 0) * second +
+    (minutes ?? 0) * minute +
+    (hours ?? 0) * hour +
+    (days ?? 0) * day +
+    (months ?? 0) * month
+  )
 }

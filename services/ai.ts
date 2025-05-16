@@ -4,9 +4,9 @@ import { db } from '../drizzle'
 import { openai } from '../instances/openai'
 import { logger } from '../utils/logger'
 import {
-    CREATE_QUESTIONS_PROMPT,
-    GENERATE_IMAGE_PROMPT,
-    GENERATE_LOG_DETAILS_PROMPT,
+  CREATE_QUESTIONS_PROMPT,
+  GENERATE_IMAGE_PROMPT,
+  GENERATE_LOG_DETAILS_PROMPT,
 } from './prompts'
 
 interface CreateQuestionsResponse {
@@ -26,8 +26,7 @@ export async function createQuestions(description: string) {
 
     const parsedContent = JSON.parse(completion.choices[0]?.message?.content || '[]')
     return parsedContent as CreateQuestionsResponse[]
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Error generating follow-up questions:', error)
     return []
   }
@@ -36,12 +35,15 @@ export async function createQuestions(description: string) {
 export interface GenerateLogDetailsResponse {
   title: string
   description: string
-  categories: { id: number, name: string }[]
+  categories: { id: number; name: string }[]
   missingCategories: string[]
   imageDescription: string
 }
 
-export async function generateLogDetails(description: string, answers: { question: string, answer: string }[]) {
+export async function generateLogDetails(
+  description: string,
+  answers: { question: string; answer: string }[],
+) {
   const categories = await db.select({ id: category.id, name: category.name }).from(category)
   const currentStyle = randomImageStyle()
 
@@ -56,8 +58,7 @@ export async function generateLogDetails(description: string, answers: { questio
 
     const rawContent = completion.choices[0]?.message?.content || '{}'
     return JSON.parse(rawContent) as GenerateLogDetailsResponse
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Error generating log details:', error)
     return {
       title: '',
@@ -80,12 +81,10 @@ export async function generateImage(imagePrompt: string) {
 
     const imageData = imageResponse?.data?.[0]?.url
 
-    if (!imageData)
-      throw new Error('Failed to generate image data')
+    if (!imageData) throw new Error('Failed to generate image data')
 
     return imageData
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Error generating image:', error)
     throw new Error('Image generation failed')
   }
@@ -109,8 +108,7 @@ export async function generateImagePrompt(description: string) {
     }
 
     return ret
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Error generating image prompt:', error)
     throw new Error('Image prompt generation failed')
   }

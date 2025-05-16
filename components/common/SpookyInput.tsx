@@ -14,13 +14,7 @@ type InputProps = ComponentPropsWithoutRef<'input'> & {
   error?: string
 }
 
-export function SpookyInput({
-  label,
-  error,
-  className,
-  id,
-  ...props
-}: InputProps) {
+export function SpookyInput({ label, error, className, id, ...props }: InputProps) {
   return (
     <div className="space-y-2">
       {label && (
@@ -37,9 +31,7 @@ export function SpookyInput({
         )}
         {...props}
       />
-      {error && (
-        <p className="text-sm text-red-400">{error}</p>
-      )}
+      {error && <p className="text-sm text-red-400">{error}</p>}
     </div>
   )
 }

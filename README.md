@@ -11,7 +11,7 @@ Track the magical mishaps and spooky shenanigans of your enchanted kitten! A whi
 ## 🌟 Features
 
 - **Event Logging**: Document supernatural occurrences with detailed descriptions.
-- **AI-Powered**: Generates unique images for each paranormal event using OpenAI’s DALL-E.
+- **AI-Powered**: Generates unique images for each paranormal event using OpenAI's DALL-E.
 - **Magical Categories**: Organize events by paranormal categories for easier filtering.
 - **Real-time Updates**: View the latest supernatural happenings in a magical feed.
 - **Responsive Design**: Enchanting experience on all devices.
@@ -25,6 +25,7 @@ Track the magical mishaps and spooky shenanigans of your enchanted kitten! A whi
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Database**: [Turso](https://turso.tech/) + [Drizzle ORM](https://orm.drizzle.team/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Linting & Formatting**: [Biome](https://biomejs.dev/) - A fast formatter and linter
 - **Image Generation**: [OpenAI DALL-E](https://openai.com/)
 - **Image Storage**: [AWS S3](https://aws.amazon.com/s3/)
 - **Deployment**: [Cloudflare Pages](https://pages.cloudflare.com/)
@@ -57,30 +58,30 @@ A playful fairy-tale world infused with paranormal elements. The design combines
 
 ### Hero Section
 
-- **Main Illustration**: A magical kitten casting spells with a tiny witch’s hat; the frightened chick peeks out from behind a stack of witchy spell books.
+- **Main Illustration**: A magical kitten casting spells with a tiny witch's hat; the frightened chick peeks out from behind a stack of witchy spell books.
 - **Animations**:
   - Soft glowing aura or floating particles around the kitten.
   - Occasional ghost drifting across the screen.
-- **Tagline**: “Track the Spooky Shenanigans of Your Magical Kitten!”
-- **CTA**: A whimsical button (e.g., “Begin Your Paranormal Log”) leading to sign-up or login.
+- **Tagline**: "Track the Spooky Shenanigans of Your Magical Kitten!"
+- **CTA**: A whimsical button (e.g., "Begin Your Paranormal Log") leading to sign-up or login.
 
 ### Latest Events Section
 
-- **Layout**: Carousel or grid of “Latest Paranormal Occurrences.”
+- **Layout**: Carousel or grid of "Latest Paranormal Occurrences."
 - **Card Hover Effects**: Subtle bobbing or glowing edges.
 - **Transitions**: Fade-ins and ghost-like silhouettes as the user scrolls.
 
 ### Add a New Log Page
 
 - **Form Design**: Whimsical, parchment-textured background.
-- **Fun Placeholders**: e.g., “What magical mischief occurred at the stroke of midnight?”
+- **Fun Placeholders**: e.g., "What magical mischief occurred at the stroke of midnight?"
 - **Animated Elements**: A quill pen icon might sparkle on input focus.
 
 ### Stats Page
 
-- **Visuals**: Arcane “statistics” area with charts resembling cauldrons or crystal balls.
+- **Visuals**: Arcane "statistics" area with charts resembling cauldrons or crystal balls.
 - **Animations**: Bars fill up like glowing liquid; spectral orbs for pie charts.
-- **Data Headings**: “Ghostly Encounters,” “Witching Hours,” “Magical Mishaps,” etc.
+- **Data Headings**: "Ghostly Encounters," "Witching Hours," "Magical Mishaps," etc.
 
 ---
 
@@ -124,7 +125,30 @@ pnpm dev
 
 5. Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-## 🎨 Design Philosophy
+### Linting and Formatting
+
+Biome is used for linting and formatting:
+
+```bash
+# Run linter
+pnpm lint
+
+# Format code
+pnpm format
+
+# Fix lint issues automatically
+pnpm lint:fix
+```
+
+### Automatic Formatting
+
+This project uses Husky and lint-staged to automatically format your code when you commit:
+
+- All staged files are automatically formatted using Biome before committing
+- No need to run the formatter manually before each commit
+- Ensures consistent code style across the project
+
+## �� Design Philosophy
 
 The application features a mystical and enchanting design with:
 

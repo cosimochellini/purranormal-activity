@@ -51,7 +51,7 @@ const tailwindConfig = {
           '0%': { opacity: '0', transform: 'translateY(10px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-        'float': {
+        float: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-5px)' },
         },
@@ -69,7 +69,7 @@ const tailwindConfig = {
             textShadow: '0 0 6px rgba(255, 255, 255, 0.4)',
           },
         },
-        'ghost': {
+        ghost: {
           '0%, 100%': {
             opacity: '0.7',
             filter: 'blur(0.5px)',
@@ -89,16 +89,16 @@ const tailwindConfig = {
               '0 0 8px rgb(255,255,255,0.2), 0 0 16px rgb(255,255,255,0.2), 0 0 20px rgb(255,255,255,0.2)',
           },
         },
-        'pupil': {
+        pupil: {
           '0%, 100%': { transform: 'translateX(0)' },
           '15%': { transform: 'translateX(-1px)' },
           '85%': { transform: 'translateX(1px)' },
         },
-        'pulse': {
+        pulse: {
           '0%, 100%': { transform: 'scale(1)' },
           '50%': { transform: 'scale(1.05)' },
         },
-        'sparkle': {
+        sparkle: {
           '0%, 100%': { opacity: '0.2', transform: 'scale(1)' },
           '50%': { opacity: '1', transform: 'scale(1.2)' },
         },
@@ -116,13 +116,13 @@ const tailwindConfig = {
         'eye-shine': 'eye-shine 3s infinite',
         'fade-in': 'fade-in 2s ease-in-out',
         'fade-in-up': 'fade-in-up 3s ease-in-out',
-        'float': 'float 3s ease-in-out infinite',
+        float: 'float 3s ease-in-out infinite',
         'float-ghost': 'float-ghost 4s ease-in-out infinite',
-        'ghost': 'ghost 3s ease-in-out infinite',
+        ghost: 'ghost 3s ease-in-out infinite',
         'magical-glow': 'magical-glow 3s ease-in-out infinite',
-        'pupil': 'pupil 3s infinite',
-        'pulse': 'pulse 2s ease-in-out infinite',
-        'sparkle': 'sparkle 2s ease-in-out infinite',
+        pupil: 'pupil 3s infinite',
+        pulse: 'pulse 2s ease-in-out infinite',
+        sparkle: 'sparkle 2s ease-in-out infinite',
         'spooky-shake': 'spooky-shake 8s ease-in-out infinite',
         'spin-slow': 'spin 20s linear infinite',
       },

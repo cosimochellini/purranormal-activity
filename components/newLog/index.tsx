@@ -1,9 +1,9 @@
 'use client'
 
 import type { FollowUpQuestion } from '@/app/api/log/refine/route'
-import type { ComponentType } from 'react'
 import { usePartialState } from '@/hooks/state'
 import dynamic from 'next/dynamic'
+import type { ComponentType } from 'react'
 import { useState } from 'react'
 
 enum State {
@@ -11,9 +11,15 @@ enum State {
   REFINEMENT = 'refinement',
   COMPLETED = 'completed',
 }
-const initial = dynamic(() => import('./initial').then(mod => mod.InitialSection), { ssr: false })
-const refinement = dynamic(() => import('./refinement').then(mod => mod.RefinementSection), { ssr: false })
-const completed = dynamic(() => import('./completed').then(mod => mod.CompletedSection), { ssr: false })
+const initial = dynamic(() => import('./initial').then((mod) => mod.InitialSection), {
+  ssr: false,
+})
+const refinement = dynamic(() => import('./refinement').then((mod) => mod.RefinementSection), {
+  ssr: false,
+})
+const completed = dynamic(() => import('./completed').then((mod) => mod.CompletedSection), {
+  ssr: false,
+})
 
 export interface FormValues {
   description: string

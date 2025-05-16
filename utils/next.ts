@@ -13,12 +13,8 @@ export function regenerateContents() {
 
     logger.info(`Triggering image generation at ${triggerUrl}`)
 
-    await triggerImages()
-      .then(logger.info)
-      .catch(logger.error)
+    await triggerImages().then(logger.info).catch(logger.error)
 
-    await redeploy()
-      .then(logger.info)
-      .catch(logger.error)
+    await redeploy().then(logger.info).catch(logger.error)
   })
 }

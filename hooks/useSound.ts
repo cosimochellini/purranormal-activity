@@ -18,14 +18,12 @@ export function useSound(soundPath: string, options: UseSoundOptions = {}) {
       audioRef.current.volume = optionsRef.current.volume ?? 1
       audioRef.current.loop = optionsRef.current.loop ?? false
 
-      if (optionsRef.current.autoplay)
-        audioRef.current.play()
+      if (optionsRef.current.autoplay) audioRef.current.play()
     }
 
     // Cleanup
     return () => {
-      if (!audioRef.current)
-        return
+      if (!audioRef.current) return
 
       audioRef.current.pause()
       audioRef.current = null
@@ -33,8 +31,7 @@ export function useSound(soundPath: string, options: UseSoundOptions = {}) {
   }, [soundPath])
 
   const play = () => {
-    if (!audioRef.current)
-      return
+    if (!audioRef.current) return
 
     // Reset the audio to start if it's already playing
     audioRef.current.currentTime = 0
@@ -42,15 +39,13 @@ export function useSound(soundPath: string, options: UseSoundOptions = {}) {
   }
 
   const pause = () => {
-    if (!audioRef.current)
-      return
+    if (!audioRef.current) return
 
     audioRef.current.pause()
   }
 
   const stop = () => {
-    if (!audioRef.current)
-      return
+    if (!audioRef.current) return
 
     audioRef.current.pause()
     audioRef.current.currentTime = 0

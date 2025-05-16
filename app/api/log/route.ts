@@ -12,12 +12,14 @@ const logFormSchema = z.object({
   categories: z.array(z.number()).min(1, 'Categories are required'),
 })
 
-export type Response = {
-  success: true
-} | {
-  success: false
-  errors: Partial<Record<keyof typeof logFormSchema.shape, string[]>>
-}
+export type Response =
+  | {
+      success: true
+    }
+  | {
+      success: false
+      errors: Partial<Record<keyof typeof logFormSchema.shape, string[]>>
+    }
 export const runtime = 'edge'
 export async function POST(request: Request) {
   const data = await request.json()
@@ -32,20 +34,26 @@ export async function POST(request: Request) {
   }
 
   try {
-    const [created] = await db.insert(log).values({
-      ...result.data,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      status: LogStatus.Created,
-    }).returning()
+    const [created] = await db
+      .insert(log)
+      .values({
+        ...result.data,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        status: LogStatus.Created,
+      })
+      .returning()
 
     if (result.data.categories.length > 0) {
-      await db.insert(logCategory).values(result.data.categories.map(category => ({ logId: created.id, categoryId: category })))
+      await db
+        .insert(logCategory)
+        .values(
+          result.data.categories.map((category) => ({ logId: created.id, categoryId: category })),
+        )
     }
 
     return ok<Response>({ success: true })
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to create log:', error)
 
     return ok<Response>({ success: false, errors: {} })

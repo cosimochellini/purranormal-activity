@@ -1,6 +1,6 @@
-import type { ComponentPropsWithoutRef } from 'react'
 import { IconX } from '@tabler/icons-react'
 import cn from 'classnames'
+import type { ComponentPropsWithoutRef } from 'react'
 import { useEffect } from 'react'
 
 interface SpookyModalProps extends ComponentPropsWithoutRef<'div'> {
@@ -23,17 +23,10 @@ export function SpookyModal({
     return () => document.removeEventListener('keydown', handleEscape)
   }, [onClose])
 
-  if (!open)
-    return null
+  if (!open) return null
 
   return (
-    <div
-      className="relative z-50"
-      role="dialog"
-      aria-modal="true"
-      {...props}
-      onClick={onClose}
-    >
+    <div className="relative z-50" role="dialog" aria-modal="true" {...props} onClick={onClose}>
       {/* Backdrop */}
       <div className="fixed inset-0 bg-purple-950/60 backdrop-blur-xl" />
 
@@ -50,12 +43,10 @@ export function SpookyModal({
               'sm:my-8',
               className,
             )}
-            onClick={e => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             <header className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl">
-                {title}
-              </h2>
+              <h2 className="text-2xl">{title}</h2>
               <button
                 type="button"
                 onClick={onClose}
@@ -66,9 +57,7 @@ export function SpookyModal({
               </button>
             </header>
 
-            <div className="relative">
-              {children}
-            </div>
+            <div className="relative">{children}</div>
 
             {/* Decorative sparkles */}
             <div className="absolute -top-4 left-1/4 h-2 w-2 animate-sparkle rounded-full bg-purple-300/80 blur-[1px]" />

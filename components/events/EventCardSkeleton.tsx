@@ -1,5 +1,5 @@
-import type { HTMLProps } from 'react'
 import cn from 'classnames'
+import type { HTMLProps } from 'react'
 import { range } from '../../utils/array'
 
 interface SkeletonProps extends HTMLProps<HTMLDivElement> {
@@ -11,15 +11,9 @@ const baseClasses = [
   'border border-purple-700/30 h-full animate-pulse',
 ]
 
-export function EventCardSkeleton(
-  { ref, className, iconCount = 3, ...props }: SkeletonProps,
-) {
+export function EventCardSkeleton({ ref, className, iconCount = 3, ...props }: SkeletonProps) {
   return (
-    <div
-      ref={ref}
-      className={cn(...baseClasses, className)}
-      {...props}
-    >
+    <div ref={ref} className={cn(...baseClasses, className)} {...props}>
       <div className="flex justify-center">
         <div className="w-[150px] h-[150px] bg-purple-800/30 rounded-md mb-4" />
       </div>
@@ -36,11 +30,8 @@ export function EventCardSkeleton(
 
         {/* Icons skeleton */}
         <div className="flex gap-2 mt-4">
-          {range(iconCount).map(i => (
-            <div
-              key={i}
-              className="h-6 w-6 bg-purple-800/30 rounded-full"
-            />
+          {range(iconCount).map((i) => (
+            <div key={i} className="h-6 w-6 bg-purple-800/30 rounded-full" />
           ))}
         </div>
       </div>

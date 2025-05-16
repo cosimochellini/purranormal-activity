@@ -1,5 +1,5 @@
-import type { Log } from '@/db/schema'
 import { LogStatus } from '@/data/enum/logStatus'
+import type { Log } from '@/db/schema'
 import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
@@ -14,12 +14,12 @@ export const runtime = 'edge'
 
 export type GetResponse =
   | {
-    success: true
-    data: Log
-  }
+      success: true
+      data: Log
+    }
   | {
-    success: false
-  }
+      success: false
+    }
 
 const getLog = async (id: number) => (await db.select().from(log).where(eq(log.id, id)))[0]
 
@@ -37,8 +37,7 @@ export async function GET(request: Request) {
     }
 
     return ok<GetResponse>({ success: true, data: log })
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to fetch log entry:', error)
 
     return ok<GetResponse>({
@@ -51,20 +50,18 @@ const schema = z.object({
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
   categories: z.array(z.number()).min(1, 'Categories are required'),
   imageDescription: z.string().nullable(),
-  secret: z
-    .string()
-    .refine(val => val === SECRET, { message: 'Invalid secret' }),
+  secret: z.string().refine((val) => val === SECRET, { message: 'Invalid secret' }),
 })
 
 export type PutResponse =
   | {
-    success: true
-    data: Log
-  }
+      success: true
+      data: Log
+    }
   | {
-    success: false
-    errors: Partial<Record<keyof typeof schema.shape, string[]>>
-  }
+      success: false
+      errors: Partial<Record<keyof typeof schema.shape, string[]>>
+    }
 
 export async function PUT(request: Request) {
   try {
@@ -99,9 +96,10 @@ export async function PUT(request: Request) {
         description,
         imageDescription,
         updatedAt: Date.now(),
-        status: imageDescription !== currentLog.imageDescription
-          ? LogStatus.Created
-          : LogStatus.ImageGenerated,
+        status:
+          imageDescription !== currentLog.imageDescription
+            ? LogStatus.Created
+            : LogStatus.ImageGenerated,
       })
       .where(eq(log.id, id))
       .returning()
@@ -109,14 +107,15 @@ export async function PUT(request: Request) {
     await db.delete(logCategory).where(eq(logCategory.logId, id))
 
     if (categories.length > 0) {
-      await db.insert(logCategory).values(categories.map(category => ({ logId: id, categoryId: category })))
+      await db
+        .insert(logCategory)
+        .values(categories.map((category) => ({ logId: id, categoryId: category })))
     }
 
     regenerateContents()
 
     return ok<PutResponse>({ success: true, data: updated })
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to update log:', error)
 
     return ok<PutResponse>({
@@ -135,9 +134,7 @@ export type PutBody = z.infer<typeof schema>
  * JSON body (rather than only using query params) and validate against a small schema.
  */
 const deleteSchema = z.object({
-  secret: z
-    .string()
-    .refine(val => val === SECRET, { message: 'Invalid secret' }),
+  secret: z.string().refine((val) => val === SECRET, { message: 'Invalid secret' }),
 })
 
 export async function DELETE(request: Request) {
@@ -163,8 +160,7 @@ export async function DELETE(request: Request) {
     regenerateContents()
 
     return ok({ success: true })
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to delete log:', error)
 
     return ok({
@@ -175,9 +171,9 @@ export async function DELETE(request: Request) {
 }
 export type DeleteResponse =
   | {
-    success: true
-  }
+      success: true
+    }
   | {
-    success: false
-    errors: Partial<Record<keyof typeof deleteSchema.shape, string[]>>
-  }
+      success: false
+      errors: Partial<Record<keyof typeof deleteSchema.shape, string[]>>
+    }

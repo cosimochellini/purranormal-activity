@@ -1,6 +1,6 @@
 import type { SQL } from 'drizzle-orm'
-import type { Log, LogWithCategories } from '../db/schema'
 import { and, asc, desc, eq, gte, inArray, like, or, sql } from 'drizzle-orm'
+import type { Log, LogWithCategories } from '../db/schema'
 import { log, logCategory } from '../db/schema'
 import { db } from '../drizzle'
 import { SortBy, TimeRange } from '../types/search'
@@ -22,7 +22,7 @@ const ranges = {
 } as const satisfies Record<TimeRange, number>
 
 async function addCategories(logs: Log[]) {
-  const logIds = logs.map(log => log.id)
+  const logIds = logs.map((log) => log.id)
   const categoryRelations = await db
     .select({
       logId: logCategory.logId,
@@ -45,13 +45,9 @@ async function addCategories(logs: Log[]) {
 }
 
 export async function getLog(id: number) {
-  const [entry] = await db
-    .select()
-    .from(log)
-    .where(eq(log.id, id))
+  const [entry] = await db.select().from(log).where(eq(log.id, id))
 
-  if (!entry)
-    return null
+  if (!entry) return null
 
   const [result] = await addCategories([entry])
 
@@ -75,36 +71,28 @@ export async function getLogs({
   sortBy = SortBy.Recent,
   timeRange = TimeRange.All,
 }: GetLogsOptions) {
-  const categoryCondition = categories.length > 0
-    ? sql`
+  const categoryCondition =
+    categories.length > 0
+      ? sql`
     ${log.id} IN (${db
       .select({ logId: logCategory.logId })
       .from(logCategory)
       .where(inArray(logCategory.categoryId, categories))
       .groupBy(logCategory.logId)})
       `
-    : undefined
+      : undefined
 
   const searchCondition = search
-    ? or(
-        like(log.title, `%${search}%`),
-        like(log.description, `%${search}%`),
-      )
+    ? or(like(log.title, `%${search}%`), like(log.description, `%${search}%`))
     : undefined
 
-  const timeRangeCondition = timeRange !== TimeRange.All
-    ? gte(log.createdAt, ranges[timeRange])
-    : undefined
+  const timeRangeCondition =
+    timeRange !== TimeRange.All ? gte(log.createdAt, ranges[timeRange]) : undefined
 
   const logs = await db
     .select()
     .from(log)
-    .where(and(
-      gte(log.id, 1),
-      searchCondition,
-      categoryCondition,
-      timeRangeCondition,
-    ))
+    .where(and(gte(log.id, 1), searchCondition, categoryCondition, timeRangeCondition))
     .orderBy(...sorting[sortBy])
     .limit(limit)
     .offset(skip)
@@ -113,8 +101,7 @@ export async function getLogs({
 }
 
 export async function setLogError(id: number | undefined, error: unknown) {
-  if (!id)
-    return
+  if (!id) return
 
   await db
     .update(log)

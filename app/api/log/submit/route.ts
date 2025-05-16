@@ -10,13 +10,15 @@ import { z } from 'zod'
 
 const submitFormSchema = z.object({
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
-  answers: z.array(z.object({
-    question: z.string(),
-    answer: z.string(),
-  })).max(5, 'At least 5 follow-up answers are required'),
-  secret: z
-    .string()
-    .refine(val => val === SECRET, { message: 'Invalid secret' }),
+  answers: z
+    .array(
+      z.object({
+        question: z.string(),
+        answer: z.string(),
+      }),
+    )
+    .max(5, 'At least 5 follow-up answers are required'),
+  secret: z.string().refine((val) => val === SECRET, { message: 'Invalid secret' }),
 })
 
 export const runtime = 'edge'
@@ -33,27 +35,24 @@ export async function POST(request: Request) {
       })
     }
 
-    const {
-      title,
-      description,
-      categories,
-      imageDescription,
-      missingCategories,
-    } = await generateLogDetails(result.data.description, result.data.answers)
+    const { title, description, categories, imageDescription, missingCategories } =
+      await generateLogDetails(result.data.description, result.data.answers)
 
-    const allCategories = (await db
-      .select({ id: category.id })
-      .from(category))
-      .map(category => category.id)
+    const allCategories = (await db.select({ id: category.id }).from(category)).map(
+      (category) => category.id,
+    )
 
-    const [newLog] = await db.insert(log).values({
-      title,
-      description,
-      imageDescription,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      status: LogStatus.Created,
-    }).returning({ id: log.id })
+    const [newLog] = await db
+      .insert(log)
+      .values({
+        title,
+        description,
+        imageDescription,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        status: LogStatus.Created,
+      })
+      .returning({ id: log.id })
 
     const categoriesToInsert = categories
       .map(({ id }) => ({ logId: newLog.id, categoryId: id }))
@@ -66,8 +65,7 @@ export async function POST(request: Request) {
     regenerateContents()
 
     return ok<Response>({ success: true, id: newLog.id, missingCategories })
-  }
-  catch (error) {
+  } catch (error) {
     logger.error('Failed to submit log:', error)
 
     return ok<Response>({
@@ -81,13 +79,13 @@ export async function POST(request: Request) {
 
 export type Response =
   | {
-    success: true
-    id: number
-    missingCategories: string[]
-  }
+      success: true
+      id: number
+      missingCategories: string[]
+    }
   | {
-    success: false
-    errors: Partial<Record<keyof typeof submitFormSchema.shape, string[]>>
-  }
+      success: false
+      errors: Partial<Record<keyof typeof submitFormSchema.shape, string[]>>
+    }
 
 export type Body = z.infer<typeof submitFormSchema>

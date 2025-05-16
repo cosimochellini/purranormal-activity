@@ -4,12 +4,7 @@ import fourth from './fourth.webp'
 import second from './second.webp'
 import third from './third.webp'
 
-const images = [
-  first,
-  second,
-  third,
-  fourth,
-] as const
+const images = [first, second, third, fourth] as const
 
 export function randomImage() {
   return randomItem(images)

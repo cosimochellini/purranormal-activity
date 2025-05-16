@@ -1,4 +1,10 @@
-import { parseAsArrayOf, parseAsInteger, parseAsString, parseAsStringEnum, useQueryState } from 'nuqs'
+import {
+  parseAsArrayOf,
+  parseAsInteger,
+  parseAsString,
+  parseAsStringEnum,
+  useQueryState,
+} from 'nuqs'
 import { SortBy, TimeRange } from '../types/search'
 import { time } from '../utils/time'
 import { typedObjectValues } from '../utils/typed'
@@ -17,9 +23,15 @@ const throttleMs = time({ seconds: 1 })
 export function useExploreData() {
   const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
   const [limit, setLimit] = useQueryState('limit', parseAsInteger.withDefault(10))
-  const [search, setSearch] = useQueryState('search', parseAsString.withDefault('').withOptions({ throttleMs }))
+  const [search, setSearch] = useQueryState(
+    'search',
+    parseAsString.withDefault('').withOptions({ throttleMs }),
+  )
 
-  const [categories, setCategories] = useQueryState('categories', parseAsArrayOf(parseAsInteger).withDefault(emptyArray))
+  const [categories, setCategories] = useQueryState(
+    'categories',
+    parseAsArrayOf(parseAsInteger).withDefault(emptyArray),
+  )
   const [sortBy, setSortBy] = useQueryState(
     'sortBy',
     parseAsStringEnum<SortBy>(typedObjectValues(SortBy)).withDefault(SortBy.Recent),

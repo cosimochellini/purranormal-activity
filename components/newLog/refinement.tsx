@@ -1,10 +1,10 @@
 import type { FollowUpQuestion } from '@/app/api/log/refine/route'
 import type { Body, Response } from '@/app/api/log/submit/route'
-import type { FormValues } from '.'
 import { fetcher } from '@/utils/fetch'
 import { IconX } from '@tabler/icons-react'
 import cn from 'classnames'
 import { useState } from 'react'
+import type { FormValues } from '.'
 import { logger } from '../../utils/logger'
 import { SpookyButton } from '../common/SpookyButton'
 import { SpookyInput } from '../common/SpookyInput'
@@ -22,45 +22,43 @@ interface AnsweredQuestion extends FollowUpQuestion {
 
 const submitLog = fetcher<Response, never, Body>('/api/log/submit', 'POST')
 
-export function RefinementSection({ description, questions, onSubmitSuccess }: RefinementSectionProps) {
+export function RefinementSection({
+  description,
+  questions,
+  onSubmitSuccess,
+}: RefinementSectionProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [answers, setAnswers] = useState<AnsweredQuestion[]>(() =>
-    questions?.map(q => ({ ...q, answer: '' })) ?? [],
+  const [answers, setAnswers] = useState<AnsweredQuestion[]>(
+    () => questions?.map((q) => ({ ...q, answer: '' })) ?? [],
   )
   const [secret, setSecret] = useState('')
 
   const handleSubmit = async () => {
-    if (!description)
-      return
+    if (!description) return
 
     try {
       setIsSubmitting(true)
       const response = await submitLog({ body: { description, answers, secret } })
 
-      if (!response.success)
-        throw new Error('Failed to submit')
+      if (!response.success) throw new Error('Failed to submit')
 
       onSubmitSuccess?.({ logId: response.id, missingCategories: response.missingCategories })
-    }
-    catch (error) {
+    } catch (error) {
       logger.error('Failed to submit log:', error)
-    }
-    finally {
+    } finally {
       setIsSubmitting(false)
     }
   }
 
   const handleAnswerChange = (question: string, answer: string) => {
-    setAnswers(prev =>
-      prev.map(p => (p.question === question ? { ...p, answer } : p)),
-    )
+    setAnswers((prev) => prev.map((p) => (p.question === question ? { ...p, answer } : p)))
   }
 
   const removeQuestion = (question: string) => {
-    setAnswers(prev => prev.filter(p => p.question !== question))
+    setAnswers((prev) => prev.filter((p) => p.question !== question))
   }
 
-  const allAnswersFilled = answers.every(a => a.answer.length > 0)
+  const allAnswersFilled = answers.every((a) => a.answer.length > 0)
 
   return (
     <div className="max-w-2xl sm:max-w-none mx-auto p-2 h-full">
@@ -75,12 +73,11 @@ export function RefinementSection({ description, questions, onSubmitSuccess }: R
         </div>
 
         <div className="space-y-6">
-          {answers.map(q => (
+          {answers.map((q) => (
             <div
               key={q.question}
               className="group bg-purple-800/20 rounded-xl p-6 transition-all duration-300 hover:bg-purple-800/30 relative"
             >
-
               <button
                 type="button"
                 onClick={() => removeQuestion(q.question)}
@@ -95,11 +92,9 @@ export function RefinementSection({ description, questions, onSubmitSuccess }: R
                 <IconX />
               </button>
 
-              <label className="block text-lg font-medium text-purple-100 mb-4">
-                {q.question}
-              </label>
+              <label className="block text-lg font-medium text-purple-100 mb-4">{q.question}</label>
               <div className="space-y-3">
-                {q.availableAnswers.map(a => (
+                {q.availableAnswers.map((a) => (
                   <RadioOption
                     key={a}
                     question={q.question}
@@ -118,7 +113,7 @@ export function RefinementSection({ description, questions, onSubmitSuccess }: R
             label="Secret"
             type="password"
             value={secret}
-            onChange={e => setSecret(e.target.value)}
+            onChange={(e) => setSecret(e.target.value)}
           />
         </div>
 
