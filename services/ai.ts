@@ -73,7 +73,7 @@ export async function generateLogDetails(
 export async function generateImage(imagePrompt: string) {
   try {
     const imageResponse = await openai.images.generate({
-      model: 'dall-e-3',
+      model: 'gpt-image-1',
       prompt: imagePrompt,
       n: 1,
       size: '1024x1024',
@@ -97,7 +97,7 @@ export async function generateImagePrompt(description: string) {
 
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4o',
       messages: [{ role: 'user', content }],
     })
 
