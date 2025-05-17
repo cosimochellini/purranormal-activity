@@ -26,6 +26,7 @@ export function SpookyModal({
   if (!open) return null
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: it's a modal
     <div className="relative z-50" role="dialog" aria-modal="true" {...props} onClick={onClose}>
       {/* Backdrop */}
       <div className="fixed inset-0 bg-purple-950/60 backdrop-blur-xl" />
@@ -34,6 +35,7 @@ export function SpookyModal({
       <div className="fixed inset-0 z-50 w-screen overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
           {/* Modal Panel */}
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: it's a modal */}
           <div
             className={cn(
               'relative w-full max-w-md transform overflow-hidden rounded-2xl',

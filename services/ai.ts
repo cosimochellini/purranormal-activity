@@ -70,7 +70,7 @@ export async function generateLogDetails(
   }
 }
 
-export async function generateImage(imagePrompt: string) {
+export async function generateImageBase64(imagePrompt: string) {
   try {
     const imageResponse = await openai.images.generate({
       model: 'gpt-image-1',
@@ -79,7 +79,7 @@ export async function generateImage(imagePrompt: string) {
       size: '1024x1024',
     })
 
-    const imageData = imageResponse?.data?.[0]?.url
+    const imageData = imageResponse?.data?.[0]?.b64_json
 
     if (!imageData) throw new Error('Failed to generate image data')
 

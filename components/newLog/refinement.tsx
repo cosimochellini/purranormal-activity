@@ -92,6 +92,7 @@ export function RefinementSection({
                 <IconX />
               </button>
 
+              {/* biome-ignore lint/a11y/noLabelWithoutControl: it's a label */}
               <label className="block text-lg font-medium text-purple-100 mb-4">{q.question}</label>
               <div className="space-y-3">
                 {q.availableAnswers.map((a) => (

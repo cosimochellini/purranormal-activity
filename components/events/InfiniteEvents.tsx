@@ -3,7 +3,7 @@
 import type { Response } from '@/app/api/log/all/route'
 import type { LogWithCategories } from '@/db/schema'
 import { fetcher } from '@/utils/fetch'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useInView } from 'react-intersection-observer'
 import { byNumber, byValue } from 'sort-es'
 import { usePartialState } from '../../hooks/state'
@@ -21,24 +21,24 @@ interface InfiniteEventsState {
   logs: LogWithCategories[]
   page: number
   hasMore: boolean
-  isLoading: boolean
 }
 
 export function InfiniteEvents({ initialLogs }: InfiniteEventsProps) {
-  const [{ logs, page, hasMore, isLoading }, setState] = usePartialState<InfiniteEventsState>({
+  const isLoadingRef = useRef(false)
+  const [{ logs, page, hasMore }, setState] = usePartialState<InfiniteEventsState>({
     logs: initialLogs,
     page: Math.ceil(initialLogs.length / 6) + 1,
     hasMore: true,
-    isLoading: false,
   })
 
   const { ref, inView } = useInView()
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   useEffect(() => {
     const loadMore = async () => {
-      if (!inView || isLoading || !hasMore) return
+      if (!inView || isLoadingRef.current || !hasMore) return
 
-      setState({ isLoading: true })
+      isLoadingRef.current = true
 
       try {
         const response = await getLogs({ query: { page: page.toString() } })
@@ -54,13 +54,14 @@ export function InfiniteEvents({ initialLogs }: InfiniteEventsProps) {
       } catch {
         // TODO: handle error
       } finally {
-        requestAnimationFrame(() => setState({ isLoading: false }))
+        requestAnimationFrame(() => {
+          isLoadingRef.current = false
+        })
       }
     }
 
     loadMore()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inView, hasMore, page, isLoading])
+  }, [inView, hasMore, page])
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

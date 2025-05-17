@@ -59,6 +59,7 @@ interface RadioLabelProps {
 
 function RadioLabel({ availableAnswer, answer, children }: RadioLabelProps) {
   return (
+    // biome-ignore lint/a11y/noLabelWithoutControl: it's a label
     <label
       className={cn(
         'text-purple-200/70 transition-all duration-300 cursor-pointer select-none',
@@ -80,6 +81,7 @@ export function RadioOption({
   const handleChange = () => onAnswerChange(question, availableAnswer)
 
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: it's a radio option
     <div className="flex items-center space-x-3 group/radio cursor-pointer" onClick={handleChange}>
       <RadioInput availableAnswer={availableAnswer} answer={answer} onChange={handleChange} />
       <RadioLabel availableAnswer={availableAnswer} answer={answer}>

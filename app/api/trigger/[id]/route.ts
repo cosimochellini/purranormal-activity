@@ -1,11 +1,10 @@
 import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
-import { generateImage, generateImagePrompt } from '@/services/ai'
+import { generateImageBase64, generateImagePrompt } from '@/services/ai'
 
 import { uploadToR2 } from '@/utils/cloudflare'
 import { ok } from '@/utils/http'
-import { downloadImageAsBuffer } from '@/utils/image'
 import { logger } from '@/utils/logger'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
@@ -27,9 +26,11 @@ export async function POST(request: Request) {
     const imagePrompt =
       logEntry.imageDescription ?? (await generateImagePrompt(logEntry.description))
 
-    const imageData = await generateImage(imagePrompt)
+    const imageData = await generateImageBase64(imagePrompt)
 
-    const buffer = await downloadImageAsBuffer(imageData)
+    // Convert base64 to buffer directly
+    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '')
+    const buffer = Buffer.from(base64Data, 'base64')
 
     await uploadToR2(buffer, logId)
 

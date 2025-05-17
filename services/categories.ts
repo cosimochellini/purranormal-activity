@@ -4,7 +4,7 @@ import { db } from '../drizzle'
 let cachedCategories: Map<number, Category> | null = null
 
 export async function getCategoriesMap(force = false) {
-  if (!force && (cachedCategories?.size ?? 0) > 0) return cachedCategories!
+  if (!force && cachedCategories?.size) return cachedCategories
 
   const categories = await db.select().from(category)
 

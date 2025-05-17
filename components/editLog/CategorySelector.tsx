@@ -24,6 +24,7 @@ export function CategorySelector({ selected, onChange, styles, iconsOnly }: Cate
 
   return (
     <div className="space-y-2" style={styles}>
+      {/* biome-ignore lint/a11y/noLabelWithoutControl: it's a label */}
       <label className="block text-sm font-medium text-purple-200">Categories</label>
       <div className="flex flex-wrap gap-2">
         {categories
