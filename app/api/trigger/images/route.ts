@@ -16,7 +16,8 @@ const DELAY_MS = 5000
 async function processLog(logEntry: { id: number }) {
   try {
     logger.info(`Processing log ${logEntry.id}`)
-    await fetch(`${NEXT_PUBLIC_APP_URL}/api/trigger/${logEntry.id}`, {
+
+    fetch(`${NEXT_PUBLIC_APP_URL}/api/trigger/${logEntry.id}`, {
       method: 'POST',
     })
   } catch (error) {

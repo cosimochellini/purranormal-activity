@@ -1,8 +1,7 @@
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { SpookyFooter } from '@/components/footer/SpookyFooter'
 import { HeroSection } from '@/components/hero/HeroSection'
-import { Suspense } from 'react'
-import { EventsSection, EventsSectionSkeleton } from '../components/events/EventsSection'
+import { EventsSection } from '../components/events/EventsSection'
 
 export const revalidate = 60
 
@@ -25,9 +24,8 @@ async function RecentEvents() {
   return (
     <section className="w-full max-w-5xl">
       <h2 className="mb-6 text-2xl font-magical animate-ghost">Recent Supernatural Sightings</h2>
-      <Suspense fallback={<EventsSectionSkeleton />}>
-        <EventsSection />
-      </Suspense>
+
+      <EventsSection />
     </section>
   )
 }
