@@ -10,6 +10,7 @@ import {
   IconQuestionMark,
   IconRobot,
   IconSparkles,
+  IconSun,
   IconWorldCode,
   IconZzz,
 } from '@tabler/icons-react'
@@ -27,4 +28,5 @@ export const categoryIcons = {
   fortune: IconPlayCardStarFilled,
   internet: IconWorldCode,
   chaos: IconSparkles,
+  weather: IconSun,
 } as const satisfies Record<string, React.ComponentType<IconProps>>
