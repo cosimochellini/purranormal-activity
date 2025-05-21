@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       await db.insert(logCategory).values(categoriesToInsert)
     }
 
-    regenerateContents()
+    await regenerateContents()
 
     return ok<Response>({ success: true, id: newLog.id, missingCategories })
   } catch (error) {
