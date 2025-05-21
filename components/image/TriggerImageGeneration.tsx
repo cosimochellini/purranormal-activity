@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { LogStatus } from '../../data/enum/logStatus'
 import type { LogWithCategories } from '../../db/schema'
-import { NEXT_PUBLIC_APP_URL } from '../../env/next'
+import { CLOUDFLARE_DEPLOY_URL } from '../../env/cloudflare'
 import { fetcher } from '../../utils/fetch'
 import { Refetch } from '../timer/refetch'
 
@@ -11,7 +11,7 @@ interface TriggerImageGenerationProps {
 }
 
 const triggerGeneration = fetcher<never, never, never>('/api/trigger/[id]', 'POST')
-const triggerUrl = fetcher<never, never, never>(`${NEXT_PUBLIC_APP_URL}/api/trigger/images`, 'POST')
+const triggerDeployment = fetcher<never, never, never>(CLOUDFLARE_DEPLOY_URL, 'POST')
 
 export function TriggerImageGeneration({ log }: TriggerImageGenerationProps) {
   const [shouldRefetch, setShouldRefetch] = useState(false)
@@ -19,7 +19,7 @@ export function TriggerImageGeneration({ log }: TriggerImageGenerationProps) {
   useEffect(() => {
     if (log.status !== LogStatus.Created) return
 
-    Promise.all([triggerGeneration({ params: { id: log.id } }), triggerUrl()]).then(() =>
+    Promise.all([triggerGeneration({ params: { id: log.id } }), triggerDeployment()]).then(() =>
       setShouldRefetch(true),
     )
   }, [log])
