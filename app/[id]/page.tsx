@@ -5,9 +5,8 @@ import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { Category } from '../../components/common/Category'
 import { EventImage } from '../../components/events/EventImage'
-import { Refetch } from '../../components/timer/refetch'
-import { LogStatus } from '../../data/enum/logStatus'
 
+import { TriggerImageGeneration } from '../../components/image/TriggerImageGeneration'
 import { NEXT_PUBLIC_APP_URL } from '../../env/next'
 import { getLog } from '../../services/log'
 import { publicImage } from '../../utils/cloudflare'
@@ -63,12 +62,12 @@ export default async function Page({ params }: PageProps) {
 
   if (!log) return notFound()
 
-  const { description, title, id, status } = log
+  const { description, title, id } = log
   const styles = transitions(id)
 
   return (
     <div className="relative min-h-full bg-deep-purple-900 p-1 md:p-4 text-white">
-      <Refetch interval={5000} shouldRefetch={status === LogStatus.Created} />
+      <TriggerImageGeneration log={log} />
 
       <SpookyBackground />
 
