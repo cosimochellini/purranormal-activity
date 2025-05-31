@@ -70,6 +70,7 @@ export function InfiniteEvents({ initialLogs }: InfiniteEventsProps) {
     }
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: no need to add additional checks
   useEffect(() => {
     if (inView && !isLoading && hasMore) {
       fetchMoreLogs()

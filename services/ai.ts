@@ -1,7 +1,8 @@
+import { openai } from '@ai-sdk/openai'
+import { experimental_generateImage as generateImage, generateText } from 'ai'
 import { randomImageStyle } from '../data/enum/imageStyle'
 import { category } from '../db/schema'
 import { db } from '../drizzle'
-import { openai } from '../instances/openai'
 import { logger } from '../utils/logger'
 import {
   CREATE_QUESTIONS_PROMPT,
@@ -15,16 +16,15 @@ interface CreateQuestionsResponse {
 }
 
 export async function createQuestions(description: string) {
-  const content = CREATE_QUESTIONS_PROMPT(description)
+  const prompt = CREATE_QUESTIONS_PROMPT(description)
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content }],
-      stream: false,
+    const { text } = await generateText({
+      model: openai('o3-mini'),
+      prompt,
     })
 
-    const parsedContent = JSON.parse(completion.choices[0]?.message?.content || '[]')
+    const parsedContent = JSON.parse(text || '[]')
     return parsedContent as CreateQuestionsResponse[]
   } catch (error) {
     logger.error('Error generating follow-up questions:', error)
@@ -47,16 +47,16 @@ export async function generateLogDetails(
   const categories = await db.select({ id: category.id, name: category.name }).from(category)
   const currentStyle = randomImageStyle()
 
-  const content = GENERATE_LOG_DETAILS_PROMPT({ description, answers, categories, currentStyle })
+  const prompt = GENERATE_LOG_DETAILS_PROMPT({ description, answers, categories, currentStyle })
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [{ role: 'user', content }],
-      response_format: { type: 'json_object' },
+    const { text } = await generateText({
+      model: openai('o3'),
+      prompt,
     })
 
-    const rawContent = completion.choices[0]?.message?.content || '{}'
+    const rawContent = text || '{}'
+
     return JSON.parse(rawContent) as GenerateLogDetailsResponse
   } catch (error) {
     logger.error('Error generating log details:', error)
@@ -72,14 +72,14 @@ export async function generateLogDetails(
 
 export async function generateImageBase64(imagePrompt: string) {
   try {
-    const imageResponse = await openai.images.generate({
-      model: 'gpt-image-1',
+    const result = await generateImage({
+      model: openai.image('gpt-image-1'),
       prompt: imagePrompt,
       n: 1,
       size: '1024x1024',
     })
 
-    const imageData = imageResponse?.data?.[0]?.b64_json
+    const imageData = result.images[0]?.base64
 
     if (!imageData) throw new Error('Failed to generate image data')
 
@@ -93,15 +93,15 @@ export async function generateImageBase64(imagePrompt: string) {
 export async function generateImagePrompt(description: string) {
   const imageStyle = randomImageStyle()
 
-  const content = GENERATE_IMAGE_PROMPT({ description, imageStyle })
+  const prompt = GENERATE_IMAGE_PROMPT({ description, imageStyle })
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [{ role: 'user', content }],
+    const { text } = await generateText({
+      model: openai('gpt-4o'),
+      prompt,
     })
 
-    const ret = completion.choices[0]?.message?.content
+    const ret = text
 
     if (!ret) {
       throw new Error('Failed to generate image prompt')
