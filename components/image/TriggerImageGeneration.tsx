@@ -19,9 +19,10 @@ export function TriggerImageGeneration({ log }: TriggerImageGenerationProps) {
   useEffect(() => {
     if (log.status !== LogStatus.Created) return
 
-    Promise.all([triggerGeneration({ params: { id: log.id } }), triggerDeployment()]).then(() =>
-      setShouldRefetch(true),
-    )
+    Promise.all([
+      triggerGeneration({ params: { id: log.id } }).catch(() => null),
+      triggerDeployment().catch(() => null),
+    ]).then(() => setShouldRefetch(true))
   }, [log])
 
   return <Refetch interval={500} shouldRefetch={shouldRefetch} />
