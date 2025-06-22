@@ -14,7 +14,7 @@ export const CHARACTER_DESCRIPTIONS = {
        - A young chick constantly terrified but also fascinated by these paranormal incidents.
        - He has no paranormal powers and is completely mystified by Kitten's chaotic magic.
        - Despite being scared, he loves the kitten and often tries to help (usually making things worse).
-       - His reactions are often over-the-top and comedic.
+       - His reactions are often over-the-top and cute.
        - Always refer to him as "pulcino", "pulcino innamorato", "cosetto", "pulcino spaventato", or "piccolo eroe".
   `,
 } as const
@@ -25,7 +25,8 @@ export const COMMON_PROMPT_INSTRUCTIONS = `
     A small, brave chick has asked for your help to investigate strange paranormal events caused by his beloved witch kitten.
 
   - Relationship:
-    The kitten and the chick live together in a loving but chaotic relationship. There's comedic tension as the kitten's uncontrolled magic creates hilarious situations, and her feline instincts sometimes make the chick worry about being accidentally eaten.
+    The kitten and the chick live together in a loving but chaotic relationship. There's tension as the kitten's uncontrolled magic creates situations,
+    and her feline instincts sometimes make the chick worry about being accidentally eaten.
 
   - Instructions:
     - Only return JSON (no additional text).
@@ -44,18 +45,19 @@ export function CREATE_QUESTIONS_PROMPT(description: string) {
   The description of the paranormal activity is:
   "${description}"
 
-  You must generate up to 5 follow-up questions in Italian, each designed to extract details that will make the story funnier, more visually interesting, and emotionally engaging. These questions should help create a richer scenario for both narrative and image generation.
+  You must generate up to 5 follow-up questions in Italian, each designed to extract details that will make the story more complete,
+   more visually interesting, and emotionally engaging.
+   These questions should help create a richer scenario for both narrative and image generation.
 
   **Priority areas to explore:**
   - **Character Reactions**: How did the chick react? How did the kitten look during/after the magic?
-  - **Magical Mishaps**: Did the magic go wrong in a funny way? Any unexpected side effects?
+  - **Magical Mishaps**: Did the magic go wrong in some way? Any unexpected side effects?
   - **Environmental Chaos**: What objects were affected? Any mess or destruction?
   - **Emotional Moments**: Any cute interactions between the characters?
   - **Setting Details**: Specific location, time of day, lighting, objects present
 
   **Question Guidelines:**
   - Ask about visual details that would make the image more appealing and cute
-  - Focus on elements that add humor or whimsy to the story
   - Include questions about character expressions and body language
   - Ask about magical visual effects (sparkles, glows, floating objects, etc.)
   - Explore the aftermath or consequences of the magical event
@@ -66,8 +68,8 @@ export function CREATE_QUESTIONS_PROMPT(description: string) {
 
   [
     {
-      "question": "Come ha reagito il pulcino quando è successo?",
-      "availableAnswers": ["Si è nascosto dietro un cuscino", "Ha fatto un verso di paura", "È svenuto per la sorpresa", "Ha provato ad aiutare", "È scappato correndo"]
+      question: string,
+      availableAnswers: string[]
     },
     ...
   ]
@@ -89,7 +91,8 @@ export function GENERATE_LOG_DETAILS_PROMPT({
 }: GenerateLogDetailsPromptParams) {
   return `
   You are a seasoned Paranormal Activity Investigator specializing in adorable feline supernatural phenomena.
-  Your task is to document this peculiar case with professional whimsy, creating content that is both funny and heartwarming.
+  Your task is to document this particular case with professional imagination,
+  creating content that is both appealing and accurate and precise.
 
   ${CHARACTER_DESCRIPTIONS.kitten}
 
@@ -101,11 +104,14 @@ export function GENERATE_LOG_DETAILS_PROMPT({
   Additional Investigation Details:
   ${answers.map((a) => `- ${a.question}: ${a.answer}`).join('\n  ')}
 
+  Available Categories:
+  ${categories.map((c) => `{ "id": ${c.id}, "name": "${c.name}" }`).join(', ')}
+
   Required Output (strictly valid JSON, no additional text):
   {
     "title": string,        // A catchy, newspaper-style headline in Italian (max 60 chars)
     "description": string,  // A whimsical retelling in Italian, maintaining the original story's essence (max 350 chars)
-    "categories": [${categories.map((c) => `{ "id": ${c.id}, "name": "${c.name}" }`).join(', ')}],
+    "categories": { "id": number, "name": string }[], // Select only the most relevant categories from the available list (maximum 4)
     "missingCategories": string[],  // Suggest up to 2 creative new categories if truly relevant
     "imageDescription": string      // A detailed scene description in English for sora image generation (max 400 chars)
   }
@@ -114,12 +120,11 @@ export function GENERATE_LOG_DETAILS_PROMPT({
   - Make it sound like a funny newspaper headline about supernatural pets
   - Include action words and emotional elements
   - Examples: "Gattina Strega Trasforma Casa in Caos Magico!" or "Pulcino Testimone di Magia Felina Fuori Controllo!"
-  - Focus on the humor and chaos
 
   **Description Guidelines:**
   - Start with what the kitten was trying to do (her intention)
   - Describe what actually happened (the magical mishap)
-  - Include the chick's funny reaction
+  - Include the chick's reaction
   - End with the current situation or aftermath
   - Use vivid, funny imagery and cute Italian expressions
   - Make it read like a charming fairy tale incident report
@@ -132,9 +137,7 @@ export function GENERATE_LOG_DETAILS_PROMPT({
   - **Environment**: Include specific objects, lighting, and setting details from the story
   - **Magical Effects**: Describe sparkles, glows, floating objects, magical auras, etc.
   - **Mood**: Emphasize the cute and whimsical atmosphere
-  - **Visual Interest**: Include details that make the scene visually engaging and funny
-  - Avoid any text or lettering in the image
-  - Convert brand names to generic alternatives
+  - **Visual Interest**: Include details that make the scene visually engaging
 
   **Example Image Structure:**
   "A cute magical kitten [specific action] in [location], with [magical effects]. A small chick [specific reaction] nearby. [Environmental details]. [Lighting/atmosphere]. Style: ${currentStyle}"
@@ -148,6 +151,7 @@ export function GENERATE_LOG_DETAILS_PROMPT({
   4. Base everything on the original incident and answers - don't hallucinate new events
   5. The scene should be visually appealing and emotionally engaging
   6. The description must be a whimsical retelling in Italian, maintaining the original story's essence (max 350 chars)
+
 ` as const
 }
 
