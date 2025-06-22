@@ -1,5 +1,5 @@
 #:schema node_modules/wrangler/config-schema.json
-name = "my-next-app"
+name = "purranormal-actvivity"
 compatibility_date = "2024-12-18"
 compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
@@ -9,4 +9,3 @@ pages_build_output_dir = ".vercel/output/static"
 # rather than the end user may result in better performance.
 # Docs: https://developers.cloudflare.com/pages/functions/smart-placement/#smart-placement
 # [placement]
-mode = "smart"
