@@ -16,7 +16,7 @@ export function SpookyCard({
       className={cn(
         'relative space-y-8 rounded-2xl',
         'border border-purple-700/30 bg-purple-900/30',
-        'p-6 backdrop-blur-sm',
+        'p-6 backdrop-blur-xs',
         variant === 'hover' && 'transition-colors duration-300 hover:bg-purple-800/30',
         className,
       )}

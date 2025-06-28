@@ -62,7 +62,7 @@ export function RefinementSection({
 
   return (
     <div className="max-w-2xl sm:max-w-none mx-auto p-2 h-full">
-      <div className="space-y-8 bg-purple-900/30 backdrop-blur-sm rounded-2xl p-8 border border-purple-700/30 relative">
+      <div className="space-y-8 bg-purple-900/30 backdrop-blur-xs rounded-2xl p-8 border border-purple-700/30 relative">
         <div className="space-y-3">
           <h2 className="text-3xl font-magical text-white animate-magical-glow">
             Mystical Inquiries
@@ -86,7 +86,7 @@ export function RefinementSection({
                   'top-0 right-0 w-8 h-8 rounded-full',
                   'bg-purple-700/50 text-purple-200 hover:text-red-400 hover:bg-purple-700',
                   'transition-colors duration-300 transform hover:scale-105',
-                  'focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50',
+                  'focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:ring-opacity-50',
                 )}
               >
                 <IconX />

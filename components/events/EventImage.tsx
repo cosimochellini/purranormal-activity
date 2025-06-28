@@ -65,18 +65,18 @@ const MagicalLoadingOverlay = () => {
   }
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm rounded-b-lg p-2">
+    <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-xs rounded-b-lg p-2">
       {/* Magical Progress Container */}
       <div className="w-full mx-auto">
         {/* Progress Bar Background */}
         <div className="relative h-1.5 bg-black/40 rounded-full border border-white/20 overflow-hidden mb-2">
           {/* Magical Progress Fill */}
           <div
-            className="h-full bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 rounded-full shadow-lg transition-all duration-1000 ease-out relative"
+            className="h-full bg-linear-to-r from-purple-400 via-pink-400 to-blue-400 rounded-full shadow-lg transition-all duration-1000 ease-out relative"
             style={{ width: `${getProgressPercentage(elapsedTime)}%` }}
           >
             {/* Animated sparkles */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse" />
+            <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/30 to-transparent animate-pulse" />
             <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-1 bg-white rounded-full animate-ping" />
           </div>
         </div>

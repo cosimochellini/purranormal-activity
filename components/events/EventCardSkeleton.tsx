@@ -7,7 +7,7 @@ interface SkeletonProps extends HTMLProps<HTMLDivElement> {
 }
 
 const baseClasses = [
-  'bg-purple-900/30 backdrop-blur-sm rounded-lg p-6',
+  'bg-purple-900/30 backdrop-blur-xs rounded-lg p-6',
   'border border-purple-700/30 h-full animate-pulse',
 ]
 
@@ -20,12 +20,12 @@ export function EventCardSkeleton({ ref, className, iconCount = 3, ...props }: S
 
       <div className="space-y-3">
         {/* Title skeleton */}
-        <div className="h-6 bg-purple-800/30 rounded w-3/4" />
+        <div className="h-6 bg-purple-800/30 rounded-sm w-3/4" />
 
         {/* Description skeleton */}
         <div className="space-y-2">
-          <div className="h-4 bg-purple-800/30 rounded w-full" />
-          <div className="h-4 bg-purple-800/30 rounded w-5/6" />
+          <div className="h-4 bg-purple-800/30 rounded-sm w-full" />
+          <div className="h-4 bg-purple-800/30 rounded-sm w-5/6" />
         </div>
 
         {/* Icons skeleton */}

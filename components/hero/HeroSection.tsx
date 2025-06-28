@@ -52,7 +52,7 @@ export const HeroSection: FC<HeroSectionProps> = ({ className }) => {
           />
 
           {/* Hover glow effect */}
-          <div className="absolute inset-0 rounded-lg bg-gradient-to-tr from-purple-500/10 to-transparent opacity-0 transition-opacity duration-700 group-hover:opacity-100" />
+          <div className="absolute inset-0 rounded-lg bg-linear-to-tr from-purple-500/10 to-transparent opacity-0 transition-opacity duration-700 group-hover:opacity-100" />
         </div>
       </div>
 

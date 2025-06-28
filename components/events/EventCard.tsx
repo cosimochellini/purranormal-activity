@@ -15,7 +15,7 @@ interface EventCardProps {
 }
 
 const cardClasses = classNames(
-  'bg-purple-900/30 backdrop-blur-sm rounded-lg p-6',
+  'bg-purple-900/30 backdrop-blur-xs rounded-lg p-6',
   'hover:transform hover:scale-[1.02] transition-all duration-300',
   'hover:shadow-[0_0_30px_rgba(168,85,247,0.3)]',
   'border border-purple-700/30',
@@ -44,7 +44,7 @@ function EventCardComponent({ log, priority, prefetch = false }: EventCardProps)
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         </div>
-        <div className="flex-grow">
+        <div className="grow">
           <h3 className="font-medium mb-2 transition-colors text-balance" style={styles.title}>
             {title}
           </h3>

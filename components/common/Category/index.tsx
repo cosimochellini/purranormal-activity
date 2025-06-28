@@ -35,7 +35,7 @@ export function Category({ category, iconOnly = false, selected, onClick }: Cate
         className={classNames(
           'group flex items-center space-x-2 rounded-full',
           'px-4 py-2 text-sm transition-all duration-300',
-          'hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-400',
+          'hover:scale-105 focus:outline-hidden focus:ring-2 focus:ring-purple-400',
           selected
             ? [
                 'bg-purple-500/40 text-white',
@@ -76,7 +76,7 @@ export function Category({ category, iconOnly = false, selected, onClick }: Cate
       <div
         className={classNames(
           'absolute -top-12 left-1/2 -translate-x-1/2 px-3 py-2',
-          'rounded-lg bg-purple-900/90 backdrop-blur-sm',
+          'rounded-lg bg-purple-900/90 backdrop-blur-xs',
           'border border-purple-400/30',
           'text-sm text-purple-100 whitespace-nowrap',
           'opacity-0 group-hover/tooltip:opacity-100',

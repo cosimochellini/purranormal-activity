@@ -74,7 +74,7 @@ export default async function Page({ params }: PageProps) {
       <main className="relative mx-auto max-w-4xl p-6">
         <div
           className={classNames(
-            'space-y-8 rounded-2xl border border-purple-700/30 bg-purple-900/30 p-6 md:p-8 backdrop-blur-sm',
+            'space-y-8 rounded-2xl border border-purple-700/30 bg-purple-900/30 p-6 md:p-8 backdrop-blur-xs',
           )}
         >
           <div className="space-y-4">

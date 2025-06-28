@@ -10,9 +10,9 @@ export function ExploreFilters() {
   const [filters, { setSearch, setSortBy, setTimeRange, setCategories }] = useExploreData()
 
   return (
-    <div className="relative rounded-xl border border-purple-700/30 bg-purple-900/30 p-6 backdrop-blur-sm">
+    <div className="relative rounded-xl border border-purple-700/30 bg-purple-900/30 p-6 backdrop-blur-xs">
       {/* Magical sparkle effects */}
-      <div className="absolute inset-0 -z-10 animate-pulse bg-gradient-to-r from-purple-900/10 via-fuchsia-900/10 to-purple-900/10" />
+      <div className="absolute inset-0 -z-10 animate-pulse bg-linear-to-r from-purple-900/10 via-fuchsia-900/10 to-purple-900/10" />
 
       <div className="space-y-8">
         {/* Main filters */}

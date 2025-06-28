@@ -23,7 +23,7 @@ export const SpookyLink: FC<SpookyLinkProps> = ({ href, children, className, pre
       <span className="relative z-10">{children}</span>
       <div
         className={cn(
-          'absolute -inset-1 blur-sm transition-opacity',
+          'absolute -inset-1 blur-xs transition-opacity',
           'bg-purple-500/20 opacity-0 group-hover:opacity-100',
         )}
       />

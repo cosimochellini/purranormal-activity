@@ -1,7 +1,7 @@
-import type { Metadata, Viewport } from 'next'
-import { Caveat, Quicksand } from 'next/font/google'
-import { ViewTransitions } from 'next-view-transitions'
 import { FloatingMenu } from '@/components/common/FloatingMenu'
+import type { Metadata, Viewport } from 'next'
+import { ViewTransitions } from 'next-view-transitions'
+import { Caveat, Quicksand } from 'next/font/google'
 import './globals.css'
 
 const primaryFont = Quicksand({
@@ -33,11 +33,11 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: Readonly<RootLayoutProps>) {
   return (
     <ViewTransitions>
-      <html lang="en" className="h-full scrollbar-hidden">
+      <html lang="en" className="h-full scrollbar-hidden" suppressHydrationWarning>
         <body
           className={`${primaryFont.variable} ${accentFont.variable}
         min-h-full w-full
-        bg-gradient-to-b from-midnight-blue to-deep-purple
+        bg-linear-to-b from-midnight-blue to-deep-purple
         text-ghost-white antialiased`}
         >
           <FloatingMenu />

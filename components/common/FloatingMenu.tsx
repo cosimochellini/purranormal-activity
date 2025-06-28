@@ -21,7 +21,7 @@ const menuItems = [
 const buttonStyles = {
   base: [
     'relative flex items-center justify-center rounded-full',
-    'bg-gradient-to-br from-deep-purple via-midnight-blue to-deep-purple',
+    'bg-linear-to-br from-deep-purple via-midnight-blue to-deep-purple',
     'text-ghost-white',
     'transition-all duration-500 ease-out',
     'focus:ring-2 focus:ring-neon-green/20 focus:ring-offset-2 focus:ring-offset-deep-purple/50',
@@ -29,7 +29,7 @@ const buttonStyles = {
   ],
   glow: [
     'before:absolute before:inset-0 before:rounded-full',
-    'before:bg-gradient-to-br before:from-neon-green/20 before:via-transparent before:to-transparent',
+    'before:bg-linear-to-br before:from-neon-green/20 before:via-transparent before:to-transparent',
     'before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500',
   ],
   size: 'h-14 w-14',
@@ -44,7 +44,7 @@ const menuStyles = {
   ],
   link: [
     'group flex items-center gap-3 rounded-full px-4 py-3',
-    'bg-gradient-to-br from-midnight-blue via-deep-purple to-midnight-blue',
+    'bg-linear-to-br from-midnight-blue via-deep-purple to-midnight-blue',
     'text-ghost-white shadow-lg backdrop-blur-lg',
     'ring-2 ring-neon-green/10 ring-offset-2 ring-offset-deep-purple/50',
     'hover:shadow-neon-green/30 hover:ring-neon-green/30',

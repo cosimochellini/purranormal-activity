@@ -22,7 +22,7 @@ function FloatingOrb({ animation, className, blur }: FloatingOrbProps) {
       absolute
       ${className}
       rounded-full
-      ${blur ? 'blur-sm' : ''}
+      ${blur ? 'blur-xs' : ''}
     `}
     />
   )

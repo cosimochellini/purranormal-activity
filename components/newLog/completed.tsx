@@ -21,7 +21,7 @@ export function CompletedSection({ logId, missingCategories }: CompletedSectionP
   return (
     <>
       <div className="flex flex-col w-full items-center justify-center gap-4">
-        <div className="relative rounded-lg border border-green-500/30 bg-green-900/30 px-8 py-4 backdrop-blur-sm">
+        <div className="relative rounded-lg border border-green-500/30 bg-green-900/30 px-8 py-4 backdrop-blur-xs">
           {/* Magical sparkles */}
           <div className="absolute -top-4 left-1/4 h-2 w-2 animate-sparkle rounded-full bg-green-300/80 blur-[1px]" />
           <div className="absolute -bottom-2 right-1/3 h-2 w-2 animate-sparkle delay-300 rounded-full bg-green-300/80 blur-[1px]" />
@@ -49,7 +49,7 @@ export function CompletedSection({ logId, missingCategories }: CompletedSectionP
         </div>
 
         {(missingCategories?.length ?? 0) > 0 && (
-          <div className="w-full max-w-md rounded-lg border border-amber-500/30 bg-amber-900/30 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-lg border border-amber-500/30 bg-amber-900/30 p-4 backdrop-blur-xs">
             <p className="mb-2 font-magical text-amber-200">Mystical Categories Discovered!</p>
             <SpookyButton variant="primary" onClick={() => setIsModalOpen(true)} className="w-full">
               View New Categories
