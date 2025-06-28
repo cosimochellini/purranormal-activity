@@ -25,9 +25,24 @@ export function SpookyModal({
 
   if (!open) return null
 
+  const handleBackdropClick = () => onClose()
+  const handleBackdropKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onClose()
+    }
+  }
+
   return (
-    // biome-ignore lint/a11y/useSemanticElements: it's a modal
-    <div className="relative z-50" role="dialog" aria-modal="true" {...props} onClick={onClose}>
+    <div
+      className="relative z-50"
+      role="dialog"
+      aria-modal="true"
+      {...props}
+      onClick={handleBackdropClick}
+      onKeyDown={handleBackdropKeyDown}
+      tabIndex={-1}
+    >
       {/* Backdrop */}
       <div className="fixed inset-0 bg-purple-950/60 backdrop-blur-xl" />
 
@@ -35,7 +50,6 @@ export function SpookyModal({
       <div className="fixed inset-0 z-50 w-screen overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
           {/* Modal Panel */}
-          {/* biome-ignore lint/a11y/useKeyWithClickEvents: it's a modal */}
           <div
             className={cn(
               'relative w-full max-w-md transform overflow-hidden rounded-2xl',
@@ -45,7 +59,9 @@ export function SpookyModal({
               'sm:my-8',
               className,
             )}
+            role="document"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
           >
             <header className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl">{title}</h2>

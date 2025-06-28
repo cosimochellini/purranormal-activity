@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm'
 import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
@@ -6,7 +7,6 @@ import { batch } from '@/utils/batch'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 import { wait } from '@/utils/promise'
-import { eq } from 'drizzle-orm'
 
 export const runtime = 'edge'
 

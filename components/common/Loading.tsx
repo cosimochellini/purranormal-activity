@@ -1,5 +1,5 @@
-import LoadingImage from '@/images/loading.webp'
 import Image from 'next/image'
+import LoadingImage from '@/images/loading.webp'
 
 export function Loading() {
   return (

@@ -1,10 +1,10 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import type { LogWithCategories } from '@/db/schema'
-import type { Query, Response } from '../../app/api/log/all/route'
 
 import { fetcher } from '@/utils/fetch'
-import { useEffect, useRef, useState } from 'react'
+import type { Query, Response } from '../../app/api/log/all/route'
 import { useExploreData } from '../../hooks/useExporeData'
 import { Loading } from '../common/Loading'
 import { EventCard } from '../events/EventCard'

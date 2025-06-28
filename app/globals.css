@@ -33,8 +33,10 @@ body {
   }
 
   .scrollbar-hidden {
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
   }
 }
 
@@ -43,6 +45,7 @@ body {
   navigation: auto;
 }
 
+/* biome-ignore lint/correctness/noUnknownTypeSelector: view-transition-group is a valid CSS selector for View Transitions API */
 ::view-transition-group(root) {
   animation-duration: 0.2s;
 }

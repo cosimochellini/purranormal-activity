@@ -1,8 +1,6 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.7.0/schema.json",
-  "organizeImports": {
-    "enabled": true
-  },
+  "$schema": "https://biomejs.dev/schemas/2.0.6/schema.json",
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
     "rules": {
@@ -16,6 +14,18 @@
       "suspicious": {
         "noExplicitAny": "warn",
         "noArrayIndexKey": "off"
+      },
+      "style": {
+        "noParameterAssign": "error",
+        "useAsConstAssertion": "error",
+        "useDefaultParameterLast": "error",
+        "useEnumInitializers": "error",
+        "useSelfClosingElements": "error",
+        "useSingleVarDeclarator": "error",
+        "noUnusedTemplateLiteral": "error",
+        "useNumberNamespace": "error",
+        "noInferrableTypes": "error",
+        "noUselessElse": "error"
       }
     }
   },
@@ -32,15 +42,16 @@
     }
   },
   "files": {
-    "ignore": [
-      ".next",
-      "node_modules",
-      "dist",
-      "build",
-      ".vercel",
-      "pnpm-lock.yaml",
-      "drizzle",
-      ".vscode"
+    "includes": [
+      "**",
+      "!**/.next",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/build",
+      "!**/.vercel",
+      "!**/pnpm-lock.yaml",
+      "!**/drizzle",
+      "!**/.vscode"
     ]
   }
 }

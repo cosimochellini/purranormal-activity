@@ -1,9 +1,9 @@
+import { z } from 'zod'
 import type { Category } from '@/db/schema'
 import { category } from '@/db/schema'
 import { db } from '@/drizzle'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { z } from 'zod'
 
 export const runtime = 'edge'
 export type GetResponse = Category[]

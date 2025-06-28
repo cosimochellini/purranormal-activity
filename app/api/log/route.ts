@@ -1,10 +1,9 @@
+import { z } from 'zod'
 import { LogStatus } from '@/data/enum/logStatus'
 import { log, logCategory } from '@/db/schema'
-
 import { db } from '@/drizzle'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { z } from 'zod'
 
 const logFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),

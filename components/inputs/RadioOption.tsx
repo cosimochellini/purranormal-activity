@@ -12,6 +12,7 @@ interface RadioInputProps {
   availableAnswer: string
   answer: string
   onChange: () => void
+  id: string
 }
 
 const activeClasses = cn(
@@ -22,12 +23,13 @@ const activeClasses = cn(
 
 const defaultClasses = cn('after:opacity-0 after:scale-0')
 
-function RadioInput({ availableAnswer, answer, onChange }: RadioInputProps) {
+function RadioInput({ availableAnswer, answer, onChange, id }: RadioInputProps) {
   const active = answer === availableAnswer
 
   return (
     <div className="relative flex items-center justify-center">
       <input
+        id={id}
         type="radio"
         value={availableAnswer}
         checked={active}
@@ -59,8 +61,7 @@ interface RadioLabelProps {
 
 function RadioLabel({ availableAnswer, answer, children }: RadioLabelProps) {
   return (
-    // biome-ignore lint/a11y/noLabelWithoutControl: it's a label
-    <label
+    <span
       className={cn(
         'text-purple-200/70 transition-all duration-300 cursor-pointer select-none',
         'group-hover/radio:text-purple-100',
@@ -68,7 +69,7 @@ function RadioLabel({ availableAnswer, answer, children }: RadioLabelProps) {
       )}
     >
       {children}
-    </label>
+    </span>
   )
 }
 
@@ -79,14 +80,19 @@ export function RadioOption({
   onAnswerChange,
 }: RadioOptionProps) {
   const handleChange = () => onAnswerChange(question, availableAnswer)
+  const inputId = `radio-${question}-${availableAnswer}`.replace(/\s+/g, '-').toLowerCase()
 
   return (
-    // biome-ignore lint/a11y/useKeyWithClickEvents: it's a radio option
-    <div className="flex items-center space-x-3 group/radio cursor-pointer" onClick={handleChange}>
-      <RadioInput availableAnswer={availableAnswer} answer={answer} onChange={handleChange} />
+    <label className="flex items-center space-x-3 group/radio cursor-pointer" htmlFor={inputId}>
+      <RadioInput
+        availableAnswer={availableAnswer}
+        answer={answer}
+        onChange={handleChange}
+        id={inputId}
+      />
       <RadioLabel availableAnswer={availableAnswer} answer={answer}>
         {availableAnswer}
       </RadioLabel>
-    </div>
+    </label>
   )
 }

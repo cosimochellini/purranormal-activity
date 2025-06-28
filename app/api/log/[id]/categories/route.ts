@@ -1,8 +1,8 @@
+import { z } from 'zod'
 import { logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { z } from 'zod'
 
 export const runtime = 'edge'
 

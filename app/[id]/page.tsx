@@ -1,8 +1,8 @@
-import { SpookyBackground } from '@/components/background/SpookyBackground'
 import classNames from 'classnames'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
+import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { Category } from '../../components/common/Category'
 import { EventImage } from '../../components/events/EventImage'
 

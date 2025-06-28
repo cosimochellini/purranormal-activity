@@ -1,6 +1,5 @@
-import type { ComponentPropsWithoutRef } from 'react'
-
 import cn from 'classnames'
+import type { ComponentPropsWithoutRef } from 'react'
 
 const baseClasses = [
   'w-full rounded-md border transition-colors duration-200',

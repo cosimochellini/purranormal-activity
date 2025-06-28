@@ -1,11 +1,11 @@
-import type { Body, Response } from '@/app/api/log/refine/route'
 import { useState } from 'react'
-import type { FormValues } from '.'
+import type { Body, Response } from '@/app/api/log/refine/route'
 import { fetcher } from '../../utils/fetch'
 import { Loading } from '../common/Loading'
 import { SpookyButton } from '../common/SpookyButton'
 import { SpookyCard } from '../common/SpookyCard'
 import { SpookyTextarea } from '../common/SpookyTextarea'
+import type { FormValues } from '.'
 
 interface InitialSectionProps {
   onInitialSuccess?: (body: Partial<FormValues>) => void

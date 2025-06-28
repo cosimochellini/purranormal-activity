@@ -1,7 +1,7 @@
+import Image from 'next/image'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { SpookyButton } from '@/components/common/SpookyButton'
 import { randomImage } from '@/images/notFound'
-import Image from 'next/image'
 import { SpookyLink } from '../components/common/SpookyLink'
 
 export default function NotFound() {

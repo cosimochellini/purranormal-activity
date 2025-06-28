@@ -1,9 +1,9 @@
-import { SpookyBackground } from '@/components/background/SpookyBackground'
-import { ExploreSection } from '@/components/explore/ExploreSection'
-import { ExploreSkeleton } from '@/components/explore/ExploreSkeleton'
 import type { Metadata } from 'next'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import { Suspense } from 'react'
+import { SpookyBackground } from '@/components/background/SpookyBackground'
+import { ExploreSection } from '@/components/explore/ExploreSection'
+import { ExploreSkeleton } from '@/components/explore/ExploreSkeleton'
 
 export const revalidate = 60
 

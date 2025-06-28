@@ -1,8 +1,8 @@
+import { z } from 'zod'
 import type { LogWithCategories } from '@/db/schema'
 import { getLogs } from '@/services/log'
 import { SortBy, TimeRange } from '@/types/search'
 import { ok } from '@/utils/http'
-import { z } from 'zod'
 
 export const runtime = 'edge'
 

@@ -1,13 +1,13 @@
 'use client'
 
+import Image from 'next/image'
+import { useTransitionRouter } from 'next-view-transitions'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { LogStatus } from '@/data/enum/logStatus'
 import type { LogWithCategories } from '@/db/schema'
 import Bug from '@/images/bug.jpg'
 import { randomImage } from '@/images/loading'
 import { publicImage } from '@/utils/cloudflare'
-import { useTransitionRouter } from 'next-view-transitions'
-import Image from 'next/image'
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { randomItem } from '../../utils/random'
 
 type ImageProps = React.ComponentProps<typeof Image>

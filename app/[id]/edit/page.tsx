@@ -1,6 +1,6 @@
+import { notFound } from 'next/navigation'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { EditLogForm } from '@/components/editLog'
-import { notFound } from 'next/navigation'
 import { getLog } from '../../../services/log'
 
 export const runtime = 'edge'

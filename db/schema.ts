@@ -1,6 +1,7 @@
 /* eslint-disable ts/no-use-before-define */
-import { LogStatus } from '@/data/enum/logStatus'
+
 import { int, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { LogStatus } from '@/data/enum/logStatus'
 
 export const category = sqliteTable('category', {
   id: int('id').primaryKey({ autoIncrement: true }),
