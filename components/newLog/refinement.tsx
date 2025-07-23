@@ -1,14 +1,14 @@
-import type { FollowUpQuestion } from '@/app/api/log/refine/route'
-import type { Body, Response } from '@/app/api/log/submit/route'
-import { fetcher } from '@/utils/fetch'
 import { IconX } from '@tabler/icons-react'
 import cn from 'classnames'
 import { useState } from 'react'
-import type { FormValues } from '.'
+import type { FollowUpQuestion } from '@/app/api/log/refine/route'
+import type { Body, Response } from '@/app/api/log/submit/route'
+import { fetcher } from '@/utils/fetch'
 import { logger } from '../../utils/logger'
 import { SpookyButton } from '../common/SpookyButton'
 import { SpookyInput } from '../common/SpookyInput'
 import { RadioOption } from '../inputs/RadioOption'
+import type { FormValues } from '.'
 
 interface RefinementSectionProps {
   description?: string

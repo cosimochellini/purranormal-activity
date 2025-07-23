@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @theme {
   --color-deep-purple-800: #2d1b69;
@@ -7,11 +7,7 @@
   --color-ghost-white: #f8f8ff;
   --color-magical-glow: #f0c4ff;
 
-  --background-image-magical-gradient: linear-gradient(
-    to right,
-    #9c4dcc,
-    #6a1b9a
-  );
+  --background-image-magical-gradient: linear-gradient(to right, #9c4dcc, #6a1b9a);
 
   --shadow-glow: 0 0 8px rgba(255, 255, 255, 0.5);
 

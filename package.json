@@ -1,6 +1,6 @@
 {
   "name": "purranormal-activity",
-  "version": "0.10.1",
+  "version": "0.10.3",
   "private": true,
   "scripts": {
     "pages:build": "npx @cloudflare/next-on-pages",
