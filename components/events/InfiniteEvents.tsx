@@ -1,10 +1,10 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
-import { useInView } from 'react-intersection-observer'
 import type { Response } from '@/app/api/log/all/route'
 import type { LogWithCategories } from '@/db/schema'
 import { fetcher } from '@/utils/fetch'
+import { useCallback, useEffect } from 'react'
+import { useInView } from 'react-intersection-observer'
 import { usePartialState } from '../../hooks/state'
 import { range } from '../../utils/array'
 import { EventCard } from './EventCard'
@@ -100,18 +100,18 @@ export function InfiniteEvents({
     }
   }
 
-  const handleLoadMore = () => {
+  const handleLoadMore = useCallback(() => {
     if (nextPage && !isLoading && hasMore && !error) {
       fetchMoreLogs(nextPage)
     }
-  }
+  }, [nextPage, isLoading, hasMore, error, fetchMoreLogs])
 
   // Handle intersection observer
   useEffect(() => {
     if (!inView) return
 
     handleLoadMore()
-  }, [inView])
+  }, [inView, handleLoadMore])
 
   const shouldShowLoadingArea = hasMore || isLoading || error
   const shouldShowSkeletons = isLoading && !error
@@ -150,6 +150,8 @@ export function InfiniteEvents({
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
+                    role="img"
+                    aria-label="Warning"
                   >
                     <path
                       strokeLinecap="round"
@@ -183,6 +185,8 @@ export function InfiniteEvents({
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  role="img"
+                  aria-label="Completed"
                 >
                   <path
                     strokeLinecap="round"
@@ -210,6 +214,8 @@ export function InfiniteEvents({
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              role="img"
+              aria-label="Search"
             >
               <path
                 strokeLinecap="round"
