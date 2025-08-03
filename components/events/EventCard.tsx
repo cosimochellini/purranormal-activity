@@ -31,18 +31,20 @@ function EventCardComponent({ log, priority, prefetch = false }: EventCardProps)
   return (
     <TransitionLink href={`/${id}`} prefetch={prefetch}>
       <div className={cardClasses}>
-        <div className="relative flex justify-center">
-          <EventImage
-            priority={priority}
-            loading={priority ? 'eager' : 'lazy'}
-            width={300}
-            height={300}
-            quality={75}
-            log={log}
-            className="mb-4 group-hover:animate-spooky-shake rounded-md w-full h-auto"
-            style={styles.image}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
+        <div className="relative flex justify-center mb-4">
+          <div className="relative w-full aspect-square overflow-hidden rounded-md">
+            <EventImage
+              priority={priority}
+              loading={priority ? 'eager' : 'lazy'}
+              width={300}
+              height={300}
+              quality={75}
+              log={log}
+              className="group-hover:animate-spooky-shake object-cover w-full h-full"
+              style={styles.image}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            />
+          </div>
         </div>
         <div className="grow">
           <h3 className="font-medium mb-2 transition-colors text-balance" style={styles.title}>
