@@ -6,6 +6,8 @@ export enum ImageStyle {
   CARTOON = 'cartoon style',
   CARTOON_GHOST_BUSTER = 'cartoon ghostbuster style',
   GIBHILI = 'gibhili style',
+  ANIME_KAWAII = 'anime kawaii style',
+  TIM_BURTON = 'tim burton style',
 }
 
 export const randomImageStyle = () => randomItem(typedObjectValues(ImageStyle))

@@ -1,4 +1,3 @@
-import { z } from 'zod'
 import { LogStatus } from '@/data/enum/logStatus'
 import { category, log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
@@ -7,18 +6,17 @@ import { generateLogDetails } from '@/services/ai'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 import { regenerateContents } from '@/utils/next'
+import { z } from 'zod'
+
+const answerSchema = z.object({
+  question: z.string(),
+  answer: z.string(),
+})
 
 const submitFormSchema = z.object({
   description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
-  answers: z
-    .array(
-      z.object({
-        question: z.string(),
-        answer: z.string(),
-      }),
-    )
-    .max(5, 'At least 5 follow-up answers are required'),
-  secret: z.string().refine((val) => val === SECRET, { message: 'Invalid secret' }),
+  answers: z.array(answerSchema).max(5, 'At least 5 follow-up answers are required'),
+  secret: z.string().refine((val) => val.toLowerCase() === SECRET, { message: 'Invalid secret' }),
 })
 
 export const runtime = 'edge'
@@ -35,8 +33,10 @@ export async function POST(request: Request) {
       })
     }
 
-    const { title, description, categories, imageDescription, missingCategories } =
-      await generateLogDetails(result.data.description, result.data.answers)
+    const { title, description, categories, imageDescription } = await generateLogDetails(
+      result.data.description,
+      result.data.answers,
+    )
 
     const allCategories = (await db.select({ id: category.id }).from(category)).map(
       (category) => category.id,
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 
     await regenerateContents()
 
-    return ok<Response>({ success: true, id: newLog.id, missingCategories })
+    return ok<Response>({ success: true, id: newLog.id, missingCategories: [] })
   } catch (error) {
     logger.error('Failed to submit log:', error)
 

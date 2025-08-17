@@ -32,11 +32,15 @@ export async function createQuestions(description: string) {
   }
 }
 
+interface Category {
+  id: number
+  name: string
+}
+
 export interface GenerateLogDetailsResponse {
   title: string
   description: string
-  categories: { id: number; name: string }[]
-  missingCategories: string[]
+  categories: Category[]
   imageDescription: string
 }
 

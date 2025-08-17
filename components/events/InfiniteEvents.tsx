@@ -1,10 +1,10 @@
 'use client'
 
+import { useCallback, useEffect } from 'react'
+import { useInView } from 'react-intersection-observer'
 import type { Response } from '@/app/api/log/all/route'
 import type { LogWithCategories } from '@/db/schema'
 import { fetcher } from '@/utils/fetch'
-import { useCallback, useEffect } from 'react'
-import { useInView } from 'react-intersection-observer'
 import { usePartialState } from '../../hooks/state'
 import { range } from '../../utils/array'
 import { EventCard } from './EventCard'
