@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import { LogStatus } from '@/data/enum/logStatus'
 import { category, log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
@@ -6,7 +7,6 @@ import { generateLogDetails } from '@/services/ai'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 import { regenerateContents } from '@/utils/next'
-import { z } from 'zod'
 
 const answerSchema = z.object({
   question: z.string(),

@@ -36,7 +36,7 @@ export const COMMON_PROMPT_INSTRUCTIONS = `
 
   - Istruzioni:
     - Usa un linguaggio conciso e chiaro con un tocco di umorismo stravagante e dolce.
-    - Includi i riferimenti specifici a luoghi, negozi, o serie TV, descritti nella descrizione del pulcino, per rendere la storia più vivida e riconoscibile.
+    - Includi riferimenti specifici a luoghi, negozi, o serie TV, presenti nella descrizione del pulcino, per rendere la storia più vivida e riconoscibile.
 `
 
 export function CREATE_QUESTIONS_PROMPT(description: string) {
@@ -50,19 +50,20 @@ export function CREATE_QUESTIONS_PROMPT(description: string) {
   La descrizione del pulcino dell'attività paranormale è:
   "${description}"
 
-  Devi generare FINO a 5 domande di follow-up in italiano, ognuna progettata per estrarre dettagli che renderanno la storia più completa,
-   più chiara visualmente e coinvolgente.
-   Queste domande dovrebbero aiutare a creare uno scenario più ricco sia per la narrativa che per la generazione di immagini.
+  Devi generare FINO a 5 domande di follow-up in italiano, ognuna progettata per estrarre dettagli che arricchiranno la storia,
+   rendendola più completa, più chiara visualmente e coinvolgente.
+   Queste domande dovrebbero aiutare a creare uno scenario più ricco sia per la narrativa che per la generazione di immagini, tramite AI.
 
   **Aree prioritarie da esplorare:**
   - **Reazioni dei Personaggi**: Come ha reagito il pulcino? Come appariva la gattina durante/dopo la magia?
   - **Incidenti Magici**: La magia è andata storta in qualche modo? Ci sono stati effetti collaterali inaspettati?
-  - **Dettagli dell'Ambientazione**: Posizione specifica, ora del giorno, illuminazione, oggetti presenti, riferimenti a luoghi/negozi/serie TV reali
+  - **Dettagli dell'Ambientazione**: Posizione specifica, ora del giorno, illuminazione, oggetti presenti
 
   **Linee Guida per le Domande:**
   - Chiedi dettagli visivi che renderebbero l'immagine più chiara e carina
   - Includi domande sulle espressioni e il linguaggio del corpo dei personaggi
   - Esplora le conseguenze o gli effetti dell'evento magico
+
 
   Ogni domanda dovrebbe avere 3-5 risposte brevi e varie in italiano che portino ad avere una chiara generazione dell'immagine dell'accaduto.
 

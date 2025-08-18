@@ -6,14 +6,16 @@
     "rules": {
       "recommended": true,
       "correctness": {
-        "noUnusedVariables": "error"
+        "noUnusedVariables": "error",
+        "useUniqueElementIds": "off"
       },
       "a11y": {
         "useButtonType": "off"
       },
       "suspicious": {
         "noExplicitAny": "warn",
-        "noArrayIndexKey": "off"
+        "noArrayIndexKey": "off",
+        "noUnknownAtRules": "off"
       },
       "style": {
         "noParameterAssign": "error",
