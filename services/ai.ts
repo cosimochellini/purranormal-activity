@@ -1,13 +1,14 @@
 import { openai } from '@ai-sdk/openai'
 import { experimental_generateImage as generateImage, generateText } from 'ai'
 import { randomImageStyle } from '../data/enum/imageStyle'
-import { category } from '../db/schema'
+import { category, type LogWithCategories } from '../db/schema'
 import { db } from '../drizzle'
 import { logger } from '../utils/logger'
 import {
   CREATE_QUESTIONS_PROMPT,
   GENERATE_IMAGE_PROMPT,
   GENERATE_LOG_DETAILS_PROMPT,
+  GENERATE_TELEGRAM_PROMPT,
 } from './prompts'
 
 interface CreateQuestionsResponse {
@@ -116,4 +117,14 @@ export async function generateImagePrompt(description: string) {
     logger.error('Error generating image prompt:', error)
     throw new Error('Image prompt generation failed')
   }
+}
+
+export async function generateTelegramMessage(log: LogWithCategories) {
+  const prompt = GENERATE_TELEGRAM_PROMPT({ log })
+  const { text } = await generateText({
+    model: openai('gpt-4o'),
+    prompt,
+  })
+
+  return text
 }

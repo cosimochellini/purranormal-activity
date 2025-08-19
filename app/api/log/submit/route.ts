@@ -29,7 +29,12 @@ export async function POST(request: Request) {
     if (!result.success) {
       return ok<Response>({
         success: false,
-        errors: result.error.flatten().fieldErrors,
+        errors: Object.fromEntries(
+          Object.entries(z.treeifyError(result.error).properties || {}).map(([key, value]) => [
+            key,
+            value?.errors || [],
+          ]),
+        ),
       })
     }
 

@@ -1,5 +1,6 @@
 // cspell:disable
 import type { ImageStyle } from '../data/enum/imageStyle'
+import type { LogWithCategories } from '../db/schema'
 
 interface AnswerOutput {
   question: string
@@ -111,7 +112,7 @@ export function GENERATE_LOG_DETAILS_PROMPT({
   Output Richiesto (RIGOROSAMENTE JSON valido, nessun testo aggiuntivo):
   {
     "title": string,        // Un titolo accattivante, stile giornalistico in italiano (max 60 caratteri)
-    "description": string,  // Un racconto stravagante in italiano, mantenendo l'essenza della storia originale (max 350 caratteri)
+    "description": string,  // Un racconto stravagante in italiano, mantenendo l'essenza della storia originale (max 550 caratteri)
     "categories": { "id": number, "name": string }[], // Seleziona le categorie più rilevanti dalla lista disponibile (massimo 4)
     "imageDescription": string      // Un prompt per generare l'immagine riassuntiva dell'accaduto, tramite AI
   }
@@ -185,15 +186,15 @@ export function GENERATE_IMAGE_PROMPT({ description, imageStyle }: GenerateImage
   8. Concentrati nel descrivere la scena visiva in dettaglio, assicurandoti che sia facile da visualizzare.
   9. Usa lo stile: ${imageStyle}
   10. Mantieni l'output finale in un singolo paragrafo, sotto le 200 parole se possibile.
-  11. Il prompt finale **deve** iniziare con: "Create an image with a magical black kitten with purple hat and green eyes..."
+  11. Il prompt finale **deve** iniziare con: "Create un'immagine con un magico gattino nero con cappello viola e occhi verdi..."
       e finire con: "... - ${imageStyle}"
 
   **Struttura esempio** (solo per riferimento; non copiare letteralmente):
-  "Create an image with a magical black kitten with purple hat and green eyes in the middle, the kitten is [ACTION].
-   There is a small cute yellow chick in the background.
-   The location is [LOCATION].
-   Additional objects: [OBJECTS].
-   - STYLE_HERE"
+  "Creare un'immagine con un magico gattino nero con cappello viola e occhi verdi al centro, il gattino è [AZIONE].
+   Sullo sfondo c'è un piccolo pulcino giallo.
+   Il luogo è [LOCATION].
+   Oggetti aggiuntivi: [OGGETTI].
+   - STILE_QUI
 
   **Importante**:
   - Sostituisci [ACTION] con la principale attività magica o soprannaturale che sta facendo la gattina.
@@ -204,4 +205,50 @@ export function GENERATE_IMAGE_PROMPT({ description, imageStyle }: GenerateImage
 
   Ora, genera il prompt finale come una singola stringa.
 ` as const
+}
+
+interface GenerateTelegramPromptParams {
+  log: LogWithCategories
+}
+
+export function GENERATE_TELEGRAM_PROMPT({ log }: GenerateTelegramPromptParams) {
+  const linkURL = `https://purranormal-activity.pages.dev/${log.id}`
+
+  return `
+  ${COMMON_PROMPT_INSTRUCTIONS}
+
+  ${CHARACTER_DESCRIPTIONS.kitten}
+
+  ${CHARACTER_DESCRIPTIONS.chick}
+
+  Hai già indivituato e categorizzato la seguente attività paranormale:
+  JSON: ${JSON.stringify(log)}
+
+  Il tuo scopo è generare un messaggio catchphrase per un evento paranormale da pubblicare come messaggio su Telegram.
+  Devi invogliare i lettori a cliccare il link per leggere la storia completa, lasciando un alone di mistero.
+
+  FORMATO RICHIESTO: MarkdownV2 di Telegram
+
+  REGOLE CRITICHE PER MARKDOWNV2:
+  - TUTTI questi caratteri devono essere preceduti da \\ (backslash): _ * [ ] ( ) ~ \` > # + - = | { } . !
+  - Per il grassetto usa: *testo\\-in\\-grassetto*
+  - Per i link usa: [testo\\-del\\-link](URL) dove URL NON va escaped ma il testo del link SÌ
+  - Per l'italico usa: _testo\\-in\\-italico_
+  - Emoji possono essere usate normalmente senza escape
+
+  ESEMPI CORRETTI:
+  - *{titolo con emoji collegato all'evento}*
+  - {descrizione}
+  - [{link clickbait}](${linkURL})
+
+  CONTENUTO RICHIESTO:
+  - Il messaggio deve essere in italiano
+  - Il messaggio deve essere RIGOROSAMENTE markdownV2, seguendo strettamente le regole di markdownV2 di Telegram, nessun testo aggiuntivo.
+  - Titolo all'inizio del messaggio accattivante in grassetto con emoji collegate all'evento
+  - La descrizione dopo il titolo deve essere breve e misteriosa (max 500 caratteri)
+  - Link al dettaglio con testo invitante e clickbait, suscitando pena, curiosità e empatia per il pulcino
+  - Il link deve essere: ${linkURL}
+  - Tono giocoso ma misterioso, perfetto per social media
+
+  ` as const
 }
