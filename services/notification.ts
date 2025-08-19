@@ -16,7 +16,7 @@ export async function sendEventNotification(
     const result = await sendMessage({
       text,
       options: {
-        parseMode: 'MarkdownV2',
+        parseMode: 'HTML',
       },
     })
 

@@ -14,7 +14,7 @@ const variantStyles = {
   secondary: 'bg-gray-800 hover:bg-gray-700 hover:shadow-[0_0_20px_rgba(75,85,99,0.5)]',
   danger:
     'bg-red-900/80 hover:bg-red-800 hover:scale-105 hover:shadow-[0_0_20px_rgba(220,38,38,0.5)]',
-}
+} as const
 
 export function SpookyButton({
   children,

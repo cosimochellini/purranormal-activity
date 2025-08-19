@@ -227,26 +227,31 @@ export function GENERATE_TELEGRAM_PROMPT({ log }: GenerateTelegramPromptParams) 
   Il tuo scopo è generare un messaggio catchphrase per un evento paranormale da pubblicare come messaggio su Telegram.
   Devi invogliare i lettori a cliccare il link per leggere la storia completa, lasciando un alone di mistero.
 
-  FORMATO RICHIESTO: MarkdownV2 di Telegram
+  FORMATO RICHIESTO: HTML di Telegram
 
-  REGOLE CRITICHE PER MARKDOWNV2:
-  - TUTTI questi caratteri devono essere preceduti da \\ (backslash): _ * [ ] ( ) ~ \` > # + - = | { } . !
-  - Per il grassetto usa: *testo\\-in\\-grassetto*
-  - Per i link usa: [testo\\-del\\-link](URL) dove URL NON va escaped ma il testo del link SÌ
-  - Per l'italico usa: _testo\\-in\\-italico_
-  - Emoji possono essere usate normalmente senza escape
+  REGOLE CRITICHE PER HTML:
+  <b>bold</b>, <strong>bold</strong>
+<i>italic</i>, <em>italic</em>
+<u>underline</u>, <ins>underline</ins>
+<s>strikethrough</s>, <strike>strikethrough</strike>, <del>strikethrough</del>
+<span class="tg-spoiler">spoiler</span>, <tg-spoiler>spoiler</tg-spoiler>
+<b>bold <i>italic bold <s>italic bold strikethrough <span class="tg-spoiler">italic bold strikethrough spoiler</span></s> <u>underline italic bold</u></i> bold</b>
+<a href="http://www.example.com/">inline URL</a>
+<a href="tg://user?id=123456789">inline mention of a user</a>
+<tg-emoji emoji-id="5368324170671202286">👍</tg-emoji>
+<code>inline fixed-width code</code>
+<pre>pre-formatted fixed-width code block</pre>
+<pre><code class="language-python">pre-formatted fixed-width code block written in the Python programming language</code></pre>
+<blockquote>Block quotation started\nBlock quotation continued\nThe last line of the block quotation</blockquote>
+<blockquote expandable>Expandable block quotation started\nExpandable block quotation continued\nExpandable block quotation continued\nHidden by default part of the block quotation started\nExpandable block quotation continued\nThe last line of the block quotation</blockquote>
 
-  ESEMPI CORRETTI:
-  - *{titolo con emoji collegato all'evento}*
-  - {descrizione}
-  - [{link clickbait}](${linkURL})
 
   CONTENUTO RICHIESTO:
   - Il messaggio deve essere in italiano
-  - Il messaggio deve essere RIGOROSAMENTE markdownV2, seguendo strettamente le regole di markdownV2 di Telegram, nessun testo aggiuntivo.
+  - Il messaggio deve essere RIGOROSAMENTE HTML, seguendo strettamente le regole HTML di Telegram, nessun testo aggiuntivo, pronto per essere inviato su Telegram tramite API.
   - Titolo all'inizio del messaggio accattivante in grassetto con emoji collegate all'evento
   - La descrizione dopo il titolo deve essere breve e misteriosa (max 500 caratteri)
-  - Link al dettaglio con testo invitante e clickbait, suscitando pena, curiosità e empatia per il pulcino
+  - Link al dettaglio con testo invitante e clickbait, suscitando pena, curiosità e empatia per il pulcino (max 100 caratteri)
   - Il link deve essere: ${linkURL}
   - Tono giocoso ma misterioso, perfetto per social media
 

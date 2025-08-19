@@ -119,6 +119,14 @@ export async function generateImagePrompt(description: string) {
   }
 }
 
+/**
+ * ensure the the message do not contains ```html at the beginning and ``` at the end
+ */
+const removeHTMLTags = (message: string) =>
+  message
+    .replace(/^```html\s*/, '') // Remove ```html at the beginning with optional whitespace
+    .replace(/\s*```$/, '') /* Remove ``` at the end with optional whitespace*/ // Remove ``` at the end with optional whitespace
+
 export async function generateTelegramMessage(log: LogWithCategories) {
   const prompt = GENERATE_TELEGRAM_PROMPT({ log })
   const { text } = await generateText({
@@ -126,5 +134,5 @@ export async function generateTelegramMessage(log: LogWithCategories) {
     prompt,
   })
 
-  return text
+  return removeHTMLTags(text)
 }

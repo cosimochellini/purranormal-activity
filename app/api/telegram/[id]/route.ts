@@ -1,4 +1,3 @@
-import type { z } from 'zod'
 import { getLog } from '@/services/log'
 import { sendEventNotification } from '@/services/notification'
 import { ok } from '@/utils/http'
@@ -15,7 +14,7 @@ export type Response =
       error: string
     }
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: idParam } = await params
     const id = Number(idParam)
@@ -57,5 +56,3 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     })
   }
 }
-
-export type Body = z.infer<typeof schema>

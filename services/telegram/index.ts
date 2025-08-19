@@ -28,7 +28,7 @@ export async function sendMessage(input: SendMessageInput): Promise<SendMessageR
   try {
     const { text, options = {} } = input
     const {
-      parseMode = 'MarkdownV2',
+      parseMode = 'HTML',
       disableWebPagePreview = true,
       silent = false,
       chatIds = TELEGRAM_BOT_CHAT_IDS,
@@ -85,7 +85,7 @@ export async function sendPhoto(input: SendPhotoInput): Promise<SendPhotoResult>
       messageThreadId,
       directMessagesTopicId,
       caption,
-      parseMode = 'MarkdownV2',
+      parseMode = 'HTML',
       captionEntities,
       showCaptionAboveMedia,
       hasSpoiler,

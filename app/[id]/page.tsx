@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { Category } from '../../components/common/Category'
+import { SendNotificationButton } from '../../components/common/SendNotificationButton'
 import { EventImage } from '../../components/events/EventImage'
 
 import { TriggerImageGeneration } from '../../components/image/TriggerImageGeneration'
@@ -118,6 +119,11 @@ export default async function Page({ params }: PageProps) {
           {/* Decorative elements */}
           <div className="absolute -top-4 left-1/4 h-2 w-2 animate-sparkle rounded-full bg-purple-300/80 blur-[1px]" />
           <div className="absolute -bottom-2 right-1/3 h-2 w-2 animate-sparkle delay-300 rounded-full bg-purple-300/80 blur-[1px]" />
+        </div>
+
+        {/* Send Notification Button */}
+        <div className="flex justify-center pt-4">
+          <SendNotificationButton logId={id} />
         </div>
       </main>
     </div>
