@@ -1,7 +1,8 @@
-import { notFound } from 'next/navigation'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { EditLogForm } from '@/components/editLog'
+import { notFound } from 'next/navigation'
 import { getLog } from '../../../services/log'
+import { PageProps } from '../../../types/next'
 
 export const runtime = 'edge'
 
@@ -9,11 +10,7 @@ interface Params {
   id: string
 }
 
-interface PageProps {
-  params: Promise<Params>
-}
-
-export default async function EditLogPage({ params }: PageProps) {
+export default async function EditLogPage({ params }: PageProps<Params>) {
   const entry = await getLog(Number((await params).id))
 
   if (!entry) return notFound()

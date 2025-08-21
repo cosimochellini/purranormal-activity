@@ -1,9 +1,12 @@
 import { getLog } from '@/services/log'
 import { sendEventNotification } from '@/services/notification'
+import { PageProps } from '@/types/next'
 import { ok } from '@/utils/http'
 
 export const runtime = 'edge'
-
+interface Params {
+  id: string
+}
 export type Response =
   | {
       success: true
@@ -14,7 +17,7 @@ export type Response =
       error: string
     }
 
-export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(_: Request, { params }: PageProps<Params>) {
   try {
     const { id: idParam } = await params
     const id = Number(idParam)

@@ -1,8 +1,8 @@
+import { SpookyBackground } from '@/components/background/SpookyBackground'
 import classNames from 'classnames'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
-import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { Category } from '../../components/common/Category'
 import { SendNotificationButton } from '../../components/common/SendNotificationButton'
 import { EventImage } from '../../components/events/EventImage'
@@ -10,6 +10,7 @@ import { EventImage } from '../../components/events/EventImage'
 import { TriggerImageGeneration } from '../../components/image/TriggerImageGeneration'
 import { NEXT_PUBLIC_APP_URL } from '../../env/next'
 import { getLog } from '../../services/log'
+import { PageProps } from '../../types/next'
 import { publicImage } from '../../utils/cloudflare'
 import { transitions } from '../../utils/viewTransition'
 
@@ -17,13 +18,9 @@ interface Params {
   id: string
 }
 
-interface PageProps {
-  params: Promise<Params>
-}
-
 export const runtime = 'edge'
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<Params>): Promise<Metadata> {
   const rawId = (await params).id
 
   const entry = await getLog(Number(rawId))
@@ -57,7 +54,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 // biome-ignore lint/style/useConst: otherwise it's not working
 export let revalidate = 2 * 60 * 60 // 2 hours
 
-export default async function Page({ params }: PageProps) {
+export default async function Page({ params }: PageProps<Params>) {
   const rawId = (await params).id
   const log = await getLog(Number(rawId))
 
