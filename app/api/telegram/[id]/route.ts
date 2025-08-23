@@ -1,6 +1,6 @@
 import { getLog } from '@/services/log'
 import { sendEventNotification } from '@/services/notification'
-import { PageProps } from '@/types/next'
+import type { PageProps } from '@/types/next'
 import { ok } from '@/utils/http'
 
 export const runtime = 'edge'

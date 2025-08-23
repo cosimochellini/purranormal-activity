@@ -1,8 +1,8 @@
+import { notFound } from 'next/navigation'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { EditLogForm } from '@/components/editLog'
-import { notFound } from 'next/navigation'
 import { getLog } from '../../../services/log'
-import { PageProps } from '../../../types/next'
+import type { PageProps } from '../../../types/next'
 
 export const runtime = 'edge'
 

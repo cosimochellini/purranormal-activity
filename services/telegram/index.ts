@@ -55,7 +55,7 @@ export async function sendMessage(input: SendMessageInput): Promise<SendMessageR
 
         const messageId = responseData.result?.message_id || 0
         messageIds.push(messageId)
-      } catch (error) {
+      } catch (_error) {
         // Continue to next chat on error
       }
     }

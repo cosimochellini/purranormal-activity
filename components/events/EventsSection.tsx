@@ -1,12 +1,14 @@
 import { getLogs } from '../../services/log'
 import { InfiniteEvents, InfiniteEventsSkeleton } from './InfiniteEvents'
 
-export async function EventsSection() {
-  const logs = await getLogs({ skip: 0, limit: 6 })
+const LIMIT = 6 * 3
 
-  return <InfiniteEvents initialLogs={logs} initialLimit={6} />
+export async function EventsSection() {
+  const logs = await getLogs({ skip: 0, limit: LIMIT })
+
+  return <InfiniteEvents initialLogs={logs} initialLimit={LIMIT} />
 }
 
 export function EventsSectionSkeleton() {
-  return <InfiniteEventsSkeleton count={6} />
+  return <InfiniteEventsSkeleton count={LIMIT} />
 }
