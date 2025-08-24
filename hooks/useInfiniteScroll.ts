@@ -1,9 +1,9 @@
 'use client'
 
+import { useCallback } from 'react'
 import type { Response } from '@/app/api/log/all/route'
 import type { LogWithCategories } from '@/db/schema'
 import { fetcher } from '@/utils/fetch'
-import { useCallback } from 'react'
 import { usePartialState } from './state'
 
 const getLogs = fetcher<Response, { page: string; limit: string }>('/api/log/all')

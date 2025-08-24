@@ -4,18 +4,22 @@ import type { PageProps } from '@/types/next'
 import { ok } from '@/utils/http'
 
 export const runtime = 'edge'
+
 interface Params {
   id: string
 }
-export type Response =
-  | {
-      success: true
-      messageId: number
-    }
-  | {
-      success: false
-      error: string
-    }
+
+interface SuccessResponse {
+  success: true
+  messageId: number
+}
+
+interface ErrorResponse {
+  success: false
+  error: string
+}
+
+export type Response = SuccessResponse | ErrorResponse
 
 export async function POST(_: Request, { params }: PageProps<Params>) {
   try {
