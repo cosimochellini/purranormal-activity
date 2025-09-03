@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useTransitionRouter } from 'next-view-transitions'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { UI_CONFIG } from '@/constants'
 import { LogStatus } from '@/data/enum/logStatus'
 import type { LogWithCategories } from '@/db/schema'
 import Bug from '@/images/bug.jpg'
@@ -59,8 +60,11 @@ const MagicalLoadingOverlay = () => {
   }, [])
 
   const getProgressPercentage = (seconds: number) => {
-    // Progress from 0% to 100% over 40 seconds
-    const percentage = Math.min(100, (seconds / 40) * 100)
+    // Progress from 0% to 100% over configured duration
+    const percentage = Math.min(
+      UI_CONFIG.MAX_PERCENTAGE,
+      (seconds / UI_CONFIG.PROGRESS_DURATION_SECONDS) * UI_CONFIG.MAX_PERCENTAGE,
+    )
     return percentage
   }
 

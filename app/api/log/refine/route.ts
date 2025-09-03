@@ -1,10 +1,14 @@
 import { z } from 'zod'
+import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { createQuestions } from '@/services/ai'
 import { ok } from '@/utils/http'
 import { logger } from '../../../../utils/logger'
 
 const schema = z.object({
-  description: z.string().min(1, 'Description is required').max(1000, 'Description is too long'),
+  description: z
+    .string()
+    .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.DESCRIPTION_REQUIRED)
+    .max(CHARACTER_LIMITS.REFINEMENT_DESCRIPTION, VALIDATION_MESSAGES.DESCRIPTION_TOO_LONG),
 })
 
 export interface FollowUpQuestion {

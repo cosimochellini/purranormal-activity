@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { LogStatus } from '@/data/enum/logStatus'
 import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
@@ -6,9 +7,17 @@ import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 
 const logFormSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
-  description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
-  categories: z.array(z.number()).min(1, 'Categories are required'),
+  title: z
+    .string()
+    .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.TITLE_REQUIRED)
+    .max(CHARACTER_LIMITS.TITLE, VALIDATION_MESSAGES.TITLE_TOO_LONG),
+  description: z
+    .string()
+    .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.DESCRIPTION_REQUIRED)
+    .max(CHARACTER_LIMITS.DESCRIPTION, VALIDATION_MESSAGES.DESCRIPTION_TOO_LONG),
+  categories: z
+    .array(z.number())
+    .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.CATEGORIES_REQUIRED),
 })
 
 export type Response =

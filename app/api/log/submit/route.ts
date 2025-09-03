@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { LogStatus } from '@/data/enum/logStatus'
 import { category, log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
@@ -14,8 +15,13 @@ const answerSchema = z.object({
 })
 
 const submitFormSchema = z.object({
-  description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
-  answers: z.array(answerSchema).max(5, 'At least 5 follow-up answers are required'),
+  description: z
+    .string()
+    .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.DESCRIPTION_REQUIRED)
+    .max(CHARACTER_LIMITS.DESCRIPTION, VALIDATION_MESSAGES.DESCRIPTION_TOO_LONG),
+  answers: z
+    .array(answerSchema)
+    .max(ARRAY_LIMITS.MAX_ANSWERS, VALIDATION_MESSAGES.ANSWERS_TOO_MANY),
   secret: z.string().refine((val) => val.toLowerCase() === SECRET, { message: 'Invalid secret' }),
 })
 

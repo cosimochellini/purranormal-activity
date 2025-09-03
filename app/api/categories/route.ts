@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ARRAY_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import type { Category } from '@/db/schema'
 import { category } from '@/db/schema'
 import { db } from '@/drizzle'
@@ -14,7 +15,9 @@ export async function GET() {
 }
 
 const schema = z.object({
-  categories: z.array(z.string()).min(1, 'At least one category is required'),
+  categories: z
+    .array(z.string())
+    .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.CATEGORY_REQUIRED),
 })
 
 export type PostResponse =

@@ -9,6 +9,7 @@ import type { DeleteResponse, PutBody, PutResponse } from '@/app/api/log/[id]/ro
 import type { UploadResponse } from '@/app/api/upload/[id]/route'
 import { SpookyButton } from '@/components/common/SpookyButton'
 import { EventImage } from '@/components/events/EventImage'
+import { UI_CONFIG } from '@/constants'
 import type { LogWithCategories } from '@/db/schema'
 import { usePartialState } from '@/hooks/state'
 import { fetcher } from '@/utils/fetch'
@@ -205,7 +206,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
             id="description"
             value={formData.description}
             onChange={(e) => setFormData({ description: e.target.value })}
-            rows={6}
+            rows={UI_CONFIG.TEXTAREA_ROWS_LARGE}
             className="w-full min-h-[150px] rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-hidden focus:ring-2 focus:ring-purple-500/20"
             style={styles.description}
           />
@@ -217,7 +218,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
             placeholder="Image Description"
             value={formData.imageDescription ?? ''}
             onChange={(e) => setFormData({ imageDescription: e.target.value })}
-            rows={6}
+            rows={UI_CONFIG.TEXTAREA_ROWS_LARGE}
             className="w-full min-h-[150px] rounded-md border border-purple-700/30 bg-purple-900/30 px-4 py-2 text-white placeholder-purple-300/50 focus:border-purple-500 focus:outline-hidden focus:ring-2 focus:ring-purple-500/20"
           />
         </div>

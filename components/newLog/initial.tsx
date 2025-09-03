@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Body, Response } from '@/app/api/log/refine/route'
+import { UI_CONFIG } from '@/constants'
 import { fetcher } from '../../utils/fetch'
 import { Loading } from '../common/Loading'
 import { SpookyButton } from '../common/SpookyButton'
@@ -47,7 +48,7 @@ export function InitialSection({ onInitialSuccess }: InitialSectionProps) {
         id="description"
         label="Description"
         required
-        rows={4}
+        rows={UI_CONFIG.TEXTAREA_ROWS_SMALL}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Describe the paranormal occurrence..."

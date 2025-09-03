@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ARRAY_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { ok } from '@/utils/http'
@@ -7,7 +8,9 @@ import { logger } from '@/utils/logger'
 export const runtime = 'edge'
 
 const schema = z.object({
-  categories: z.array(z.number()).min(1, 'At least one category is required'),
+  categories: z
+    .array(z.number())
+    .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.CATEGORY_REQUIRED),
 })
 
 export type Response =

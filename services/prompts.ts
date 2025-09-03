@@ -1,4 +1,5 @@
 // cspell:disable
+import { ARRAY_LIMITS, CHARACTER_LIMITS } from '../constants'
 import type { ImageStyle } from '../data/enum/imageStyle'
 import type { LogWithCategories } from '../db/schema'
 
@@ -51,7 +52,7 @@ export function CREATE_QUESTIONS_PROMPT(description: string) {
   La descrizione del pulcino dell'attività paranormale è:
   "${description}"
 
-  Devi generare FINO a 5 domande di follow-up in italiano, ognuna progettata per estrarre dettagli che arricchiranno la storia,
+  Devi generare FINO a ${ARRAY_LIMITS.MAX_QUESTIONS} domande di follow-up in italiano, ognuna progettata per estrarre dettagli che arricchiranno la storia,
    rendendola più completa, più chiara visualmente e coinvolgente.
    Queste domande dovrebbero aiutare a creare uno scenario più ricco sia per la narrativa che per la generazione di immagini, tramite AI.
 
@@ -66,14 +67,14 @@ export function CREATE_QUESTIONS_PROMPT(description: string) {
   - Esplora le conseguenze o gli effetti dell'evento magico
 
 
-  Ogni domanda dovrebbe avere 3-5 risposte brevi e varie in italiano che portino ad avere una chiara generazione dell'immagine dell'accaduto.
+  Ogni domanda dovrebbe avere 3-${ARRAY_LIMITS.MAX_ANSWERS} risposte brevi e varie in italiano che portino ad avere una chiara generazione dell'immagine dell'accaduto.
 
   Il tuo output deve essere RIGOROSAMENTE JSON valido—nessun testo extra o markdown. Usa esattamente questa struttura:
 
   [
     {
-      question: string, // MAX 90 caratteri
-      availableAnswers: string[] // MAX 5 risposte, MAX 120 caratteri per risposta
+      question: string, // MAX ${CHARACTER_LIMITS.QUESTION} caratteri
+      availableAnswers: string[] // MAX ${ARRAY_LIMITS.MAX_ANSWERS} risposte, MAX ${CHARACTER_LIMITS.ANSWER} caratteri per risposta
     },
     ...
   ]
@@ -111,9 +112,9 @@ export function GENERATE_LOG_DETAILS_PROMPT({
 
   Output Richiesto (RIGOROSAMENTE JSON valido, nessun testo aggiuntivo):
   {
-    "title": string,        // Un titolo accattivante, stile giornalistico in italiano (max 60 caratteri)
-    "description": string,  // Un racconto stravagante in italiano, mantenendo l'essenza della storia originale (max 550 caratteri)
-    "categories": { "id": number, "name": string }[], // Seleziona le categorie più rilevanti dalla lista disponibile (massimo 4)
+    "title": string,        // Un titolo accattivante, stile giornalistico in italiano (max ${CHARACTER_LIMITS.GENERATED_TITLE} caratteri)
+    "description": string,  // Un racconto stravagante in italiano, mantenendo l'essenza della storia originale (max ${CHARACTER_LIMITS.GENERATED_DESCRIPTION} caratteri)
+    "categories": { "id": number, "name": string }[], // Seleziona le categorie più rilevanti dalla lista disponibile (massimo ${ARRAY_LIMITS.MAX_CATEGORIES})
     "imageDescription": string      // Un prompt per generare l'immagine riassuntiva dell'accaduto, tramite AI
   }
 
@@ -185,7 +186,7 @@ export function GENERATE_IMAGE_PROMPT({ description, imageStyle }: GenerateImage
   7. Mantieni uno stile generale "carino" o "adorabile".
   8. Concentrati nel descrivere la scena visiva in dettaglio, assicurandoti che sia facile da visualizzare.
   9. Usa lo stile: ${imageStyle}
-  10. Mantieni l'output finale in un singolo paragrafo, sotto le 200 parole se possibile.
+  10. Mantieni l'output finale in un singolo paragrafo, sotto le ${CHARACTER_LIMITS.IMAGE_PROMPT} parole se possibile.
   11. Il prompt finale **deve** iniziare con: "Create un'immagine con un magico gattino nero con cappello viola e occhi verdi..."
       e finire con: "... - ${imageStyle}"
 
@@ -245,8 +246,8 @@ export function GENERATE_TELEGRAM_PROMPT({ log }: GenerateTelegramPromptParams) 
   - Il messaggio deve sempre iniziare con #DAY ${log.id * 2}
   - Il messaggio deve essere RIGOROSAMENTE HTML, seguendo strettamente le regole HTML di Telegram, nessun testo aggiuntivo, pronto per essere inviato su Telegram tramite API.
   - Titolo all'inizio del messaggio accattivante in grassetto con emoji collegate all'evento
-  - La descrizione dopo il titolo deve essere breve e misteriosa (max 500 caratteri)
-  - Link al dettaglio con testo invitante e clickbait, suscitando pena, curiosità e empatia per il pulcino (max 100 caratteri)
+  - La descrizione dopo il titolo deve essere breve e misteriosa (max ${CHARACTER_LIMITS.TELEGRAM_DESCRIPTION} caratteri)
+  - Link al dettaglio con testo invitante e clickbait, suscitando pena, curiosità e empatia per il pulcino (max ${CHARACTER_LIMITS.TELEGRAM_LINK} caratteri)
   - Il link deve essere: ${linkURL}
   - Tono giocoso ma misterioso, perfetto per social media
 
