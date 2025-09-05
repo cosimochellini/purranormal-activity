@@ -6,16 +6,12 @@ import { Loading } from '../common/Loading'
 import { SpookyButton } from '../common/SpookyButton'
 import { SpookyCard } from '../common/SpookyCard'
 import { SpookyTextarea } from '../common/SpookyTextarea'
-import type { FormValues } from '.'
-
-interface InitialSectionProps {
-  onInitialSuccess?: (body: Partial<FormValues>) => void
-}
+import type { StateSectionProps } from '.'
 
 const refineLog = fetcher<Response, never, Body>('/api/log/refine', 'POST')
 
-export function InitialSection({ onInitialSuccess }: InitialSectionProps) {
-  const [description, setDescription] = useState('')
+export function InitialSection({ onNext, description: initialDescription }: StateSectionProps) {
+  const [description, setDescription] = useState(initialDescription ?? '')
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -29,7 +25,7 @@ export function InitialSection({ onInitialSuccess }: InitialSectionProps) {
 
       const questions = response.content
 
-      onInitialSuccess?.({ description, questions })
+      onNext?.({ description, questions })
     } catch (error) {
       if (error instanceof Error) setErrorMessage(error.message)
       else setErrorMessage(JSON.stringify(error))

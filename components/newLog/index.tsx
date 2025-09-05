@@ -1,25 +1,18 @@
 'use client'
 
-import dynamic from 'next/dynamic'
 import type { ComponentType } from 'react'
 import { useState } from 'react'
 import type { FollowUpQuestion } from '@/app/api/log/refine/route'
 import { usePartialState } from '@/hooks/state'
+import { CompletedSection } from './completed'
+import { InitialSection } from './initial'
+import { RefinementSection } from './refinement'
 
 enum State {
   INITIAL = 'initial',
   REFINEMENT = 'refinement',
   COMPLETED = 'completed',
 }
-const initial = dynamic(() => import('./initial').then((mod) => mod.InitialSection), {
-  ssr: false,
-})
-const refinement = dynamic(() => import('./refinement').then((mod) => mod.RefinementSection), {
-  ssr: false,
-})
-const completed = dynamic(() => import('./completed').then((mod) => mod.CompletedSection), {
-  ssr: false,
-})
 
 export interface FormValues {
   description: string
@@ -28,9 +21,9 @@ export interface FormValues {
   missingCategories: string[]
 }
 
-interface InitialSectionProps {
-  onInitialSuccess?: (body: Partial<FormValues>) => void
-  onSubmitSuccess?: (body: Partial<FormValues>) => void
+export interface StateSectionProps {
+  onNext?: (body: Partial<FormValues>) => void
+  onPrevious?: () => void
   description?: string
   questions?: FollowUpQuestion[]
   logId?: number
@@ -38,10 +31,26 @@ interface InitialSectionProps {
 }
 
 const stateMap = {
-  [State.INITIAL]: initial,
-  [State.REFINEMENT]: refinement,
-  [State.COMPLETED]: completed,
-} as const satisfies Record<State, ComponentType<InitialSectionProps>>
+  [State.INITIAL]: InitialSection,
+  [State.REFINEMENT]: RefinementSection,
+  [State.COMPLETED]: CompletedSection,
+} as const satisfies Record<State, ComponentType<StateSectionProps>>
+
+const progress = [State.INITIAL, State.REFINEMENT, State.COMPLETED]
+
+const next = (current: State) => {
+  const currentIndex = progress.indexOf(current)
+  const next = progress.at(Math.min(currentIndex + 1, progress.length - 1))
+
+  return next ?? State.INITIAL
+}
+
+const prev = (current: State) => {
+  const currentIndex = progress.indexOf(current)
+  const prev = progress.at(Math.max(currentIndex - 1, 0))
+
+  return prev ?? State.COMPLETED
+}
 
 export function NewLogForm() {
   const [state, setState] = useState(State.INITIAL)
@@ -49,21 +58,20 @@ export function NewLogForm() {
 
   const Component = stateMap[state]
 
-  const handleInitialSuccess = ({ description, questions }: Partial<FormValues>) => {
-    setState(State.REFINEMENT)
-    setBody({ description, questions })
+  const handleNext = (form: Partial<FormValues>) => {
+    setState(next(state))
+    setBody(form)
   }
 
-  const handleRefinementSuccess = ({ logId, missingCategories }: Partial<FormValues>) => {
-    setState(State.COMPLETED)
-    setBody({ logId, missingCategories })
+  const handlePrevious = () => {
+    setState(prev(state))
   }
 
   return (
     <Component
       key={state}
-      onInitialSuccess={handleInitialSuccess}
-      onSubmitSuccess={handleRefinementSuccess}
+      onNext={handleNext}
+      onPrevious={handlePrevious}
       description={body?.description}
       questions={body?.questions}
       logId={body?.logId}
