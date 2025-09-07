@@ -1,6 +1,6 @@
 {
   "name": "purranormal-activity",
-  "version": "0.14.0",
+  "version": "0.14.2",
   "private": true,
   "scripts": {
     "pages:build": "npx @cloudflare/next-on-pages",
@@ -26,13 +26,13 @@
     "@aws-sdk/client-s3": "3.726.1",
     "@libsql/client": "^0.15.14",
     "@tabler/icons-react": "^3.34.1",
-    "ai": "^5.0.33",
+    "ai": "^5.0.34",
     "classnames": "^2.5.1",
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.44.5",
     "next": "15.5.2",
     "next-view-transitions": "^0.3.4",
-    "nuqs": "^2.5.2",
+    "nuqs": "^2.6.0",
     "openai": "^5.19.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
@@ -43,7 +43,7 @@
     "zod": "^4.1.5"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.2.2",
+    "@biomejs/biome": "2.2.3",
     "@cloudflare/next-on-pages": "^1.13.16",
     "@tailwindcss/postcss": "^4.1.13",
     "@types/node": "^24.3.1",
