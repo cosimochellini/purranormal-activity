@@ -7,7 +7,7 @@ export const CHARACTER_LIMITS = {
   /** Maximum characters for log titles */
   TITLE: 100,
   /** Maximum characters for log descriptions */
-  DESCRIPTION: 500,
+  DESCRIPTION: 600,
   /** Maximum characters for refinement descriptions */
   REFINEMENT_DESCRIPTION: 1000,
   /** Maximum characters for questions in prompts */
