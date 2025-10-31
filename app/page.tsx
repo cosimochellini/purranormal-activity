@@ -3,6 +3,7 @@ import { SpookyFooter } from '@/components/footer/SpookyFooter'
 import { HeroSection } from '@/components/hero/HeroSection'
 import { EventsSection } from '../components/events/EventsSection'
 
+export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
 export const revalidate = 60
 
