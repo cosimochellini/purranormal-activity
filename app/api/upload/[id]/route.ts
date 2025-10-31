@@ -1,6 +1,6 @@
 /* eslint-disable node/prefer-global/buffer */
 import type { NextRequest } from 'next/server'
-import { uploadToR2 } from '@/utils/cloudflare'
+import { uploadToR2 } from '@/utils/cloudflare.server'
 import { badRequest, ok } from '../../../../utils/http'
 
 export interface UploadResponse {

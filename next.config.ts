@@ -19,8 +19,11 @@ const nextConfig: NextConfig = {
   compress: true,
 
   experimental: {
-    optimizePackageImports: ['@tabler/icons-react'],
+    optimizePackageImports: ['@tabler/icons-react', 'drizzle-orm'],
   },
+
+  // Empty turbopack config to silence warning, we'll optimize in other ways
+  turbopack: {},
 }
 
 export default nextConfig
