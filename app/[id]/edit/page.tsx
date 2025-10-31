@@ -5,6 +5,7 @@ import { getLog } from '../../../services/log'
 import type { PageProps } from '../../../types/next'
 
 export const runtime = 'edge'
+export const dynamic = 'force-dynamic'
 
 interface Params {
   id: string

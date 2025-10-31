@@ -19,6 +19,7 @@ interface Params {
 }
 
 export const runtime = 'edge'
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: PageProps<Params>): Promise<Metadata> {
   const rawId = (await params).id

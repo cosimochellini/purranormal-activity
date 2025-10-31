@@ -5,6 +5,7 @@ import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { ExploreSection } from '@/components/explore/ExploreSection'
 import { ExploreSkeleton } from '@/components/explore/ExploreSkeleton'
 
+export const dynamic = 'force-dynamic'
 export const revalidate = 60
 
 export const metadata: Metadata = {
