@@ -1,6 +1,6 @@
 import { revalidatePath } from 'next/cache'
 import { NEXT_PUBLIC_APP_URL } from '../env/next'
-import { redeploy } from './cloudflare.server'
+import { redeploy } from './cloudflare'
 import { logger } from './logger'
 
 const triggerUrl = `${NEXT_PUBLIC_APP_URL}/api/trigger/images` as const
