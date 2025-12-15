@@ -22,7 +22,10 @@ const submitFormSchema = z.object({
   answers: z
     .array(answerSchema)
     .max(ARRAY_LIMITS.MAX_ANSWERS, VALIDATION_MESSAGES.ANSWERS_TOO_MANY),
-  secret: z.string().refine((val) => val.toLowerCase() === SECRET, { message: 'Invalid secret' }),
+  secret: z
+    .string()
+    .min(1, VALIDATION_MESSAGES.SECRET_REQUIRED)
+    .refine((val) => val.toLowerCase() === SECRET, { message: VALIDATION_MESSAGES.SECRET_INVALID }),
 })
 
 export const runtime = 'edge'
@@ -79,10 +82,25 @@ export async function POST(request: Request) {
   } catch (error) {
     logger.error('Failed to submit log:', error)
 
+    // Determine user-friendly error message based on error type
+    let errorMessage = 'Unable to process your paranormal event. Please try again.'
+
+    if (error instanceof Error) {
+      // Check for specific error types
+      if (error.message.includes('AI') || error.message.includes('OpenAI')) {
+        errorMessage =
+          'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.'
+      } else if (error.message.includes('database') || error.message.includes('DB')) {
+        errorMessage = 'Unable to save the event at this time. Please try again shortly.'
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        errorMessage = 'Connection issue detected. Please check your internet and try again.'
+      }
+    }
+
     return ok<Response>({
       success: false,
       errors: {
-        description: [JSON.stringify(error)],
+        general: [errorMessage],
       },
     })
   }
@@ -96,7 +114,7 @@ export type Response =
     }
   | {
       success: false
-      errors: Partial<Record<keyof typeof submitFormSchema.shape, string[]>>
+      errors: Partial<Record<keyof typeof submitFormSchema.shape | 'general', string[]>>
     }
 
 export type Body = z.infer<typeof submitFormSchema>

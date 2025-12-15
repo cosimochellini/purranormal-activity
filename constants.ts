@@ -52,11 +52,15 @@ export const UI_CONFIG = {
 
 // Validation messages
 export const VALIDATION_MESSAGES = {
-  TITLE_REQUIRED: 'Title is required',
-  TITLE_TOO_LONG: 'Title is too long',
-  DESCRIPTION_REQUIRED: 'Description is required',
-  DESCRIPTION_TOO_LONG: 'Description is too long',
-  CATEGORIES_REQUIRED: 'Categories are required',
-  ANSWERS_TOO_MANY: 'At least 5 follow-up answers are required',
-  CATEGORY_REQUIRED: 'At least one category is required',
+  TITLE_REQUIRED: 'Please provide a title for your paranormal event',
+  TITLE_TOO_LONG: `Title must be ${CHARACTER_LIMITS.TITLE} characters or less`,
+  DESCRIPTION_REQUIRED: 'Please describe what mystical event occurred',
+  DESCRIPTION_TOO_LONG: `Description must be ${CHARACTER_LIMITS.DESCRIPTION} characters or less`,
+  DESCRIPTION_TOO_SHORT: 'Please provide more details about the mystical event',
+  DESCRIPTION_REFINEMENT_TOO_LONG: `Description must be ${CHARACTER_LIMITS.REFINEMENT_DESCRIPTION} characters or less`,
+  CATEGORIES_REQUIRED: 'Please select at least one category for this event',
+  ANSWERS_TOO_MANY: `You can provide up to ${ARRAY_LIMITS.MAX_ANSWERS} answers`,
+  CATEGORY_REQUIRED: 'At least one category must be selected',
+  SECRET_INVALID: 'The secret password is incorrect. Please check and try again.',
+  SECRET_REQUIRED: 'Secret password is required to submit this event',
 } as const

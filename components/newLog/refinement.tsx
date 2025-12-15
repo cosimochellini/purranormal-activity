@@ -7,6 +7,7 @@ import { fetcher } from '@/utils/fetch'
 import { logger } from '../../utils/logger'
 import { SpookyButton } from '../common/SpookyButton'
 import { SpookyInput } from '../common/SpookyInput'
+import { SpookyModal } from '../common/SpookyModal'
 import { RadioOption } from '../inputs/RadioOption'
 import type { StateSectionProps } from '.'
 
@@ -92,9 +93,15 @@ export function RefinementSection({
     () => questions?.map((q) => ({ ...q, answer: '', otherText: null })) ?? [],
   )
   const [secret, setSecret] = useState('')
+  const [errorMessage, setErrorMessage] = useState<string>()
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({})
 
   const handleSubmit = async () => {
     if (!description) return
+
+    // Clear previous errors
+    setErrorMessage(undefined)
+    setFieldErrors({})
 
     try {
       setIsSubmitting(true)
@@ -107,11 +114,23 @@ export function RefinementSection({
 
       const response = await submitLog({ body: { description, answers: payloadAnswers, secret } })
 
-      if (!response.success) throw new Error('Failed to submit')
+      if (!response.success) {
+        // Handle validation errors from API
+        setFieldErrors(response.errors || {})
+
+        const errorMessage = Object.values(response.errors).flat().join(', ')
+
+        setErrorMessage(errorMessage)
+
+        logger.error('Validation errors:', response.errors)
+        return
+      }
 
       onNext?.({ logId: response.id, missingCategories: response.missingCategories })
     } catch (error) {
+      // Handle network or unexpected errors
       logger.error('Failed to submit log:', error)
+      setErrorMessage('Unable to save the event. Please check your connection and try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -125,10 +144,20 @@ export function RefinementSection({
           : p,
       ),
     )
+    // Clear errors when user makes changes
+    if (errorMessage || Object.keys(fieldErrors).length > 0) {
+      setErrorMessage(undefined)
+      setFieldErrors({})
+    }
   }
 
   const handleOtherTextChange = (question: string, otherText: string) => {
     setAnswers((prev) => prev.map((p) => (p.question === question ? { ...p, otherText } : p)))
+    // Clear errors when user makes changes
+    if (errorMessage || Object.keys(fieldErrors).length > 0) {
+      setErrorMessage(undefined)
+      setFieldErrors({})
+    }
   }
 
   const removeQuestion = (question: string) => {
@@ -216,8 +245,30 @@ export function RefinementSection({
             label="Secret"
             type="password"
             value={secret}
-            onChange={(e) => setSecret(e.target.value)}
+            onChange={(e) => {
+              setSecret(e.target.value)
+              // Clear secret-specific errors when user types
+              if (fieldErrors.secret) {
+                setFieldErrors((prev) => {
+                  const { secret, ...rest } = prev
+                  return rest
+                })
+              }
+            }}
           />
+          {fieldErrors.secret && fieldErrors.secret.length > 0 && (
+            <div className="animate-fadeIn space-y-1">
+              {fieldErrors.secret.map((error, index) => (
+                <p
+                  key={`${error}-${index}`}
+                  className="text-sm text-red-400 flex items-start gap-2"
+                >
+                  <span className="text-red-400">⚠</span>
+                  <span>{error}</span>
+                </p>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 mt-6">
@@ -239,6 +290,29 @@ export function RefinementSection({
         <div className="absolute -bottom-2 right-1/3 h-2 w-2 animate-sparkle delay-300 rounded-full bg-purple-300/80 blur-[1px]" />
         <div className="absolute top-1/2 -right-4 h-2 w-2 animate-sparkle delay-700 rounded-full bg-purple-300/80 blur-[1px]" />
       </div>
+
+      {/* Error Modal */}
+      <SpookyModal
+        title="Something Went Wrong"
+        open={!!errorMessage}
+        onClose={() => setErrorMessage(undefined)}
+      >
+        <div className="space-y-4">
+          <p className="text-purple-200/90 leading-relaxed">{errorMessage}</p>
+          <div className="flex gap-3 justify-end mt-6">
+            <SpookyButton
+              onClick={() => setErrorMessage(undefined)}
+              variant="secondary"
+              className="flex-1 sm:flex-none"
+            >
+              Dismiss
+            </SpookyButton>
+            <SpookyButton onClick={handleSubmit} className="flex-1 sm:flex-none">
+              Try Again
+            </SpookyButton>
+          </div>
+        </div>
+      </SpookyModal>
     </div>
   )
 }
