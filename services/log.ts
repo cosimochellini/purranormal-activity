@@ -24,6 +24,11 @@ const ranges = {
 
 async function addCategories(logs: Log[]) {
   const logIds = logs.map((log) => log.id)
+
+  if (logIds.length === 0) {
+    return []
+  }
+
   const categoryRelations = await db
     .select({
       logId: logCategory.logId,
@@ -32,17 +37,19 @@ async function addCategories(logs: Log[]) {
     .from(logCategory)
     .where(inArray(logCategory.logId, logIds))
 
-  const data = [] as LogWithCategories[]
+  const categoryMap = new Map<number, number[]>()
 
-  for (const log of logs) {
-    const categories = categoryRelations
-      .filter(({ logId }) => logId === log.id)
-      .map(({ categoryId }) => categoryId)
-
-    data.push({ ...log, categories })
+  for (const { logId, categoryId } of categoryRelations) {
+    if (!categoryMap.has(logId)) {
+      categoryMap.set(logId, [])
+    }
+    categoryMap.get(logId)!.push(categoryId)
   }
 
-  return data
+  return logs.map((log) => ({
+    ...log,
+    categories: categoryMap.get(log.id) || [],
+  }))
 }
 
 export async function getLog(id: number) {
