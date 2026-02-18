@@ -41,7 +41,9 @@ export function IntersectionTrigger({
       data-testid="intersection-trigger"
     >
       {/* Visual indicator for debugging (can be removed in production) */}
-      <div className="h-px bg-purple-500/20 w-full" />
+      {process.env.NODE_ENV === 'development' && (
+        <div className="h-px bg-purple-500/20 w-full" />
+      )}
     </div>
   )
 }
