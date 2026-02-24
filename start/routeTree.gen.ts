@@ -10,33 +10,188 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiScriptRouteImport } from './routes/api/script'
+import { Route as ApiLogRouteImport } from './routes/api/log'
+import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
+import { Route as ApiUploadIdRouteImport } from './routes/api/upload/$id'
+import { Route as ApiTriggerImagesRouteImport } from './routes/api/trigger/images'
+import { Route as ApiTriggerIdRouteImport } from './routes/api/trigger/$id'
+import { Route as ApiTelegramIdRouteImport } from './routes/api/telegram/$id'
+import { Route as ApiLogSubmitRouteImport } from './routes/api/log/submit'
+import { Route as ApiLogRefineRouteImport } from './routes/api/log/refine'
+import { Route as ApiLogAllRouteImport } from './routes/api/log/all'
+import { Route as ApiLogIdRouteImport } from './routes/api/log/$id'
+import { Route as ApiLogIdCategoriesRouteImport } from './routes/api/log/$id/categories'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiScriptRoute = ApiScriptRouteImport.update({
+  id: '/api/script',
+  path: '/api/script',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiLogRoute = ApiLogRouteImport.update({
+  id: '/api/log',
+  path: '/api/log',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCategoriesRoute = ApiCategoriesRouteImport.update({
+  id: '/api/categories',
+  path: '/api/categories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadIdRoute = ApiUploadIdRouteImport.update({
+  id: '/api/upload/$id',
+  path: '/api/upload/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTriggerImagesRoute = ApiTriggerImagesRouteImport.update({
+  id: '/api/trigger/images',
+  path: '/api/trigger/images',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTriggerIdRoute = ApiTriggerIdRouteImport.update({
+  id: '/api/trigger/$id',
+  path: '/api/trigger/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTelegramIdRoute = ApiTelegramIdRouteImport.update({
+  id: '/api/telegram/$id',
+  path: '/api/telegram/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiLogSubmitRoute = ApiLogSubmitRouteImport.update({
+  id: '/submit',
+  path: '/submit',
+  getParentRoute: () => ApiLogRoute,
+} as any)
+const ApiLogRefineRoute = ApiLogRefineRouteImport.update({
+  id: '/refine',
+  path: '/refine',
+  getParentRoute: () => ApiLogRoute,
+} as any)
+const ApiLogAllRoute = ApiLogAllRouteImport.update({
+  id: '/all',
+  path: '/all',
+  getParentRoute: () => ApiLogRoute,
+} as any)
+const ApiLogIdRoute = ApiLogIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiLogRoute,
+} as any)
+const ApiLogIdCategoriesRoute = ApiLogIdCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => ApiLogIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/categories': typeof ApiCategoriesRoute
+  '/api/log': typeof ApiLogRouteWithChildren
+  '/api/script': typeof ApiScriptRoute
+  '/api/log/$id': typeof ApiLogIdRouteWithChildren
+  '/api/log/all': typeof ApiLogAllRoute
+  '/api/log/refine': typeof ApiLogRefineRoute
+  '/api/log/submit': typeof ApiLogSubmitRoute
+  '/api/telegram/$id': typeof ApiTelegramIdRoute
+  '/api/trigger/$id': typeof ApiTriggerIdRoute
+  '/api/trigger/images': typeof ApiTriggerImagesRoute
+  '/api/upload/$id': typeof ApiUploadIdRoute
+  '/api/log/$id/categories': typeof ApiLogIdCategoriesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/categories': typeof ApiCategoriesRoute
+  '/api/log': typeof ApiLogRouteWithChildren
+  '/api/script': typeof ApiScriptRoute
+  '/api/log/$id': typeof ApiLogIdRouteWithChildren
+  '/api/log/all': typeof ApiLogAllRoute
+  '/api/log/refine': typeof ApiLogRefineRoute
+  '/api/log/submit': typeof ApiLogSubmitRoute
+  '/api/telegram/$id': typeof ApiTelegramIdRoute
+  '/api/trigger/$id': typeof ApiTriggerIdRoute
+  '/api/trigger/images': typeof ApiTriggerImagesRoute
+  '/api/upload/$id': typeof ApiUploadIdRoute
+  '/api/log/$id/categories': typeof ApiLogIdCategoriesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/categories': typeof ApiCategoriesRoute
+  '/api/log': typeof ApiLogRouteWithChildren
+  '/api/script': typeof ApiScriptRoute
+  '/api/log/$id': typeof ApiLogIdRouteWithChildren
+  '/api/log/all': typeof ApiLogAllRoute
+  '/api/log/refine': typeof ApiLogRefineRoute
+  '/api/log/submit': typeof ApiLogSubmitRoute
+  '/api/telegram/$id': typeof ApiTelegramIdRoute
+  '/api/trigger/$id': typeof ApiTriggerIdRoute
+  '/api/trigger/images': typeof ApiTriggerImagesRoute
+  '/api/upload/$id': typeof ApiUploadIdRoute
+  '/api/log/$id/categories': typeof ApiLogIdCategoriesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/api/categories'
+    | '/api/log'
+    | '/api/script'
+    | '/api/log/$id'
+    | '/api/log/all'
+    | '/api/log/refine'
+    | '/api/log/submit'
+    | '/api/telegram/$id'
+    | '/api/trigger/$id'
+    | '/api/trigger/images'
+    | '/api/upload/$id'
+    | '/api/log/$id/categories'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/api/categories'
+    | '/api/log'
+    | '/api/script'
+    | '/api/log/$id'
+    | '/api/log/all'
+    | '/api/log/refine'
+    | '/api/log/submit'
+    | '/api/telegram/$id'
+    | '/api/trigger/$id'
+    | '/api/trigger/images'
+    | '/api/upload/$id'
+    | '/api/log/$id/categories'
+  id:
+    | '__root__'
+    | '/'
+    | '/api/categories'
+    | '/api/log'
+    | '/api/script'
+    | '/api/log/$id'
+    | '/api/log/all'
+    | '/api/log/refine'
+    | '/api/log/submit'
+    | '/api/telegram/$id'
+    | '/api/trigger/$id'
+    | '/api/trigger/images'
+    | '/api/upload/$id'
+    | '/api/log/$id/categories'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiCategoriesRoute: typeof ApiCategoriesRoute
+  ApiLogRoute: typeof ApiLogRouteWithChildren
+  ApiScriptRoute: typeof ApiScriptRoute
+  ApiTelegramIdRoute: typeof ApiTelegramIdRoute
+  ApiTriggerIdRoute: typeof ApiTriggerIdRoute
+  ApiTriggerImagesRoute: typeof ApiTriggerImagesRoute
+  ApiUploadIdRoute: typeof ApiUploadIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +203,131 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/script': {
+      id: '/api/script'
+      path: '/api/script'
+      fullPath: '/api/script'
+      preLoaderRoute: typeof ApiScriptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/log': {
+      id: '/api/log'
+      path: '/api/log'
+      fullPath: '/api/log'
+      preLoaderRoute: typeof ApiLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/categories': {
+      id: '/api/categories'
+      path: '/api/categories'
+      fullPath: '/api/categories'
+      preLoaderRoute: typeof ApiCategoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/upload/$id': {
+      id: '/api/upload/$id'
+      path: '/api/upload/$id'
+      fullPath: '/api/upload/$id'
+      preLoaderRoute: typeof ApiUploadIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/trigger/images': {
+      id: '/api/trigger/images'
+      path: '/api/trigger/images'
+      fullPath: '/api/trigger/images'
+      preLoaderRoute: typeof ApiTriggerImagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/trigger/$id': {
+      id: '/api/trigger/$id'
+      path: '/api/trigger/$id'
+      fullPath: '/api/trigger/$id'
+      preLoaderRoute: typeof ApiTriggerIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/telegram/$id': {
+      id: '/api/telegram/$id'
+      path: '/api/telegram/$id'
+      fullPath: '/api/telegram/$id'
+      preLoaderRoute: typeof ApiTelegramIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/log/submit': {
+      id: '/api/log/submit'
+      path: '/submit'
+      fullPath: '/api/log/submit'
+      preLoaderRoute: typeof ApiLogSubmitRouteImport
+      parentRoute: typeof ApiLogRoute
+    }
+    '/api/log/refine': {
+      id: '/api/log/refine'
+      path: '/refine'
+      fullPath: '/api/log/refine'
+      preLoaderRoute: typeof ApiLogRefineRouteImport
+      parentRoute: typeof ApiLogRoute
+    }
+    '/api/log/all': {
+      id: '/api/log/all'
+      path: '/all'
+      fullPath: '/api/log/all'
+      preLoaderRoute: typeof ApiLogAllRouteImport
+      parentRoute: typeof ApiLogRoute
+    }
+    '/api/log/$id': {
+      id: '/api/log/$id'
+      path: '/$id'
+      fullPath: '/api/log/$id'
+      preLoaderRoute: typeof ApiLogIdRouteImport
+      parentRoute: typeof ApiLogRoute
+    }
+    '/api/log/$id/categories': {
+      id: '/api/log/$id/categories'
+      path: '/categories'
+      fullPath: '/api/log/$id/categories'
+      preLoaderRoute: typeof ApiLogIdCategoriesRouteImport
+      parentRoute: typeof ApiLogIdRoute
+    }
   }
 }
 
+interface ApiLogIdRouteChildren {
+  ApiLogIdCategoriesRoute: typeof ApiLogIdCategoriesRoute
+}
+
+const ApiLogIdRouteChildren: ApiLogIdRouteChildren = {
+  ApiLogIdCategoriesRoute: ApiLogIdCategoriesRoute,
+}
+
+const ApiLogIdRouteWithChildren = ApiLogIdRoute._addFileChildren(
+  ApiLogIdRouteChildren,
+)
+
+interface ApiLogRouteChildren {
+  ApiLogIdRoute: typeof ApiLogIdRouteWithChildren
+  ApiLogAllRoute: typeof ApiLogAllRoute
+  ApiLogRefineRoute: typeof ApiLogRefineRoute
+  ApiLogSubmitRoute: typeof ApiLogSubmitRoute
+}
+
+const ApiLogRouteChildren: ApiLogRouteChildren = {
+  ApiLogIdRoute: ApiLogIdRouteWithChildren,
+  ApiLogAllRoute: ApiLogAllRoute,
+  ApiLogRefineRoute: ApiLogRefineRoute,
+  ApiLogSubmitRoute: ApiLogSubmitRoute,
+}
+
+const ApiLogRouteWithChildren =
+  ApiLogRoute._addFileChildren(ApiLogRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiCategoriesRoute: ApiCategoriesRoute,
+  ApiLogRoute: ApiLogRouteWithChildren,
+  ApiScriptRoute: ApiScriptRoute,
+  ApiTelegramIdRoute: ApiTelegramIdRoute,
+  ApiTriggerIdRoute: ApiTriggerIdRoute,
+  ApiTriggerImagesRoute: ApiTriggerImagesRoute,
+  ApiUploadIdRoute: ApiUploadIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
