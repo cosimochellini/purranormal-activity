@@ -1,6 +1,7 @@
 import { getLog } from '@/services/log'
 import { sendEventNotification } from '@/services/notification'
-import type { PageProps } from '@/types/next'
+import type { TelegramIdResponse } from '@/types/api/telegram-id'
+import type { ParamsContext } from '@/types/route'
 import { ok } from '@/utils/http'
 
 export const runtime = 'edge'
@@ -9,25 +10,13 @@ interface Params {
   id: string
 }
 
-interface SuccessResponse {
-  success: true
-  messageId: number
-}
-
-interface ErrorResponse {
-  success: false
-  error: string
-}
-
-export type Response = SuccessResponse | ErrorResponse
-
-export async function POST(_: Request, { params }: PageProps<Params>) {
+export async function POST(_: Request, { params }: ParamsContext<Params>) {
   try {
     const { id: idParam } = await params
     const id = Number(idParam)
 
     if (Number.isNaN(id)) {
-      return ok<Response>({
+      return ok<TelegramIdResponse>({
         success: false,
         error: 'Invalid event ID',
       })
@@ -36,7 +25,7 @@ export async function POST(_: Request, { params }: PageProps<Params>) {
     // Fetch the event
     const event = await getLog(id)
     if (!event) {
-      return ok<Response>({
+      return ok<TelegramIdResponse>({
         success: false,
         error: 'Event not found',
       })
@@ -46,18 +35,18 @@ export async function POST(_: Request, { params }: PageProps<Params>) {
     const telegramResult = await sendEventNotification(event)
 
     if (!telegramResult.success) {
-      return ok<Response>({
+      return ok<TelegramIdResponse>({
         success: false,
         error: telegramResult.error || 'Unknown error',
       })
     }
 
-    return ok<Response>({
+    return ok<TelegramIdResponse>({
       success: true,
       messageId: telegramResult.messageId || 0,
     })
   } catch (error) {
-    return ok<Response>({
+    return ok<TelegramIdResponse>({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
     })

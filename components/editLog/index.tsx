@@ -5,13 +5,13 @@ import classNames from 'classnames'
 import { useRouter } from 'next/navigation'
 import type { ChangeEvent, FormEvent } from 'react'
 import { Suspense, useRef, useState } from 'react'
-import type { DeleteResponse, PutBody, PutResponse } from '@/app/api/log/[id]/route'
-import type { UploadResponse } from '@/app/api/upload/[id]/route'
 import { SpookyButton } from '@/components/common/SpookyButton'
 import { EventImage } from '@/components/events/EventImage'
 import { UI_CONFIG } from '@/constants'
 import type { LogWithCategories } from '@/db/schema'
 import { usePartialState } from '@/hooks/state'
+import type { LogIdDeleteResponse, LogIdPutBody, LogIdPutResponse } from '@/types/api/log-id'
+import type { UploadIdResponse } from '@/types/api/upload-id'
 import { fetcher } from '@/utils/fetch'
 import { transitions } from '@/utils/viewTransition'
 import { SpookyInput } from '../common/SpookyInput'
@@ -22,9 +22,9 @@ interface Secret {
   secret: string
 }
 
-const updateLog = fetcher<PutResponse, never, PutBody>('/api/log/[id]', 'PUT')
-const deleteLog = fetcher<DeleteResponse, never, Secret>('/api/log/[id]', 'DELETE')
-const uploadImage = fetcher<UploadResponse, never, FormData>('/api/upload/[id]', 'POST')
+const updateLog = fetcher<LogIdPutResponse, never, LogIdPutBody>('/api/log/[id]', 'PUT')
+const deleteLog = fetcher<LogIdDeleteResponse, never, Secret>('/api/log/[id]', 'DELETE')
+const uploadImage = fetcher<UploadIdResponse, never, FormData>('/api/upload/[id]', 'POST')
 
 interface UpdateImageButtonProps {
   id: number
@@ -124,7 +124,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
       })
 
       if (!response.success) {
-        const errors = Object.values(response.errors).flat()
+        const errors = Object.values(response.errors ?? {}).flat()
         setError(errors[0] ?? 'Failed to update')
         return
       }
@@ -150,8 +150,8 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
       })
 
       if (!response.success) {
-        const errors = Object.values(response.errors).flat()
-        setError(errors[0] ?? 'Failed to update')
+        const errors = Object.values(response.errors ?? {}).flat()
+        setError(errors[0] ?? response.error ?? 'Failed to update')
         return
       }
 

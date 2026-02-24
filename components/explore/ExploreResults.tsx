@@ -2,15 +2,15 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { LogWithCategories } from '@/db/schema'
+import type { LogAllQuery, LogAllResponse } from '@/types/api/log-all'
 
 import { fetcher } from '@/utils/fetch'
-import type { Query, Response } from '../../app/api/log/all/route'
 import { useExploreData } from '../../hooks/useExporeData'
 import { Loading } from '../common/Loading'
 import { EventCard } from '../events/EventCard'
 import { NoLogsFound } from './NoLogsFound'
 
-const searchLogs = fetcher<Response, Query>('/api/log/all')
+const searchLogs = fetcher<LogAllResponse, LogAllQuery>('/api/log/all')
 
 export function ExploreResults() {
   const [{ page, limit, search, categories, sortBy, timeRange }] = useExploreData()

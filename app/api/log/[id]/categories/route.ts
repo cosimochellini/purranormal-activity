@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { ARRAY_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
+import type { LogIdCategoriesPostResponse } from '@/types/api/log-id-categories'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 
@@ -13,15 +14,6 @@ const schema = z.object({
     .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.CATEGORY_REQUIRED),
 })
 
-export type Response =
-  | {
-      success: true
-    }
-  | {
-      success: false
-      errors: Partial<Record<keyof typeof schema.shape, string[]>>
-    }
-
 export async function POST(request: Request) {
   try {
     const url = new URL(request.url)
@@ -30,7 +22,7 @@ export async function POST(request: Request) {
     const result = await schema.safeParseAsync(data)
 
     if (!result.success) {
-      return ok<Response>({
+      return ok<LogIdCategoriesPostResponse>({
         success: false,
         errors: result.error.flatten().fieldErrors,
       })
@@ -45,11 +37,11 @@ export async function POST(request: Request) {
       })),
     )
 
-    return ok<Response>({ success: true })
+    return ok<LogIdCategoriesPostResponse>({ success: true })
   } catch (error) {
     logger.error('Failed to add categories to log:', error)
 
-    return ok<Response>({
+    return ok<LogIdCategoriesPostResponse>({
       success: false,
       errors: {
         categories: ['Failed to add categories to log'],
@@ -57,5 +49,3 @@ export async function POST(request: Request) {
     })
   }
 }
-
-export type Body = z.infer<typeof schema>

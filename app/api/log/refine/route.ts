@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { createQuestions } from '@/services/ai'
+import type { LogRefineResponse } from '@/types/api/log-refine'
 import { ok } from '@/utils/http'
 import { logger } from '../../../../utils/logger'
 
@@ -11,21 +12,6 @@ const schema = z.object({
     .max(CHARACTER_LIMITS.REFINEMENT_DESCRIPTION, VALIDATION_MESSAGES.DESCRIPTION_TOO_LONG),
 })
 
-export interface FollowUpQuestion {
-  question: string
-  availableAnswers: string[]
-}
-
-export type Response =
-  | {
-      success: true
-      content: FollowUpQuestion[]
-    }
-  | {
-      success: false
-      errors: Partial<Record<keyof typeof schema.shape, string[]>>
-    }
-
 export const runtime = 'edge'
 
 export async function POST(request: Request) {
@@ -35,14 +21,14 @@ export async function POST(request: Request) {
 
     if (!result.success) {
       const errors = result.error.flatten().fieldErrors
-      return ok<Response>({ success: false, errors })
+      return ok<LogRefineResponse>({ success: false, errors })
     }
 
     const { description } = result.data
 
     const content = await createQuestions(description)
 
-    return ok<Response>({ success: true, content })
+    return ok<LogRefineResponse>({ success: true, content })
   } catch (error) {
     logger.error('Failed to generate follow-up questions:', error)
 
@@ -61,7 +47,7 @@ export async function POST(request: Request) {
       }
     }
 
-    return ok<Response>({
+    return ok<LogRefineResponse>({
       success: false,
       errors: {
         description: [errorMessage],
@@ -69,5 +55,3 @@ export async function POST(request: Request) {
     })
   }
 }
-
-export type Body = z.infer<typeof schema>

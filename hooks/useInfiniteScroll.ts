@@ -1,12 +1,12 @@
 'use client'
 
 import { useCallback } from 'react'
-import type { Response } from '@/app/api/log/all/route'
 import type { LogWithCategories } from '@/db/schema'
+import type { LogAllResponse } from '@/types/api/log-all'
 import { fetcher } from '@/utils/fetch'
 import { usePartialState } from './state'
 
-const getLogs = fetcher<Response, { page: string; limit: string }>('/api/log/all')
+const getLogs = fetcher<LogAllResponse, { page: string; limit: string }>('/api/log/all')
 
 interface UseInfiniteScrollState {
   logs: LogWithCategories[]

@@ -10,7 +10,7 @@ import { EventImage } from '../../components/events/EventImage'
 import { TriggerImageGeneration } from '../../components/image/TriggerImageGeneration'
 import { NEXT_PUBLIC_APP_URL } from '../../env/next'
 import { getLog } from '../../services/log'
-import type { PageProps } from '../../types/next'
+import type { ParamsContext } from '../../types/route'
 import { publicImage } from '../../utils/cloudflare'
 import { transitions } from '../../utils/viewTransition'
 
@@ -20,7 +20,7 @@ interface Params {
 
 export const runtime = 'edge'
 
-export async function generateMetadata({ params }: PageProps<Params>): Promise<Metadata> {
+export async function generateMetadata({ params }: ParamsContext<Params>): Promise<Metadata> {
   const rawId = (await params).id
 
   const entry = await getLog(Number(rawId))
@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: PageProps<Params>): Promise<M
 // biome-ignore lint/style/useConst: otherwise it's not working
 export let revalidate = 2 * 60 * 60 // 2 hours
 
-export default async function Page({ params }: PageProps<Params>) {
+export default async function Page({ params }: ParamsContext<Params>) {
   const rawId = (await params).id
   const log = await getLog(Number(rawId))
 

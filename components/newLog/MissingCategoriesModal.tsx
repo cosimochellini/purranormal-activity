@@ -1,7 +1,10 @@
 import { IconCheck, IconX } from '@tabler/icons-react'
 import { useState } from 'react'
-import type { Body, PostResponse } from '../../app/api/categories/route'
-import type { Response } from '../../app/api/log/[id]/categories/route'
+import type { CategoriesPostBody, CategoriesPostResponse } from '@/types/api/categories'
+import type {
+  LogIdCategoriesPostBody,
+  LogIdCategoriesPostResponse,
+} from '@/types/api/log-id-categories'
 import { fetcher } from '../../utils/fetch'
 import { logger } from '../../utils/logger'
 import { SpookyButton } from '../common/SpookyButton'
@@ -14,8 +17,14 @@ interface MissingCategoriesModalProps {
   missingCategories: string[]
 }
 
-const addCategories = fetcher<PostResponse, never, Body>('/api/categories', 'POST')
-const addLogCategories = fetcher<Response, never, Body>('/api/log/[id]/categories', 'POST')
+const addCategories = fetcher<CategoriesPostResponse, never, CategoriesPostBody>(
+  '/api/categories',
+  'POST',
+)
+const addLogCategories = fetcher<LogIdCategoriesPostResponse, never, LogIdCategoriesPostBody>(
+  '/api/log/[id]/categories',
+  'POST',
+)
 
 export function MissingCategoriesModal({
   open,
@@ -51,8 +60,10 @@ export function MissingCategoriesModal({
 
       if (!res.success) throw new Error('Failed to save categories')
 
+      const categoryIds = res.categories.map((category) => category.id)
+
       await addLogCategories({
-        body: { categories: categoriesToAdd },
+        body: { categories: categoryIds },
         params: { id: logId },
       })
 

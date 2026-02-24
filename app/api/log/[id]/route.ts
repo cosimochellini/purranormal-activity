@@ -2,25 +2,16 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { LogStatus } from '@/data/enum/logStatus'
-import type { Log } from '@/db/schema'
 import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
+import { regenerateContents } from '@/services/content'
+import type { LogIdDeleteResponse, LogIdGetResponse, LogIdPutResponse } from '@/types/api/log-id'
 import { deleteFromR2 } from '@/utils/cloudflare'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { regenerateContents } from '@/utils/next'
 
 export const runtime = 'edge'
-
-export type GetResponse =
-  | {
-      success: true
-      data: Log
-    }
-  | {
-      success: false
-    }
 
 const getLog = async (id: number) => (await db.select().from(log).where(eq(log.id, id)))[0]
 
@@ -32,16 +23,16 @@ export async function GET(request: Request) {
     const log = await getLog(id)
 
     if (!log) {
-      return ok<GetResponse>({
+      return ok<LogIdGetResponse>({
         success: false,
       })
     }
 
-    return ok<GetResponse>({ success: true, data: log })
+    return ok<LogIdGetResponse>({ success: true, data: log })
   } catch (error) {
     logger.error('Failed to fetch log entry:', error)
 
-    return ok<GetResponse>({
+    return ok<LogIdGetResponse>({
       success: false,
     })
   }
@@ -62,16 +53,6 @@ const schema = z.object({
   secret: z.string().refine((val) => val === SECRET, { message: 'Invalid secret' }),
 })
 
-export type PutResponse =
-  | {
-      success: true
-      data: Log
-    }
-  | {
-      success: false
-      errors: Partial<Record<keyof typeof schema.shape, string[]>>
-    }
-
 export async function PUT(request: Request) {
   try {
     const url = new URL(request.url)
@@ -81,7 +62,7 @@ export async function PUT(request: Request) {
     const result = await schema.safeParseAsync(data)
 
     if (!result.success) {
-      return ok<PutResponse>({
+      return ok<LogIdPutResponse>({
         success: false,
         errors: result.error.flatten().fieldErrors,
       })
@@ -89,7 +70,7 @@ export async function PUT(request: Request) {
 
     const currentLog = await getLog(id)
     if (!currentLog) {
-      return ok<PutResponse>({
+      return ok<LogIdPutResponse>({
         success: false,
         errors: { title: ['Log not found'] },
       })
@@ -123,11 +104,11 @@ export async function PUT(request: Request) {
 
     await regenerateContents()
 
-    return ok<PutResponse>({ success: true, data: updated })
+    return ok<LogIdPutResponse>({ success: true, data: updated })
   } catch (error) {
     logger.error('Failed to update log:', error)
 
-    return ok<PutResponse>({
+    return ok<LogIdPutResponse>({
       success: false,
       errors: {
         title: ['Failed to update log'],
@@ -135,8 +116,6 @@ export async function PUT(request: Request) {
     })
   }
 }
-
-export type PutBody = z.infer<typeof schema>
 
 /**
  * For the DELETE route, we similarly need to check `secret`. We'll parse the
@@ -153,7 +132,7 @@ export async function DELETE(request: Request) {
     const parsed = deleteSchema.safeParse(data)
 
     if (!parsed.success) {
-      return ok({
+      return ok<LogIdDeleteResponse>({
         success: false,
         error: 'Invalid secret',
       })
@@ -168,21 +147,13 @@ export async function DELETE(request: Request) {
 
     await regenerateContents()
 
-    return ok({ success: true })
+    return ok<LogIdDeleteResponse>({ success: true })
   } catch (error) {
     logger.error('Failed to delete log:', error)
 
-    return ok({
+    return ok<LogIdDeleteResponse>({
       success: false,
       error: 'Failed to delete log',
     })
   }
 }
-export type DeleteResponse =
-  | {
-      success: true
-    }
-  | {
-      success: false
-      errors: Partial<Record<keyof typeof deleteSchema.shape, string[]>>
-    }

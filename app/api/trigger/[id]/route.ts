@@ -1,9 +1,9 @@
 import { eq } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
 import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
 import { generateImageBase64, generateImagePrompt } from '@/services/ai'
+import { invalidatePublicContent } from '@/services/content'
 import { setLogError } from '@/services/log'
 import { uploadToR2 } from '@/utils/cloudflare'
 import { ok } from '@/utils/http'
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       })
       .where(eq(log.id, logId))
 
-    revalidatePath('/', 'layout')
+    await invalidatePublicContent()
 
     return ok({ success: true })
   } catch (error) {

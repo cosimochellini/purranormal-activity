@@ -1,22 +1,21 @@
 import { z } from 'zod'
 import { ARRAY_LIMITS, VALIDATION_MESSAGES } from '@/constants'
-import type { Category } from '@/db/schema'
 import { category } from '@/db/schema'
 import { db } from '@/drizzle'
+import type { CategoriesGetResponse, CategoriesPostResponse } from '@/types/api/categories'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 
 export const runtime = 'edge'
-export type GetResponse = Category[]
 export async function GET() {
   try {
     const categories = await db.select().from(category)
 
-    return ok<GetResponse>(categories)
+    return ok<CategoriesGetResponse>(categories)
   } catch (error) {
     logger.error('Failed to fetch categories:', error)
 
-    return ok<GetResponse>([])
+    return ok<CategoriesGetResponse>([])
   }
 }
 
@@ -26,23 +25,13 @@ const schema = z.object({
     .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.CATEGORY_REQUIRED),
 })
 
-export type PostResponse =
-  | {
-      success: true
-      categories: { id: number; name: string }[]
-    }
-  | {
-      success: false
-      errors: Partial<Record<keyof typeof schema.shape, string[]>>
-    }
-
 export async function POST(request: Request) {
   try {
     const data = await request.json()
     const result = await schema.safeParseAsync(data)
 
     if (!result.success) {
-      return ok<PostResponse>({
+      return ok<CategoriesPostResponse>({
         success: false,
         errors: result.error.flatten().fieldErrors,
       })
@@ -65,11 +54,11 @@ export async function POST(request: Request) {
         name: category.name,
       })
 
-    return ok<PostResponse>({ success: true, categories })
+    return ok<CategoriesPostResponse>({ success: true, categories })
   } catch (error) {
     logger.error('Failed to create categories:', error)
 
-    return ok<PostResponse>({
+    return ok<CategoriesPostResponse>({
       success: false,
       errors: {
         categories: ['Failed to create categories'],
@@ -77,5 +66,3 @@ export async function POST(request: Request) {
     })
   }
 }
-
-export type Body = z.infer<typeof schema>

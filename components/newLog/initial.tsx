@@ -1,8 +1,8 @@
 import cn from 'classnames'
 import { useState } from 'react'
 import { z } from 'zod'
-import type { Body, Response } from '@/app/api/log/refine/route'
 import { ARRAY_LIMITS, CHARACTER_LIMITS, UI_CONFIG, VALIDATION_MESSAGES } from '@/constants'
+import type { LogRefineBody, LogRefineResponse } from '@/types/api/log-refine'
 import { fetcher } from '../../utils/fetch'
 import { logger } from '../../utils/logger'
 import { Loading } from '../common/Loading'
@@ -12,7 +12,7 @@ import { SpookyModal } from '../common/SpookyModal'
 import { SpookyTextarea } from '../common/SpookyTextarea'
 import type { StateSectionProps } from '.'
 
-const refineLog = fetcher<Response, never, Body>('/api/log/refine', 'POST')
+const refineLog = fetcher<LogRefineResponse, never, LogRefineBody>('/api/log/refine', 'POST')
 
 const MIN_DESCRIPTION_LENGTH = ARRAY_LIMITS.MIN_REQUIRED
 

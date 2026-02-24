@@ -5,9 +5,10 @@ import { category, log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
 import { generateLogDetails } from '@/services/ai'
+import { regenerateContents } from '@/services/content'
+import type { LogSubmitResponse } from '@/types/api/log-submit'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { regenerateContents } from '@/utils/next'
 
 const answerSchema = z.object({
   question: z.string(),
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     const result = await submitFormSchema.safeParseAsync(data)
 
     if (!result.success) {
-      return ok<Response>({
+      return ok<LogSubmitResponse>({
         success: false,
         errors: Object.fromEntries(
           Object.entries(z.treeifyError(result.error).properties || {}).map(([key, value]) => [
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
 
     await regenerateContents()
 
-    return ok<Response>({ success: true, id: newLog.id, missingCategories: [] })
+    return ok<LogSubmitResponse>({ success: true, id: newLog.id, missingCategories: [] })
   } catch (error) {
     logger.error('Failed to submit log:', error)
 
@@ -97,7 +98,7 @@ export async function POST(request: Request) {
       }
     }
 
-    return ok<Response>({
+    return ok<LogSubmitResponse>({
       success: false,
       errors: {
         general: [errorMessage],
@@ -105,16 +106,3 @@ export async function POST(request: Request) {
     })
   }
 }
-
-export type Response =
-  | {
-      success: true
-      id: number
-      missingCategories: string[]
-    }
-  | {
-      success: false
-      errors: Partial<Record<keyof typeof submitFormSchema.shape | 'general', string[]>>
-    }
-
-export type Body = z.infer<typeof submitFormSchema>

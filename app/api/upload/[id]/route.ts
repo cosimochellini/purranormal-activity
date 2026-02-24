@@ -1,19 +1,14 @@
 /* eslint-disable node/prefer-global/buffer */
-import type { NextRequest } from 'next/server'
+import type { UploadIdResponse } from '@/types/api/upload-id'
 import { uploadToR2 } from '@/utils/cloudflare'
 import { badRequest, ok } from '../../../../utils/http'
 
-export interface UploadResponse {
-  success: boolean
-  errors?: Record<string, string[]>
-}
-
 export const runtime = 'edge'
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File
-    const logId = Number(request.nextUrl.searchParams.get('id'))
+    const logId = Number(new URL(request.url).searchParams.get('id'))
 
     if (!file) return badRequest('File is required')
 
@@ -23,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     const result = await uploadToR2(buffer, logId)
 
-    return ok({ success: true, result })
+    return ok<UploadIdResponse>({ success: true, result })
   } catch (error) {
     return badRequest(`Failed to upload file ${error}`)
   }

@@ -3,6 +3,7 @@ import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants
 import { LogStatus } from '@/data/enum/logStatus'
 import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
+import type { LogPostResponse } from '@/types/api/log'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 
@@ -20,14 +21,6 @@ const logFormSchema = z.object({
     .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.CATEGORIES_REQUIRED),
 })
 
-export type Response =
-  | {
-      success: true
-    }
-  | {
-      success: false
-      errors: Partial<Record<keyof typeof logFormSchema.shape, string[]>>
-    }
 export const runtime = 'edge'
 export async function POST(request: Request) {
   const data = await request.json()
@@ -35,7 +28,7 @@ export async function POST(request: Request) {
   const result = await logFormSchema.safeParseAsync(data)
 
   if (!result.success) {
-    return ok<Response>({
+    return ok<LogPostResponse>({
       success: false,
       errors: result.error.flatten().fieldErrors,
     })
@@ -60,12 +53,10 @@ export async function POST(request: Request) {
         )
     }
 
-    return ok<Response>({ success: true })
+    return ok<LogPostResponse>({ success: true })
   } catch (error) {
     logger.error('Failed to create log:', error)
 
-    return ok<Response>({ success: false, errors: {} })
+    return ok<LogPostResponse>({ success: false, errors: {} })
   }
 }
-
-export type Body = z.infer<typeof logFormSchema>

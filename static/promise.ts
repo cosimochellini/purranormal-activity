@@ -1,9 +1,9 @@
-import type { GetResponse } from '../app/api/categories/route'
+import type { CategoriesGetResponse } from '../types/api/categories'
 import { fetcher } from '../utils/fetch'
 import { logger } from '../utils/logger'
 
-const emptyCategories: GetResponse = []
-const fetchCategories = fetcher<GetResponse>('/api/categories')
+const emptyCategories: CategoriesGetResponse = []
+const fetchCategories = fetcher<CategoriesGetResponse>('/api/categories')
 
 export const getCategories =
   typeof window === 'undefined'
