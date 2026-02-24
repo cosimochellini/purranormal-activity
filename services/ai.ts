@@ -102,7 +102,7 @@ export async function generateImagePrompt(description: string) {
 
   try {
     const { text } = await generateText({
-      model: openai('gpt-4o'),
+      model: openai('gpt-5.2'),
       prompt,
     })
 
@@ -130,7 +130,7 @@ const removeHTMLTags = (message: string) =>
 export async function generateTelegramMessage(log: LogWithCategories) {
   const prompt = GENERATE_TELEGRAM_PROMPT({ log })
   const { text } = await generateText({
-    model: openai('gpt-4o'),
+    model: openai('gpt-5-mini'),
     prompt,
   })
 
