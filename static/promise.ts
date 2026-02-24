@@ -1,6 +1,6 @@
 import type { GetResponse } from '../app/api/categories/route'
-import { logger } from '../utils/logger'
 import { fetcher } from '../utils/fetch'
+import { logger } from '../utils/logger'
 
 const emptyCategories: GetResponse = []
 const fetchCategories = fetcher<GetResponse>('/api/categories')

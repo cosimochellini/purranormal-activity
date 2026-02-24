@@ -2,13 +2,22 @@
   "name": "purranormal-activity",
   "version": "0.14.10",
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "pages:build": "npx @cloudflare/next-on-pages",
-    "preview": "npm run pages:build && wrangler pages dev",
-    "deploy": "npm run pages:build && wrangler pages deploy",
-    "dev": "npm run increase && next dev",
-    "build": "next build",
+    "pages:preview": "pnpm run pages:build && wrangler pages dev",
+    "pages:deploy": "pnpm run pages:build && wrangler pages deploy",
+    "preview": "vite preview",
+    "deploy": "pnpm run build:start && wrangler deploy --config wrangler.jsonc",
+    "dev": "pnpm run increase && next dev",
+    "dev:start": "vite dev",
+    "build": "pnpm run build:next",
+    "build:next": "next build",
+    "build:start": "vite build",
     "start": "next start",
+    "cf-typegen": "wrangler types --config wrangler.jsonc",
     "lint": "biome check .",
     "format": "biome format . --write",
     "lint:fix": "biome check --write .",
@@ -39,22 +48,27 @@
     "react-intersection-observer": "^10.0.3",
     "sharp": "^0.34.5",
     "sort-es": "^1.7.18",
-    "vercel": "^50.23.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.4",
     "@cloudflare/next-on-pages": "^1.13.16",
+    "@cloudflare/vite-plugin": "1.25.5",
     "@tailwindcss/postcss": "^4.2.1",
+    "@tanstack/react-router": "1.162.9",
+    "@tanstack/react-start": "1.162.9",
     "@types/node": "^25.3.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "5.1.4",
     "drizzle-kit": "^0.31.9",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.2.1",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "7.3.1",
+    "wrangler": "4.68.1"
   }
 }
