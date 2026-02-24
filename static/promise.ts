@@ -1,5 +1,15 @@
 import type { GetResponse } from '../app/api/categories/route'
-import { NEXT_PUBLIC_APP_URL } from '../env/next'
+import { logger } from '../utils/logger'
 import { fetcher } from '../utils/fetch'
 
-export const getCategories = fetcher<GetResponse>(`${NEXT_PUBLIC_APP_URL}/api/categories`)()
+const emptyCategories: GetResponse = []
+const fetchCategories = fetcher<GetResponse>('/api/categories')
+
+export const getCategories =
+  typeof window === 'undefined'
+    ? Promise.resolve(emptyCategories)
+    : fetchCategories().catch((error) => {
+        logger.error('Failed to fetch categories:', error)
+
+        return emptyCategories
+      })

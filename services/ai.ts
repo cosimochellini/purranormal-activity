@@ -1,5 +1,5 @@
 import { openai } from '@ai-sdk/openai'
-import { experimental_generateImage as generateImage, generateText } from 'ai'
+import { generateImage, generateText } from 'ai'
 import { randomImageStyle } from '../data/enum/imageStyle'
 import { category, type LogWithCategories } from '../db/schema'
 import { db } from '../drizzle'
@@ -21,7 +21,7 @@ export async function createQuestions(description: string) {
 
   try {
     const { text } = await generateText({
-      model: openai('o3-mini'),
+      model: openai('gpt-5-mini'),
       prompt,
     })
 
@@ -56,7 +56,7 @@ export async function generateLogDetails(
 
   try {
     const { text } = await generateText({
-      model: openai('o3'),
+      model: openai('gpt-5.2'),
       prompt,
     })
 
@@ -78,7 +78,7 @@ export async function generateLogDetails(
 export async function generateImageBase64(imagePrompt: string) {
   try {
     const result = await generateImage({
-      model: openai.image('gpt-image-1'),
+      model: openai.image('gpt-image-1.5'),
       prompt: imagePrompt,
       n: 1,
       size: '1024x1024',
