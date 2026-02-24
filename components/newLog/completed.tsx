@@ -1,5 +1,4 @@
 import { IconSparkles } from '@tabler/icons-react'
-import Image from 'next/image'
 import { useState } from 'react'
 import { SpookyButton } from '@/components/common/SpookyButton'
 import { randomImage } from '@/images/insert/success'
@@ -15,6 +14,7 @@ interface CompletedSectionProps {
 const successImage = randomImage()
 export function CompletedSection({ logId, missingCategories }: CompletedSectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const imageSrc = typeof successImage === 'string' ? successImage : successImage.src
 
   useSound('/sounds/magic.mp3', { autoplay: true })
 
@@ -38,13 +38,11 @@ export function CompletedSection({ logId, missingCategories }: CompletedSectionP
           <div className="absolute inset-0 -m-4 animate-pulse rounded-xl bg-purple-500/10 blur-2xl" />
           <div className="absolute inset-0 -m-2 animate-pulse delay-300 rounded-xl bg-purple-600/5 blur-xl" />
 
-          <Image
-            src={successImage}
-            blurDataURL={successImage.blurDataURL}
-            placeholder="blur"
+          {/* biome-ignore lint/performance/noImgElement: using plain img during Next to Start migration */}
+          <img
+            src={imageSrc}
             alt="Success"
-            fill
-            className="object-contain transition-transform duration-700 group-hover:scale-105"
+            className="object-contain transition-transform duration-700 group-hover:scale-105 w-full h-full"
           />
         </div>
 

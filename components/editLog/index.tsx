@@ -2,7 +2,6 @@
 
 import { IconRefresh } from '@tabler/icons-react'
 import classNames from 'classnames'
-import { useRouter } from 'next/navigation'
 import type { ChangeEvent, FormEvent } from 'react'
 import { Suspense, useRef, useState } from 'react'
 import { SpookyButton } from '@/components/common/SpookyButton'
@@ -34,8 +33,6 @@ function UpdateImageButton({ id }: UpdateImageButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
-  const router = useRouter()
-
   const handleClick = () => {
     fileInputRef.current?.click()
   }
@@ -60,7 +57,7 @@ function UpdateImageButton({ id }: UpdateImageButtonProps) {
         return
       }
 
-      router.push(`/${id}`)
+      window.location.href = `/${id}`
 
       setError('')
     } catch (err) {
@@ -106,8 +103,6 @@ interface EditLogFormProps {
 }
 
 export function EditLogForm({ initialData }: EditLogFormProps) {
-  const router = useRouter()
-
   const [submitting, setSubmitting] = usePartialState({ form: false, delete: false })
   const [error, setError] = useState('')
   const [formData, setFormData] = usePartialState(() => ({ ...initialData, secret: '' }))
@@ -129,8 +124,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
         return
       }
 
-      router.push(`/${initialData.id}`)
-      router.refresh()
+      window.location.href = `/${initialData.id}`
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update')
     } finally {
@@ -155,8 +149,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
         return
       }
 
-      router.push('/')
-      router.refresh()
+      window.location.href = '/'
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete')
     } finally {

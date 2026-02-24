@@ -1,7 +1,5 @@
 'use client'
 
-import Image from 'next/image'
-import { useTransitionRouter } from 'next-view-transitions'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { UI_CONFIG } from '@/constants'
 import { LogStatus } from '@/data/enum/logStatus'
@@ -11,7 +9,10 @@ import { randomImage } from '@/images/loading'
 import { publicImage } from '@/utils/cloudflare'
 import { randomItem } from '../../utils/random'
 
-type ImageProps = React.ComponentProps<typeof Image>
+interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  priority?: boolean
+  quality?: number
+}
 
 interface EventImageProps extends ImageProps {
   log: LogWithCategories
@@ -36,6 +37,9 @@ const magicalTexts = [
 ]
 
 const randomMagicalText = () => randomItem(magicalTexts)
+
+const toAssetSrc = (asset: string | { src: string }) =>
+  typeof asset === 'string' ? asset : asset.src
 
 const MagicalLoadingOverlay = () => {
   const [elapsedTime, setElapsedTime] = useState(0)
@@ -101,18 +105,17 @@ const fallbackImage = randomImage()
 
 export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt'>) {
   const clickCounter = useRef(0)
-  const router = useTransitionRouter()
 
   const [imageError, setImageError] = useState(false)
 
   const { imageDescription, id, status } = log
 
   const image = useMemo(() => {
-    if (status === LogStatus.Created) return fallbackImage.src
+    if (status === LogStatus.Created) return toAssetSrc(fallbackImage)
 
-    if (status === LogStatus.Error) return Bug.src
+    if (status === LogStatus.Error) return toAssetSrc(Bug)
 
-    if (imageError) return Bug.src
+    if (imageError) return toAssetSrc(Bug)
 
     return publicImage(id)
   }, [id, imageError, status])
@@ -124,17 +127,28 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
   const onImageClick = () => {
     clickCounter.current += 1
 
-    if (clickCounter.current >= 5) return router.push(`/${log.id}/edit`)
+    if (clickCounter.current >= 5) {
+      window.location.href = `/${log.id}/edit`
+    }
   }
+
+  const {
+    priority,
+    quality: _quality,
+    loading,
+    ...imageProps
+  } = props as Omit<EventImageProps, 'src' | 'alt'>
 
   return (
     <div className="relative">
-      <Image
-        {...props}
+      {/* biome-ignore lint/performance/noImgElement: using plain img during Next to Start migration */}
+      <img
+        {...(imageProps as React.ImgHTMLAttributes<HTMLImageElement>)}
         src={image}
         alt={imageDescription ?? ''}
+        loading={priority ? 'eager' : loading}
         onError={onImageError}
-        onClick={onImageClick}
+        onMouseDown={onImageClick}
       />
 
       {status === LogStatus.Created && <MagicalLoadingOverlay />}

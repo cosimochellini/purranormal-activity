@@ -9,10 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as NewRouteImport } from './routes/new'
+import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as IdRouteImport } from './routes/$id'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiScriptRouteImport } from './routes/api/script'
 import { Route as ApiLogRouteImport } from './routes/api/log'
 import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
+import { Route as IdEditRouteImport } from './routes/$id/edit'
 import { Route as ApiUploadIdRouteImport } from './routes/api/upload/$id'
 import { Route as ApiTriggerImagesRouteImport } from './routes/api/trigger/images'
 import { Route as ApiTriggerIdRouteImport } from './routes/api/trigger/$id'
@@ -23,6 +27,21 @@ import { Route as ApiLogAllRouteImport } from './routes/api/log/all'
 import { Route as ApiLogIdRouteImport } from './routes/api/log/$id'
 import { Route as ApiLogIdCategoriesRouteImport } from './routes/api/log/$id/categories'
 
+const NewRoute = NewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExploreRoute = ExploreRouteImport.update({
+  id: '/explore',
+  path: '/explore',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IdRoute = IdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -42,6 +61,11 @@ const ApiCategoriesRoute = ApiCategoriesRouteImport.update({
   id: '/api/categories',
   path: '/api/categories',
   getParentRoute: () => rootRouteImport,
+} as any)
+const IdEditRoute = IdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => IdRoute,
 } as any)
 const ApiUploadIdRoute = ApiUploadIdRouteImport.update({
   id: '/api/upload/$id',
@@ -91,6 +115,10 @@ const ApiLogIdCategoriesRoute = ApiLogIdCategoriesRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$id': typeof IdRouteWithChildren
+  '/explore': typeof ExploreRoute
+  '/new': typeof NewRoute
+  '/$id/edit': typeof IdEditRoute
   '/api/categories': typeof ApiCategoriesRoute
   '/api/log': typeof ApiLogRouteWithChildren
   '/api/script': typeof ApiScriptRoute
@@ -106,6 +134,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$id': typeof IdRouteWithChildren
+  '/explore': typeof ExploreRoute
+  '/new': typeof NewRoute
+  '/$id/edit': typeof IdEditRoute
   '/api/categories': typeof ApiCategoriesRoute
   '/api/log': typeof ApiLogRouteWithChildren
   '/api/script': typeof ApiScriptRoute
@@ -122,6 +154,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$id': typeof IdRouteWithChildren
+  '/explore': typeof ExploreRoute
+  '/new': typeof NewRoute
+  '/$id/edit': typeof IdEditRoute
   '/api/categories': typeof ApiCategoriesRoute
   '/api/log': typeof ApiLogRouteWithChildren
   '/api/script': typeof ApiScriptRoute
@@ -139,6 +175,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$id'
+    | '/explore'
+    | '/new'
+    | '/$id/edit'
     | '/api/categories'
     | '/api/log'
     | '/api/script'
@@ -154,6 +194,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$id'
+    | '/explore'
+    | '/new'
+    | '/$id/edit'
     | '/api/categories'
     | '/api/log'
     | '/api/script'
@@ -169,6 +213,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/$id'
+    | '/explore'
+    | '/new'
+    | '/$id/edit'
     | '/api/categories'
     | '/api/log'
     | '/api/script'
@@ -185,6 +233,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  IdRoute: typeof IdRouteWithChildren
+  ExploreRoute: typeof ExploreRoute
+  NewRoute: typeof NewRoute
   ApiCategoriesRoute: typeof ApiCategoriesRoute
   ApiLogRoute: typeof ApiLogRouteWithChildren
   ApiScriptRoute: typeof ApiScriptRoute
@@ -196,6 +247,27 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/new': {
+      id: '/new'
+      path: '/new'
+      fullPath: '/new'
+      preLoaderRoute: typeof NewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/explore': {
+      id: '/explore'
+      path: '/explore'
+      fullPath: '/explore'
+      preLoaderRoute: typeof ExploreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$id': {
+      id: '/$id'
+      path: '/$id'
+      fullPath: '/$id'
+      preLoaderRoute: typeof IdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -223,6 +295,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/categories'
       preLoaderRoute: typeof ApiCategoriesRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/$id/edit': {
+      id: '/$id/edit'
+      path: '/edit'
+      fullPath: '/$id/edit'
+      preLoaderRoute: typeof IdEditRouteImport
+      parentRoute: typeof IdRoute
     }
     '/api/upload/$id': {
       id: '/api/upload/$id'
@@ -290,6 +369,16 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface IdRouteChildren {
+  IdEditRoute: typeof IdEditRoute
+}
+
+const IdRouteChildren: IdRouteChildren = {
+  IdEditRoute: IdEditRoute,
+}
+
+const IdRouteWithChildren = IdRoute._addFileChildren(IdRouteChildren)
+
 interface ApiLogIdRouteChildren {
   ApiLogIdCategoriesRoute: typeof ApiLogIdCategoriesRoute
 }
@@ -321,6 +410,9 @@ const ApiLogRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  IdRoute: IdRouteWithChildren,
+  ExploreRoute: ExploreRoute,
+  NewRoute: NewRoute,
   ApiCategoriesRoute: ApiCategoriesRoute,
   ApiLogRoute: ApiLogRouteWithChildren,
   ApiScriptRoute: ApiScriptRoute,

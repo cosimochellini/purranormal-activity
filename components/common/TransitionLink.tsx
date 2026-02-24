@@ -1,10 +1,11 @@
-import { Link } from 'next-view-transitions'
-import type { ComponentProps } from 'react'
+import type { AnchorHTMLAttributes, ReactNode } from 'react'
 
-interface TransitionLinkProps extends ComponentProps<typeof Link> {
-  children: React.ReactNode
+interface TransitionLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+  href: string
+  children: ReactNode
+  prefetch?: boolean
 }
 
-export function TransitionLink({ children, ...props }: TransitionLinkProps) {
-  return <Link {...props}>{children}</Link>
+export function TransitionLink({ children, prefetch: _prefetch, ...props }: TransitionLinkProps) {
+  return <a {...props}>{children}</a>
 }

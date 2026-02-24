@@ -1,5 +1,4 @@
 import cn from 'classnames'
-import Image from 'next/image'
 import type { FC } from 'react'
 import heroImage from '@/images/hero.webp'
 import { AnimatedWord } from '../common/AnimatedWord'
@@ -11,6 +10,8 @@ interface HeroSectionProps {
 }
 
 export const HeroSection: FC<HeroSectionProps> = ({ className }) => {
+  const src = typeof heroImage === 'string' ? heroImage : heroImage.src
+
   return (
     <section
       className={cn(
@@ -42,13 +43,11 @@ export const HeroSection: FC<HeroSectionProps> = ({ className }) => {
 
         {/* Main image */}
         <div className="relative h-full w-full overflow-hidden rounded-lg">
-          <Image
-            src={heroImage}
+          {/* biome-ignore lint/performance/noImgElement: using plain img during Next to Start migration */}
+          <img
+            src={src}
             alt="Magical kitten and frightened chick"
-            fill
-            priority
             className="animate-fade-in rounded-lg object-cover transition-transform duration-700 group-hover:scale-105"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
           />
 
           {/* Hover glow effect */}

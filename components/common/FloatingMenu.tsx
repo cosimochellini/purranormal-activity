@@ -2,9 +2,9 @@
 
 import { IconCat, IconCrystalBall, IconMenu2, IconSearch } from '@tabler/icons-react'
 import cn from 'classnames'
-import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { memo, useState } from 'react'
+import { TransitionLink } from './TransitionLink'
 
 interface MenuItem {
   href: string
@@ -14,7 +14,7 @@ interface MenuItem {
 
 const menuItems = [
   { href: '/', icon: <IconCat />, label: 'Home' },
-  { href: '/discover', icon: <IconSearch />, label: 'Discover' },
+  { href: '/new', icon: <IconSearch />, label: 'New' },
   { href: '/explore', icon: <IconCrystalBall />, label: 'Explore' },
 ] as const satisfies MenuItem[]
 
@@ -61,7 +61,7 @@ interface MenuItemProps extends MenuItem {
 
 const MenuItemComponent = memo(({ href, icon: Icon, label, isOpen, index }: MenuItemProps) => {
   return (
-    <Link
+    <TransitionLink
       href={href}
       className={cn(menuStyles.link, buttonStyles.glow)}
       style={{
@@ -79,7 +79,7 @@ const MenuItemComponent = memo(({ href, icon: Icon, label, isOpen, index }: Menu
         className="absolute inset-0 -z-10 animate-pulse rounded-full bg-purple-500/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
         aria-hidden="true"
       />
-    </Link>
+    </TransitionLink>
   )
 })
 
