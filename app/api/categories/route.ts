@@ -9,9 +9,15 @@ import { logger } from '@/utils/logger'
 export const runtime = 'edge'
 export type GetResponse = Category[]
 export async function GET() {
-  const categories = await db.select().from(category)
+  try {
+    const categories = await db.select().from(category)
 
-  return ok<GetResponse>(categories)
+    return ok<GetResponse>(categories)
+  } catch (error) {
+    logger.error('Failed to fetch categories:', error)
+
+    return ok<GetResponse>([])
+  }
 }
 
 const schema = z.object({
