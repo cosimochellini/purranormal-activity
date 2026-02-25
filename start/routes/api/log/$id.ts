@@ -98,7 +98,6 @@ export const Route = createFileRoute('/api/log/$id')({
           const [updated] = await db
             .update(log)
             .set({
-              ...currentLog,
               title,
               description,
               imageDescription,
@@ -107,7 +106,7 @@ export const Route = createFileRoute('/api/log/$id')({
               status:
                 imageDescription !== currentLog.imageDescription
                   ? LogStatus.Created
-                  : LogStatus.ImageGenerated,
+                  : currentLog.status,
             })
             .where(eq(log.id, id))
             .returning()

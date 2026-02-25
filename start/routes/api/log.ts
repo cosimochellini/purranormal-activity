@@ -59,7 +59,12 @@ export const Route = createFileRoute('/api/log')({
           return ok<LogPostResponse>({ success: true })
         } catch (error) {
           logger.error('Failed to create log:', error)
-          return ok<LogPostResponse>({ success: false, errors: {} })
+          return ok<LogPostResponse>({
+            success: false,
+            errors: {
+              general: ['Failed to create log. Please try again.'],
+            },
+          })
         }
       },
     },

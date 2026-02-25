@@ -5,8 +5,8 @@ import { LogStatus } from '@/data/enum/logStatus'
 import type { LogWithCategories } from '@/db/schema'
 import Bug from '@/images/bug.jpg'
 import { randomImage } from '@/images/loading'
-import { publicImage } from '@/utils/cloudflare'
 import { toAssetSrc } from '@/utils/image'
+import { publicImage } from '@/utils/public-image'
 import { randomItem } from '../../utils/random'
 
 interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {

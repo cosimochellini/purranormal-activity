@@ -8,7 +8,7 @@ import { EventImage } from '@/components/events/EventImage'
 import { TriggerImageGeneration } from '@/components/image/TriggerImageGeneration'
 import { APP_URL } from '@/env/public'
 import { getLogById } from '@/start/services/log'
-import { publicImage } from '@/utils/cloudflare'
+import { publicImage } from '@/utils/public-image'
 import { transitions } from '@/utils/viewTransition'
 
 export const Route = createFileRoute('/$id')({

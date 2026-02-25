@@ -1,4 +1,4 @@
-/* eslint-disable node/prefer-global/process */
+import { getRequiredEnv } from './required'
 
-export const TURSO_DATABASE_URL = process.env.TURSO_DATABASE_URL as string
-export const TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN as string
+export const TURSO_DATABASE_URL = getRequiredEnv('TURSO_DATABASE_URL')
+export const TURSO_AUTH_TOKEN = getRequiredEnv('TURSO_AUTH_TOKEN')

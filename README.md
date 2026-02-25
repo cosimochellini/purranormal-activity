@@ -47,10 +47,10 @@ Run dev server (keeps current project behavior with patch version bump):
 pnpm dev
 ```
 
-Run dev server without version bump:
+If you need to skip the automatic version bump, run Vite directly:
 
 ```bash
-pnpm dev:start
+vite dev
 ```
 
 Default local URL is shown in terminal (typically `http://localhost:3000`).
@@ -63,7 +63,7 @@ Default local URL is shown in terminal (typically `http://localhost:3000`).
 - `pnpm build` - production build (TanStack Start / Vite)
 - `pnpm preview` - preview built app locally
 - `pnpm cf-typegen` - generate Worker env types from Wrangler config
-- `pnpm deploy` - build and deploy to Cloudflare Workers
+- `pnpm deploy` - build and deploy to Cloudflare Workers (no manual pre-build required)
 
 ## Cloudflare Workers
 

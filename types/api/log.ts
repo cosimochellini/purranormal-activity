@@ -10,5 +10,5 @@ export type LogPostResponse =
     }
   | {
       success: false
-      errors: Partial<Record<keyof LogPostBody, string[]>>
+      errors: Partial<Record<keyof LogPostBody | 'general', string[]>>
     }

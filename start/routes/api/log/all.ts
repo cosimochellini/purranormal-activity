@@ -4,6 +4,7 @@ import { getLogs } from '@/services/log'
 import type { LogAllResponse } from '@/types/api/log-all'
 import { SortBy, TimeRange } from '@/types/search'
 import { ok } from '@/utils/http'
+import { logger } from '@/utils/logger'
 
 const querySchema = z.object({
   page: z.string().optional().default('1').transform(Number),
@@ -54,9 +55,10 @@ export const Route = createFileRoute('/api/log/all')({
             nextPage: hasMore ? page + 1 : null,
           })
         } catch (error) {
+          logger.error('Failed to fetch logs:', error)
           return ok<LogAllResponse>({
             success: false,
-            error: `Failed to fetch logs: ${error}`,
+            error: 'Failed to fetch logs',
           })
         }
       },
