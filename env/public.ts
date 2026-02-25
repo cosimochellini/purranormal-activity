@@ -1,4 +1,3 @@
-/* eslint-disable node/prefer-global/process */
 const WORKERS_URL = 'https://purranormal-activity.workers.dev'
 
 const normalizeUrl = (url: string) => url.replace(/\/$/, '')

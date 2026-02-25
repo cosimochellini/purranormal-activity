@@ -19,7 +19,13 @@ export const Route = createFileRoute('/api/upload/$id')({
           const buffer = Buffer.from(await file.arrayBuffer())
           const result = await uploadToR2(buffer, logId)
 
-          return ok<UploadIdResponse>({ success: true, result })
+          return ok<UploadIdResponse>({
+            success: true,
+            result: {
+              etag: result.ETag ?? null,
+              versionId: result.VersionId ?? null,
+            },
+          })
         } catch (error) {
           return badRequest(`Failed to upload file ${error}`)
         }

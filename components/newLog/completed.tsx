@@ -2,6 +2,7 @@ import { IconSparkles } from '@tabler/icons-react'
 import { useState } from 'react'
 import { SpookyButton } from '@/components/common/SpookyButton'
 import { randomImage } from '@/images/insert/success'
+import { toAssetSrc } from '@/utils/image'
 import { useSound } from '../../hooks/useSound'
 import { TransitionLink } from '../common/TransitionLink'
 import { MissingCategoriesModal } from './MissingCategoriesModal'
@@ -14,7 +15,7 @@ interface CompletedSectionProps {
 const successImage = randomImage()
 export function CompletedSection({ logId, missingCategories }: CompletedSectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const imageSrc = typeof successImage === 'string' ? successImage : successImage.src
+  const imageSrc = toAssetSrc(successImage)
 
   useSound('/sounds/magic.mp3', { autoplay: true })
 

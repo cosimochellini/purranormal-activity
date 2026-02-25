@@ -1,5 +1,3 @@
-'use client'
-
 import { IconCat, IconCrystalBall, IconMenu2, IconSearch } from '@tabler/icons-react'
 import cn from 'classnames'
 import type { ReactNode } from 'react'

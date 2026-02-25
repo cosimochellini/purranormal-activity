@@ -103,6 +103,7 @@ export const Route = createFileRoute('/api/log/$id')({
               description,
               imageDescription,
               updatedAt: Date.now(),
+              // Regenerate image only when the prompt changes.
               status:
                 imageDescription !== currentLog.imageDescription
                   ? LogStatus.Created

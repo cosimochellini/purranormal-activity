@@ -1,5 +1,3 @@
-'use client'
-
 import type { LogWithCategories } from '@/db/schema'
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll'
 import { range } from '@/utils/array'

@@ -1,5 +1,3 @@
-'use client'
-
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { UI_CONFIG } from '@/constants'
@@ -8,6 +6,7 @@ import type { LogWithCategories } from '@/db/schema'
 import Bug from '@/images/bug.jpg'
 import { randomImage } from '@/images/loading'
 import { publicImage } from '@/utils/cloudflare'
+import { toAssetSrc } from '@/utils/image'
 import { randomItem } from '../../utils/random'
 
 interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
@@ -38,9 +37,6 @@ const magicalTexts = [
 ]
 
 const randomMagicalText = () => randomItem(magicalTexts)
-
-const toAssetSrc = (asset: string | { src: string }) =>
-  typeof asset === 'string' ? asset : asset.src
 
 const MagicalLoadingOverlay = () => {
   const [elapsedTime, setElapsedTime] = useState(0)

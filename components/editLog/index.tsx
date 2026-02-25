@@ -1,5 +1,3 @@
-'use client'
-
 import { IconRefresh } from '@tabler/icons-react'
 import { useNavigate } from '@tanstack/react-router'
 import classNames from 'classnames'

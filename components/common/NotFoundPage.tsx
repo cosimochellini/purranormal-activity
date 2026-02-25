@@ -1,10 +1,8 @@
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { randomImage } from '@/images/notFound'
+import { toAssetSrc } from '@/utils/image'
 import { SpookyButton } from './SpookyButton'
 import { SpookyLink } from './SpookyLink'
-
-const toAssetSrc = (asset: string | { src: string }) =>
-  typeof asset === 'string' ? asset : asset.src
 
 export function NotFoundPage() {
   const errorImage = randomImage()

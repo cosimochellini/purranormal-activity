@@ -1,7 +1,8 @@
 import LoadingImage from '@/images/loading.webp'
+import { toAssetSrc } from '@/utils/image'
 
 export function Loading() {
-  const src = typeof LoadingImage === 'string' ? LoadingImage : LoadingImage.src
+  const src = toAssetSrc(LoadingImage)
 
   return (
     <div className="flex justify-center items-center min-h-96">

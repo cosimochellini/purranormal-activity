@@ -1,4 +1,3 @@
-'use client'
 import { useEffect, useState } from 'react'
 import { LogStatus } from '../../data/enum/logStatus'
 import type { LogWithCategories } from '../../db/schema'

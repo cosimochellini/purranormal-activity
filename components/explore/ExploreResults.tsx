@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect, useRef, useState } from 'react'
 import type { LogWithCategories } from '@/db/schema'
 import type { LogAllQuery, LogAllResponse } from '@/types/api/log-all'

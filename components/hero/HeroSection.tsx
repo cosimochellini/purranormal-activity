@@ -1,6 +1,7 @@
 import cn from 'classnames'
 import type { FC } from 'react'
 import heroImage from '@/images/hero.webp'
+import { toAssetSrc } from '@/utils/image'
 import { AnimatedWord } from '../common/AnimatedWord'
 import { SpookyButton } from '../common/SpookyButton'
 import { SpookyLink } from '../common/SpookyLink'
@@ -10,7 +11,7 @@ interface HeroSectionProps {
 }
 
 export const HeroSection: FC<HeroSectionProps> = ({ className }) => {
-  const src = typeof heroImage === 'string' ? heroImage : heroImage.src
+  const src = toAssetSrc(heroImage)
 
   return (
     <section
@@ -46,7 +47,7 @@ export const HeroSection: FC<HeroSectionProps> = ({ className }) => {
           <img
             src={src}
             alt="Magical kitten and frightened chick"
-            className="animate-fade-in rounded-lg object-cover transition-transform duration-700 group-hover:scale-105"
+            className="h-full w-full animate-fade-in rounded-lg object-cover transition-transform duration-700 group-hover:scale-105"
           />
 
           {/* Hover glow effect */}

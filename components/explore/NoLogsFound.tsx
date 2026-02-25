@@ -1,8 +1,9 @@
+import { toAssetSrc } from '@/utils/image'
 import { randomImage } from '../../images/noResults'
 
 export function NoLogsFound() {
   const image = randomImage()
-  const src = typeof image === 'string' ? image : image.src
+  const src = toAssetSrc(image)
   return (
     <div className="relative flex flex-col items-center justify-center py-16 px-4">
       {/* Magical glow effects */}
@@ -18,7 +19,7 @@ export function NoLogsFound() {
         <img
           src={src}
           alt="No supernatural events found"
-          className="object-contain transition-transform duration-700 hover:scale-105 rounded-xl"
+          className="w-full h-full rounded-xl object-contain transition-transform duration-700 hover:scale-105"
         />
       </div>
 

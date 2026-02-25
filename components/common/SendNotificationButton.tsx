@@ -1,5 +1,3 @@
-'use client'
-
 import { IconBrandTelegram, IconCheck, IconX } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useSound } from '@/hooks/useSound'
