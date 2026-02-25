@@ -38,7 +38,6 @@ export function CompletedSection({ logId, missingCategories }: CompletedSectionP
           <div className="absolute inset-0 -m-4 animate-pulse rounded-xl bg-purple-500/10 blur-2xl" />
           <div className="absolute inset-0 -m-2 animate-pulse delay-300 rounded-xl bg-purple-600/5 blur-xl" />
 
-          {/* biome-ignore lint/performance/noImgElement: using plain img during Next to Start migration */}
           <img
             src={imageSrc}
             alt="Success"

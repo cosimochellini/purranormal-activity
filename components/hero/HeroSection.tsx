@@ -43,7 +43,6 @@ export const HeroSection: FC<HeroSectionProps> = ({ className }) => {
 
         {/* Main image */}
         <div className="relative h-full w-full overflow-hidden rounded-lg">
-          {/* biome-ignore lint/performance/noImgElement: using plain img during Next to Start migration */}
           <img
             src={src}
             alt="Magical kitten and frightened chick"

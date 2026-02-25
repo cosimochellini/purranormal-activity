@@ -29,7 +29,6 @@ export function NotFoundPage() {
           <div className="absolute -top-4 left-1/4 h-2 w-2 animate-sparkle rounded-full bg-purple-300/80 blur-[1px]" />
           <div className="absolute -bottom-2 right-1/3 h-2 w-2 animate-sparkle delay-300 rounded-full bg-purple-300/80 blur-[1px]" />
 
-          {/* biome-ignore lint/performance/noImgElement: using plain img during Next to Start migration */}
           <img
             src={toAssetSrc(errorImage)}
             alt="404 Error"

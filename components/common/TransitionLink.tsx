@@ -1,6 +1,6 @@
 'use client'
 
-import { Link, useRouter } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import type { AnchorHTMLAttributes, ReactNode } from 'react'
 
 interface TransitionLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
@@ -13,10 +13,7 @@ const isInternalHref = (href: string) =>
   href.startsWith('/') || href.startsWith('#') || href.startsWith('?')
 
 export function TransitionLink({ children, href, prefetch, ...anchorProps }: TransitionLinkProps) {
-  const router = useRouter({ warn: false }) as { navigate?: unknown } | undefined
-  const useRouterLink = isInternalHref(href) && typeof router?.navigate === 'function'
-
-  if (!useRouterLink) {
+  if (!isInternalHref(href)) {
     return (
       <a href={href} {...anchorProps}>
         {children}

@@ -1,6 +1,7 @@
 'use client'
 
 import { IconRefresh } from '@tabler/icons-react'
+import { useNavigate } from '@tanstack/react-router'
 import classNames from 'classnames'
 import type { ChangeEvent, FormEvent } from 'react'
 import { Suspense, useRef, useState } from 'react'
@@ -30,6 +31,7 @@ interface UpdateImageButtonProps {
 }
 
 function UpdateImageButton({ id }: UpdateImageButtonProps) {
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
@@ -57,7 +59,11 @@ function UpdateImageButton({ id }: UpdateImageButtonProps) {
         return
       }
 
-      window.location.href = `/${id}`
+      await navigate({
+        to: '/$id',
+        params: { id: `${id}` },
+        viewTransition: true,
+      })
 
       setError('')
     } catch (err) {
@@ -103,6 +109,7 @@ interface EditLogFormProps {
 }
 
 export function EditLogForm({ initialData }: EditLogFormProps) {
+  const navigate = useNavigate()
   const [submitting, setSubmitting] = usePartialState({ form: false, delete: false })
   const [error, setError] = useState('')
   const [formData, setFormData] = usePartialState(() => ({ ...initialData, secret: '' }))
@@ -124,7 +131,11 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
         return
       }
 
-      window.location.href = `/${initialData.id}`
+      await navigate({
+        to: '/$id',
+        params: { id: `${initialData.id}` },
+        viewTransition: true,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update')
     } finally {
@@ -149,7 +160,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
         return
       }
 
-      window.location.href = '/'
+      await navigate({ to: '/', viewTransition: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete')
     } finally {

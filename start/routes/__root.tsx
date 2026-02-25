@@ -2,7 +2,7 @@ import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-r
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
 import { FloatingMenu } from '@/components/common/FloatingMenu'
 import { NotFoundPage } from '@/components/common/NotFoundPage'
-import '@/app/globals.css'
+import '@/start/globals.css'
 
 export const Route = createRootRoute({
   head: () => ({

@@ -1,6 +1,6 @@
 'use client'
 
-import { useRouter } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { UI_CONFIG } from '@/constants'
 import { LogStatus } from '@/data/enum/logStatus'
@@ -106,11 +106,7 @@ const fallbackImage = randomImage()
 
 export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt'>) {
   const clickCounter = useRef(0)
-  const router = useRouter({ warn: false }) as
-    | {
-        navigate?: (opts: { to: string; viewTransition?: boolean }) => Promise<void> | void
-      }
-    | undefined
+  const navigate = useNavigate()
 
   const [imageError, setImageError] = useState(false)
 
@@ -134,14 +130,11 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
     clickCounter.current += 1
 
     if (clickCounter.current >= 5) {
-      const target = `/${log.id}/edit`
-
-      if (typeof router?.navigate === 'function') {
-        void router.navigate({ to: target, viewTransition: true })
-        return
-      }
-
-      window.location.href = target
+      void navigate({
+        to: '/$id/edit',
+        params: { id: `${log.id}` },
+        viewTransition: true,
+      })
     }
   }
 
@@ -154,7 +147,6 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
 
   return (
     <div className="relative">
-      {/* biome-ignore lint/performance/noImgElement: using plain img during Next to Start migration */}
       <img
         {...(imageProps as React.ImgHTMLAttributes<HTMLImageElement>)}
         src={image}
