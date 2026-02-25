@@ -6,6 +6,7 @@ import type { LogWithCategories } from '@/db/schema'
 import Bug from '@/images/bug.jpg'
 import { randomImage } from '@/images/loading'
 import { toAssetSrc } from '@/utils/image'
+import { logger } from '@/utils/logger'
 import { publicImage } from '@/utils/public-image'
 import { randomItem } from '../../utils/random'
 
@@ -126,10 +127,12 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
     clickCounter.current += 1
 
     if (clickCounter.current >= 5) {
-      void navigate({
+      navigate({
         to: '/$id/edit',
         params: { id: `${log.id}` },
         viewTransition: true,
+      }).catch((error) => {
+        logger.error('Failed to navigate to edit route:', error)
       })
     }
   }
@@ -143,13 +146,14 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
 
   return (
     <div className="relative">
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: hidden easter egg should only react to pointer clicks */}
       <img
         {...(imageProps as React.ImgHTMLAttributes<HTMLImageElement>)}
         src={image}
         alt={imageDescription ?? ''}
         loading={priority ? 'eager' : loading}
         onError={onImageError}
-        onMouseDown={onImageClick}
+        onClick={onImageClick}
       />
 
       {status === LogStatus.Created && <MagicalLoadingOverlay />}

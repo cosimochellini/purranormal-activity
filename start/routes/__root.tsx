@@ -41,8 +41,8 @@ function RootComponent() {
         className="min-h-full w-full bg-linear-to-b from-midnight-blue to-deep-purple text-ghost-white antialiased"
         suppressHydrationWarning
       >
-        <FloatingMenu />
         <NuqsAdapter>
+          <FloatingMenu />
           <Outlet />
         </NuqsAdapter>
         <Scripts />

@@ -1,4 +1,4 @@
-const WORKERS_URL = 'https://purranormal-activity.workers.dev'
+const DEFAULT_DEV_URL = 'http://localhost:5173'
 
 const normalizeUrl = (url: string) => url.replace(/\/$/, '')
 
@@ -16,7 +16,21 @@ function readPublicEnv(key: PublicEnvKey) {
   return undefined
 }
 
-export const VITE_APP_URL = normalizeUrl(readPublicEnv('VITE_APP_URL') || WORKERS_URL)
+const resolveAppUrl = () => {
+  const appUrl = readPublicEnv('VITE_APP_URL') || readPublicEnv('VITE_CLOUDFLARE_PUBLIC_URL')
+
+  if (appUrl) {
+    return normalizeUrl(appUrl)
+  }
+
+  if (import.meta.env?.DEV) {
+    return DEFAULT_DEV_URL
+  }
+
+  throw new Error('Missing VITE_APP_URL or VITE_CLOUDFLARE_PUBLIC_URL for production runtime')
+}
+
+export const VITE_APP_URL = resolveAppUrl()
 
 export const APP_URL = VITE_APP_URL
 

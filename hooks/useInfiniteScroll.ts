@@ -1,5 +1,3 @@
-'use client'
-
 import { useCallback } from 'react'
 import type { LogWithCategories } from '@/db/schema'
 import type { LogAllResponse } from '@/types/api/log-all'

@@ -1,7 +1,7 @@
-import { Link } from '@tanstack/react-router'
-import type { AnchorHTMLAttributes, ReactNode } from 'react'
+import { Link, type LinkComponentProps } from '@tanstack/react-router'
+import type { ReactNode } from 'react'
 
-interface TransitionLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
+interface TransitionLinkProps extends Omit<LinkComponentProps<'a'>, 'to' | 'preload' | 'children'> {
   href: string
   children: ReactNode
   prefetch?: boolean
@@ -20,12 +20,7 @@ export function TransitionLink({ children, href, prefetch, ...anchorProps }: Tra
   }
 
   return (
-    <Link
-      to={href}
-      preload={prefetch ? 'intent' : false}
-      viewTransition
-      {...(anchorProps as Omit<TransitionLinkProps, 'href' | 'prefetch'>)}
-    >
+    <Link to={href} preload={prefetch ? 'intent' : false} viewTransition {...anchorProps}>
       {children}
     </Link>
   )

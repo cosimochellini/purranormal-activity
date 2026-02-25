@@ -18,7 +18,6 @@ import { Route as ApiLogRouteImport } from './routes/api/log'
 import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
 import { Route as IdEditRouteImport } from './routes/$id/edit'
 import { Route as ApiUploadIdRouteImport } from './routes/api/upload/$id'
-import { Route as ApiTriggerImagesRouteImport } from './routes/api/trigger/images'
 import { Route as ApiTriggerIdRouteImport } from './routes/api/trigger/$id'
 import { Route as ApiTelegramIdRouteImport } from './routes/api/telegram/$id'
 import { Route as ApiLogSubmitRouteImport } from './routes/api/log/submit'
@@ -72,11 +71,6 @@ const ApiUploadIdRoute = ApiUploadIdRouteImport.update({
   path: '/api/upload/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiTriggerImagesRoute = ApiTriggerImagesRouteImport.update({
-  id: '/api/trigger/images',
-  path: '/api/trigger/images',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiTriggerIdRoute = ApiTriggerIdRouteImport.update({
   id: '/api/trigger/$id',
   path: '/api/trigger/$id',
@@ -128,7 +122,6 @@ export interface FileRoutesByFullPath {
   '/api/log/submit': typeof ApiLogSubmitRoute
   '/api/telegram/$id': typeof ApiTelegramIdRoute
   '/api/trigger/$id': typeof ApiTriggerIdRoute
-  '/api/trigger/images': typeof ApiTriggerImagesRoute
   '/api/upload/$id': typeof ApiUploadIdRoute
   '/api/log/$id/categories': typeof ApiLogIdCategoriesRoute
 }
@@ -147,7 +140,6 @@ export interface FileRoutesByTo {
   '/api/log/submit': typeof ApiLogSubmitRoute
   '/api/telegram/$id': typeof ApiTelegramIdRoute
   '/api/trigger/$id': typeof ApiTriggerIdRoute
-  '/api/trigger/images': typeof ApiTriggerImagesRoute
   '/api/upload/$id': typeof ApiUploadIdRoute
   '/api/log/$id/categories': typeof ApiLogIdCategoriesRoute
 }
@@ -167,7 +159,6 @@ export interface FileRoutesById {
   '/api/log/submit': typeof ApiLogSubmitRoute
   '/api/telegram/$id': typeof ApiTelegramIdRoute
   '/api/trigger/$id': typeof ApiTriggerIdRoute
-  '/api/trigger/images': typeof ApiTriggerImagesRoute
   '/api/upload/$id': typeof ApiUploadIdRoute
   '/api/log/$id/categories': typeof ApiLogIdCategoriesRoute
 }
@@ -188,7 +179,6 @@ export interface FileRouteTypes {
     | '/api/log/submit'
     | '/api/telegram/$id'
     | '/api/trigger/$id'
-    | '/api/trigger/images'
     | '/api/upload/$id'
     | '/api/log/$id/categories'
   fileRoutesByTo: FileRoutesByTo
@@ -207,7 +197,6 @@ export interface FileRouteTypes {
     | '/api/log/submit'
     | '/api/telegram/$id'
     | '/api/trigger/$id'
-    | '/api/trigger/images'
     | '/api/upload/$id'
     | '/api/log/$id/categories'
   id:
@@ -226,7 +215,6 @@ export interface FileRouteTypes {
     | '/api/log/submit'
     | '/api/telegram/$id'
     | '/api/trigger/$id'
-    | '/api/trigger/images'
     | '/api/upload/$id'
     | '/api/log/$id/categories'
   fileRoutesById: FileRoutesById
@@ -241,7 +229,6 @@ export interface RootRouteChildren {
   ApiScriptRoute: typeof ApiScriptRoute
   ApiTelegramIdRoute: typeof ApiTelegramIdRoute
   ApiTriggerIdRoute: typeof ApiTriggerIdRoute
-  ApiTriggerImagesRoute: typeof ApiTriggerImagesRoute
   ApiUploadIdRoute: typeof ApiUploadIdRoute
 }
 
@@ -308,13 +295,6 @@ declare module '@tanstack/react-router' {
       path: '/api/upload/$id'
       fullPath: '/api/upload/$id'
       preLoaderRoute: typeof ApiUploadIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/trigger/images': {
-      id: '/api/trigger/images'
-      path: '/api/trigger/images'
-      fullPath: '/api/trigger/images'
-      preLoaderRoute: typeof ApiTriggerImagesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/trigger/$id': {
@@ -418,7 +398,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiScriptRoute: ApiScriptRoute,
   ApiTelegramIdRoute: ApiTelegramIdRoute,
   ApiTriggerIdRoute: ApiTriggerIdRoute,
-  ApiTriggerImagesRoute: ApiTriggerImagesRoute,
   ApiUploadIdRoute: ApiUploadIdRoute,
 }
 export const routeTree = rootRouteImport
