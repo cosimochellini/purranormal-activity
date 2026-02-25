@@ -11,7 +11,7 @@
     "pages:deploy": "pnpm run pages:build && wrangler pages deploy",
     "preview": "vite preview",
     "deploy": "pnpm run build:start && wrangler deploy --config wrangler.jsonc",
-    "dev": "vite dev",
+    "dev": "pnpm run increase && vite dev",
     "dev:next": "pnpm run increase && next dev",
     "dev:start": "vite dev",
     "build": "pnpm run build:start",

@@ -1,15 +1,8 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { NotFoundPage } from '@/components/common/NotFoundPage'
 import { EditLogForm } from '@/components/editLog'
-import { getLog } from '@/services/log'
-
-const getLogById = createServerFn({ method: 'GET' })
-  .inputValidator((data: { id: number }) => data)
-  .handler(async ({ data }) => {
-    return getLog(data.id)
-  })
+import { getLogById } from '@/start/services/log'
 
 export const Route = createFileRoute('/$id/edit')({
   loader: async ({ params }) => {

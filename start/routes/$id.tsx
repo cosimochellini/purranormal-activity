@@ -1,5 +1,4 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
 import classNames from 'classnames'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { Category } from '@/components/common/Category'
@@ -8,15 +7,9 @@ import { SendNotificationButton } from '@/components/common/SendNotificationButt
 import { EventImage } from '@/components/events/EventImage'
 import { TriggerImageGeneration } from '@/components/image/TriggerImageGeneration'
 import { APP_URL } from '@/env/public'
-import { getLog } from '@/services/log'
+import { getLogById } from '@/start/services/log'
 import { publicImage } from '@/utils/cloudflare'
 import { transitions } from '@/utils/viewTransition'
-
-const getLogById = createServerFn({ method: 'GET' })
-  .inputValidator((data: { id: number }) => data)
-  .handler(async ({ data }) => {
-    return getLog(data.id)
-  })
 
 export const Route = createFileRoute('/$id')({
   loader: async ({ params }) => {

@@ -1,3 +1,4 @@
+import { setLogError } from '@/services/log'
 import { triggerFirstPendingImage, triggerLogImageIfPending } from '@/services/trigger'
 import { logger } from '@/utils/logger'
 
@@ -11,6 +12,10 @@ interface RegenerateContentsOptions {
   triggerLogId?: number
 }
 
+interface RegenerateContentsResult {
+  imageTriggered: boolean
+}
+
 export async function regenerateContents({
   triggerImages = true,
   triggerLogId,
@@ -18,7 +23,7 @@ export async function regenerateContents({
   await invalidatePublicContent()
 
   if (!triggerImages) {
-    return
+    return { imageTriggered: false } satisfies RegenerateContentsResult
   }
 
   try {
@@ -26,12 +31,26 @@ export async function regenerateContents({
       const triggered = await triggerLogImageIfPending(triggerLogId)
 
       if (triggered) {
-        return
+        return { imageTriggered: true } satisfies RegenerateContentsResult
       }
     }
 
-    await triggerFirstPendingImage()
+    const triggered = await triggerFirstPendingImage()
+
+    if (!triggered && typeof triggerLogId === 'number' && Number.isFinite(triggerLogId)) {
+      const error = new Error(`Image generation was not triggered for log ${triggerLogId}`)
+      logger.error(error.message)
+      await setLogError(triggerLogId, error)
+    }
+
+    return { imageTriggered: triggered } satisfies RegenerateContentsResult
   } catch (error) {
     logger.error('Failed to trigger image generation during content regeneration:', error)
+
+    if (typeof triggerLogId === 'number' && Number.isFinite(triggerLogId)) {
+      await setLogError(triggerLogId, error)
+    }
+
+    return { imageTriggered: false } satisfies RegenerateContentsResult
   }
 }

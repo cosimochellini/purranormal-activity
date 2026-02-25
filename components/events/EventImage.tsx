@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { UI_CONFIG } from '@/constants'
 import { LogStatus } from '@/data/enum/logStatus'
@@ -105,6 +106,11 @@ const fallbackImage = randomImage()
 
 export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt'>) {
   const clickCounter = useRef(0)
+  const router = useRouter({ warn: false }) as
+    | {
+        navigate?: (opts: { to: string; viewTransition?: boolean }) => Promise<void> | void
+      }
+    | undefined
 
   const [imageError, setImageError] = useState(false)
 
@@ -128,7 +134,14 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
     clickCounter.current += 1
 
     if (clickCounter.current >= 5) {
-      window.location.href = `/${log.id}/edit`
+      const target = `/${log.id}/edit`
+
+      if (typeof router?.navigate === 'function') {
+        void router.navigate({ to: target, viewTransition: true })
+        return
+      }
+
+      window.location.href = target
     }
   }
 
