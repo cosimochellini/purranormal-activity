@@ -1,7 +1,6 @@
 import { getLog } from '@/services/log'
 import { sendEventNotification } from '@/services/notification'
 import type { TelegramIdResponse } from '@/types/api/telegram-id'
-import type { ParamsContext } from '@/types/route'
 import { ok } from '@/utils/http'
 
 export const runtime = 'edge'
@@ -10,7 +9,11 @@ interface Params {
   id: string
 }
 
-export async function POST(_: Request, { params }: ParamsContext<Params>) {
+interface RouteParamsContext {
+  params: Promise<Params>
+}
+
+export async function POST(_: Request, { params }: RouteParamsContext) {
   try {
     const { id: idParam } = await params
     const id = Number(idParam)

@@ -47,7 +47,6 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-intersection-observer": "^10.0.3",
-    "sharp": "^0.34.5",
     "sort-es": "^1.7.18",
     "zod": "^4.3.6"
   },

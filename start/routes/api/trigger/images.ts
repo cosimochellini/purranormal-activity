@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
+import { invalidatePublicContent } from '@/services/content'
 import { generateLogImage } from '@/services/trigger'
 import { batch } from '@/utils/batch'
 import { ok } from '@/utils/http'
@@ -36,6 +37,10 @@ export const Route = createFileRoute('/api/trigger/images')({
           for (const logBatch of logBatches) {
             await Promise.all(logBatch.map(processLog))
             await wait(DELAY_MS)
+          }
+
+          if (logs.length > 0) {
+            await invalidatePublicContent()
           }
 
           return ok({

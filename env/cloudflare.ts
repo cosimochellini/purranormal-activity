@@ -1,3 +1,5 @@
+import { VITE_CLOUDFLARE_DEPLOY_URL, VITE_CLOUDFLARE_PUBLIC_URL } from './public'
+
 /* eslint-disable node/prefer-global/process */
 export const ACCOUNT_ID = process.env.ACCOUNT_ID as string
 
@@ -9,8 +11,8 @@ export const BUCKET_NAME = 'purranormal-images'
 
 export const BUCKET_URL = `https://${ACCOUNT_ID}.r2.cloudflarestorage.com` as const
 
-export const CLOUDFLARE_PUBLIC_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_PUBLIC_URL as string
+export const CLOUDFLARE_PUBLIC_URL = VITE_CLOUDFLARE_PUBLIC_URL
 
-export const CLOUDFLARE_DEPLOY_URL = process.env.NEXT_PUBLIC_CLOUDFLARE_DEPLOY_URL as string
+export const CLOUDFLARE_DEPLOY_URL = VITE_CLOUDFLARE_DEPLOY_URL
 
 export const CLOUDFLARE_IMAGE_TOKEN = process.env.CLOUDFLARE_IMAGE_TOKEN as string

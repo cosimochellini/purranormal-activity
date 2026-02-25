@@ -1,8 +1,10 @@
-import Image from 'next/image'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { SpookyButton } from '@/components/common/SpookyButton'
 import { randomImage } from '@/images/notFound'
 import { SpookyLink } from '../components/common/SpookyLink'
+
+const toAssetSrc = (asset: string | { src: string }) =>
+  typeof asset === 'string' ? asset : asset.src
 
 export default function NotFound() {
   const errorImage = randomImage()
@@ -29,12 +31,12 @@ export default function NotFound() {
           <div className="absolute -top-4 left-1/4 h-2 w-2 animate-sparkle rounded-full bg-purple-300/80 blur-[1px]" />
           <div className="absolute -bottom-2 right-1/3 h-2 w-2 animate-sparkle delay-300 rounded-full bg-purple-300/80 blur-[1px]" />
 
-          <Image
-            src={errorImage}
+          {/* biome-ignore lint/performance/noImgElement: using plain img during Next to Start migration */}
+          <img
+            src={toAssetSrc(errorImage)}
             alt="404 Error"
-            className="rounded-lg object-contain"
-            priority
-            fill
+            className="rounded-lg object-contain w-full h-full"
+            loading="eager"
           />
         </div>
 

@@ -102,7 +102,10 @@ export async function PUT(request: Request) {
         .values(categories.map((category) => ({ logId: id, categoryId: category })))
     }
 
-    await regenerateContents()
+    await regenerateContents({
+      triggerImages: updated.status === LogStatus.Created,
+      triggerLogId: updated.id,
+    })
 
     return ok<LogIdPutResponse>({ success: true, data: updated })
   } catch (error) {
@@ -145,7 +148,7 @@ export async function DELETE(request: Request) {
     await db.delete(log).where(eq(log.id, id))
     await deleteFromR2(id)
 
-    await regenerateContents()
+    await regenerateContents({ triggerImages: false })
 
     return ok<LogIdDeleteResponse>({ success: true })
   } catch (error) {

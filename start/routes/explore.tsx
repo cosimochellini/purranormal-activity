@@ -3,16 +3,25 @@ import { Suspense } from 'react'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { ExploreSection } from '@/components/explore/ExploreSection'
 import { ExploreSkeleton } from '@/components/explore/ExploreSkeleton'
+import { APP_URL } from '@/env/public'
+
+const EXPLORE_TITLE = 'Explore | Paranormal Kitten Logger'
+const EXPLORE_DESCRIPTION = 'Explore the paranormal records of our enchanted encounters...'
 
 export const Route = createFileRoute('/explore')({
   head: () => ({
     meta: [
-      { title: 'Explore' },
-      {
-        name: 'description',
-        content: 'Explore the paranormal records of our enchanted encounters...',
-      },
+      { title: EXPLORE_TITLE },
+      { name: 'description', content: EXPLORE_DESCRIPTION },
+      { property: 'og:title', content: EXPLORE_TITLE },
+      { property: 'og:description', content: EXPLORE_DESCRIPTION },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:url', content: `${APP_URL}/explore` },
+      { name: 'twitter:card', content: 'summary' },
+      { name: 'twitter:title', content: EXPLORE_TITLE },
+      { name: 'twitter:description', content: EXPLORE_DESCRIPTION },
     ],
+    links: [{ rel: 'canonical', href: `${APP_URL}/explore` }],
   }),
   component: RouteComponent,
 })

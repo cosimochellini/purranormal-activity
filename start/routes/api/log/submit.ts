@@ -78,7 +78,7 @@ export const Route = createFileRoute('/api/log/submit')({
             await db.insert(logCategory).values(categoriesToInsert)
           }
 
-          await regenerateContents()
+          await regenerateContents({ triggerLogId: newLog.id })
 
           return ok<LogSubmitResponse>({ success: true, id: newLog.id, missingCategories: [] })
         } catch (error) {

@@ -1,9 +1,8 @@
-import { eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
 import { generateImageBase64, generateImagePrompt } from '@/services/ai'
-import { invalidatePublicContent } from '@/services/content'
 import { uploadToR2 } from '@/utils/cloudflare'
 
 export async function generateLogImage(logId: number) {
@@ -26,6 +25,39 @@ export async function generateLogImage(logId: number) {
       status: LogStatus.ImageGenerated,
     })
     .where(eq(log.id, logId))
+}
 
-  await invalidatePublicContent()
+export async function triggerLogImageIfPending(logId: number) {
+  const [logEntry] = await db
+    .select({
+      id: log.id,
+      status: log.status,
+    })
+    .from(log)
+    .where(eq(log.id, logId))
+
+  if (!logEntry || logEntry.status !== LogStatus.Created) {
+    return false
+  }
+
+  await generateLogImage(logId)
+  return true
+}
+
+export async function triggerFirstPendingImage() {
+  const [logEntry] = await db
+    .select({
+      id: log.id,
+    })
+    .from(log)
+    .where(eq(log.status, LogStatus.Created))
+    .orderBy(desc(log.updatedAt))
+    .limit(1)
+
+  if (!logEntry) {
+    return false
+  }
+
+  await generateLogImage(logEntry.id)
+  return true
 }

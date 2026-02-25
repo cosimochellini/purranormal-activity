@@ -11,8 +11,7 @@ export const Route = createFileRoute('/api/upload/$id')({
         try {
           const formData = await request.formData()
           const file = formData.get('file') as File
-          const idFromQuery = new URL(request.url).searchParams.get('id')
-          const logId = Number(params.id ?? idFromQuery)
+          const logId = Number(params.id)
 
           if (!file) return badRequest('File is required')
           if (Number.isNaN(logId)) return badRequest('Invalid log ID')

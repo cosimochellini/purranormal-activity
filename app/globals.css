@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Quicksand:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -11,7 +12,7 @@
 
   --shadow-glow: 0 0 8px rgba(255, 255, 255, 0.5);
 
-  --font-magical: serif;
+  --font-magical: "Caveat", cursive;
 
   --animate-creepy-text: creepy-text 2s ease-in-out infinite;
   --animate-eye-shine: eye-shine 3s infinite;
@@ -251,7 +252,7 @@
       rgba(156, 77, 204, 0.1) 0%,
       rgba(106, 27, 154, 0.2) 100%
     );
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: "Quicksand", system-ui, -apple-system, "Segoe UI", sans-serif;
   }
 }
 

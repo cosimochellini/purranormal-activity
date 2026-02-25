@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { invalidatePublicContent } from '@/services/content'
 import { setLogError } from '@/services/log'
 import { generateLogImage } from '@/services/trigger'
 import { ok } from '@/utils/http'
@@ -7,14 +8,20 @@ import { logger } from '@/utils/logger'
 export const Route = createFileRoute('/api/trigger/$id')({
   server: {
     handlers: {
-      POST: async ({ request, params }) => {
+      POST: async ({ params }) => {
         let logId: number | undefined
         try {
-          const url = new URL(request.url)
-          const rawId = params.id ?? url.searchParams.get('id')
-          logId = Number(rawId)
+          logId = Number(params.id)
+
+          if (Number.isNaN(logId)) {
+            return ok({
+              success: false,
+              error: 'Invalid log id',
+            })
+          }
 
           await generateLogImage(logId)
+          await invalidatePublicContent()
 
           return ok({ success: true })
         } catch (error) {

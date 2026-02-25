@@ -4,15 +4,32 @@ import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { InfiniteEvents } from '@/components/events/InfiniteEvents'
 import { SpookyFooter } from '@/components/footer/SpookyFooter'
 import { HeroSection } from '@/components/hero/HeroSection'
+import { APP_URL } from '@/env/public'
 import { getLogs } from '@/services/log'
 
 const LIMIT = 6 * 3
+const HOME_TITLE = 'Paranormal Kitten Logger'
+const HOME_DESCRIPTION = 'Track the magical mishaps and spooky shenanigans of your enchanted kitten'
 
 const getRecentLogs = createServerFn({ method: 'GET' }).handler(async () => {
   return getLogs({ skip: 0, limit: LIMIT })
 })
 
 export const Route = createFileRoute('/')({
+  head: () => ({
+    meta: [
+      { title: HOME_TITLE },
+      { name: 'description', content: HOME_DESCRIPTION },
+      { property: 'og:title', content: HOME_TITLE },
+      { property: 'og:description', content: HOME_DESCRIPTION },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:url', content: `${APP_URL}/` },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: HOME_TITLE },
+      { name: 'twitter:description', content: HOME_DESCRIPTION },
+    ],
+    links: [{ rel: 'canonical', href: `${APP_URL}/` }],
+  }),
   loader: () => getRecentLogs(),
   component: RouteComponent,
 })

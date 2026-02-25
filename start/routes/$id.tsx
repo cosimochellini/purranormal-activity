@@ -7,7 +7,7 @@ import { NotFoundPage } from '@/components/common/NotFoundPage'
 import { SendNotificationButton } from '@/components/common/SendNotificationButton'
 import { EventImage } from '@/components/events/EventImage'
 import { TriggerImageGeneration } from '@/components/image/TriggerImageGeneration'
-import { NEXT_PUBLIC_APP_URL } from '@/env/next'
+import { APP_URL } from '@/env/public'
 import { getLog } from '@/services/log'
 import { publicImage } from '@/utils/cloudflare'
 import { transitions } from '@/utils/viewTransition'
@@ -46,9 +46,14 @@ export const Route = createFileRoute('/$id')({
         { property: 'og:title', content: `Day ${id * 2} - ${title}` },
         { property: 'og:description', content: description },
         { property: 'og:type', content: 'article' },
-        { property: 'og:url', content: `${NEXT_PUBLIC_APP_URL}/${params.id}` },
+        { property: 'og:url', content: `${APP_URL}/${params.id}` },
         { property: 'og:image', content: publicImage(id) },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: `Day ${id * 2} - ${title}` },
+        { name: 'twitter:description', content: description },
+        { name: 'twitter:image', content: publicImage(id) },
       ],
+      links: [{ rel: 'canonical', href: `${APP_URL}/${params.id}` }],
     }
   },
   notFoundComponent: NotFoundPage,

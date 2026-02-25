@@ -1,11 +1,6 @@
-import { eq } from 'drizzle-orm'
-import { LogStatus } from '@/data/enum/logStatus'
-import { log } from '@/db/schema'
-import { db } from '@/drizzle'
-import { generateImageBase64, generateImagePrompt } from '@/services/ai'
 import { invalidatePublicContent } from '@/services/content'
 import { setLogError } from '@/services/log'
-import { uploadToR2 } from '@/utils/cloudflare'
+import { generateLogImage } from '@/services/trigger'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 
@@ -17,29 +12,11 @@ export async function POST(request: Request) {
     const url = new URL(request.url)
     logId = Number(url.searchParams.get('id'))
 
-    // Get log details
-    const [logEntry] = await db.select().from(log).where(eq(log.id, logId))
+    if (Number.isNaN(logId)) {
+      return ok({ success: false, error: 'Invalid log id' })
+    }
 
-    if (!logEntry) return ok({ success: false, error: 'Log not found' })
-
-    const imagePrompt =
-      logEntry.imageDescription ?? (await generateImagePrompt(logEntry.description))
-
-    const imageData = await generateImageBase64(imagePrompt)
-
-    // Convert base64 to buffer directly
-    const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '')
-    const buffer = Buffer.from(base64Data, 'base64')
-
-    await uploadToR2(buffer, logId)
-
-    // Update log status and blurDataURL
-    await db
-      .update(log)
-      .set({
-        status: LogStatus.ImageGenerated,
-      })
-      .where(eq(log.id, logId))
+    await generateLogImage(logId)
 
     await invalidatePublicContent()
 

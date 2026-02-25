@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react'
 import { LogStatus } from '../../data/enum/logStatus'
 import type { LogWithCategories } from '../../db/schema'
-import { CLOUDFLARE_DEPLOY_URL } from '../../env/cloudflare'
 import { fetcher } from '../../utils/fetch'
 import { Refetch } from '../timer/refetch'
 
@@ -11,7 +10,6 @@ interface TriggerImageGenerationProps {
 }
 
 const triggerGeneration = fetcher<never, never, never>('/api/trigger/[id]', 'POST')
-const triggerDeployment = fetcher<never, never, never>(CLOUDFLARE_DEPLOY_URL, 'POST')
 
 export function TriggerImageGeneration({ log }: TriggerImageGenerationProps) {
   const [shouldRefetch, setShouldRefetch] = useState(false)
@@ -19,10 +17,9 @@ export function TriggerImageGeneration({ log }: TriggerImageGenerationProps) {
   useEffect(() => {
     if (log.status !== LogStatus.Created) return
 
-    Promise.all([
-      triggerGeneration({ params: { id: log.id } }).catch(() => null),
-      triggerDeployment().catch(() => null),
-    ]).then(() => setShouldRefetch(true))
+    triggerGeneration({ params: { id: log.id } })
+      .catch(() => null)
+      .then(() => setShouldRefetch(true))
   }, [log])
 
   return <Refetch interval={500} shouldRefetch={shouldRefetch} />

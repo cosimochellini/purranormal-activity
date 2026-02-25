@@ -37,10 +37,14 @@ const getLog = async (id: number) => (await db.select().from(log).where(eq(log.i
 export const Route = createFileRoute('/api/log/$id')({
   server: {
     handlers: {
-      GET: async ({ request, params }) => {
-        const url = new URL(request.url)
-        const rawId = params.id ?? url.searchParams.get('id')
-        const id = Number(rawId)
+      GET: async ({ params }) => {
+        const id = Number(params.id)
+
+        if (Number.isNaN(id)) {
+          return ok<LogIdGetResponse>({
+            success: false,
+          })
+        }
 
         try {
           const entry = await getLog(id)
@@ -62,9 +66,15 @@ export const Route = createFileRoute('/api/log/$id')({
       },
       PUT: async ({ request, params }) => {
         try {
-          const url = new URL(request.url)
-          const rawId = params.id ?? url.searchParams.get('id')
-          const id = Number(rawId)
+          const id = Number(params.id)
+
+          if (Number.isNaN(id)) {
+            return ok<LogIdPutResponse>({
+              success: false,
+              errors: { title: ['Invalid log id'] },
+            })
+          }
+
           const data = await request.json()
           const result = await schema.safeParseAsync(data)
 
@@ -109,7 +119,10 @@ export const Route = createFileRoute('/api/log/$id')({
               .values(categories.map((category) => ({ logId: id, categoryId: category })))
           }
 
-          await regenerateContents()
+          await regenerateContents({
+            triggerImages: updated.status === LogStatus.Created,
+            triggerLogId: updated.id,
+          })
 
           return ok<LogIdPutResponse>({ success: true, data: updated })
         } catch (error) {
@@ -135,13 +148,18 @@ export const Route = createFileRoute('/api/log/$id')({
             })
           }
 
-          const url = new URL(request.url)
-          const rawId = params.id ?? url.searchParams.get('id')
-          const id = Number(rawId)
+          const id = Number(params.id)
+
+          if (Number.isNaN(id)) {
+            return ok<LogIdDeleteResponse>({
+              success: false,
+              error: 'Invalid log id',
+            })
+          }
 
           await db.delete(log).where(eq(log.id, id))
           await deleteFromR2(id)
-          await regenerateContents()
+          await regenerateContents({ triggerImages: false })
 
           return ok<LogIdDeleteResponse>({ success: true })
         } catch (error) {

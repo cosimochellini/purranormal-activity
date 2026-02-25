@@ -18,9 +18,17 @@ export const Route = createFileRoute('/api/log/$id/categories')({
     handlers: {
       POST: async ({ request, params }) => {
         try {
-          const url = new URL(request.url)
-          const id = params.id ?? url.searchParams.get('id')
-          const logId = Number(id)
+          const logId = Number(params.id)
+
+          if (Number.isNaN(logId)) {
+            return ok<LogIdCategoriesPostResponse>({
+              success: false,
+              errors: {
+                categories: ['Invalid log id'],
+              },
+            })
+          }
+
           const data = await request.json()
           const result = await schema.safeParseAsync(data)
 

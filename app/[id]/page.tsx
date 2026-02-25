@@ -8,9 +8,8 @@ import { SendNotificationButton } from '../../components/common/SendNotification
 import { EventImage } from '../../components/events/EventImage'
 
 import { TriggerImageGeneration } from '../../components/image/TriggerImageGeneration'
-import { NEXT_PUBLIC_APP_URL } from '../../env/next'
+import { APP_URL } from '../../env/public'
 import { getLog } from '../../services/log'
-import type { ParamsContext } from '../../types/route'
 import { publicImage } from '../../utils/cloudflare'
 import { transitions } from '../../utils/viewTransition'
 
@@ -18,9 +17,13 @@ interface Params {
   id: string
 }
 
+interface RouteParamsContext {
+  params: Promise<Params>
+}
+
 export const runtime = 'edge'
 
-export async function generateMetadata({ params }: ParamsContext<Params>): Promise<Metadata> {
+export async function generateMetadata({ params }: RouteParamsContext): Promise<Metadata> {
   const rawId = (await params).id
 
   const entry = await getLog(Number(rawId))
@@ -38,7 +41,7 @@ export async function generateMetadata({ params }: ParamsContext<Params>): Promi
       title: `Day ${id * 2} - ${title}`,
       description,
       type: 'article',
-      url: `${NEXT_PUBLIC_APP_URL}/${rawId}`,
+      url: `${APP_URL}/${rawId}`,
       images: [
         {
           url: publicImage(id),
@@ -54,7 +57,7 @@ export async function generateMetadata({ params }: ParamsContext<Params>): Promi
 // biome-ignore lint/style/useConst: otherwise it's not working
 export let revalidate = 2 * 60 * 60 // 2 hours
 
-export default async function Page({ params }: ParamsContext<Params>) {
+export default async function Page({ params }: RouteParamsContext) {
   const rawId = (await params).id
   const log = await getLog(Number(rawId))
 

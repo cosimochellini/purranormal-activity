@@ -1,18 +1,37 @@
-import { NEXT_PUBLIC_APP_URL } from '@/env/next'
-import { redeploy } from '@/utils/cloudflare'
+import { triggerFirstPendingImage, triggerLogImageIfPending } from '@/services/trigger'
 import { logger } from '@/utils/logger'
-
-const triggerUrl = `${NEXT_PUBLIC_APP_URL}/api/trigger/images` as const
 
 // Framework-neutral placeholder for cache invalidation during migration.
 export async function invalidatePublicContent() {
   logger.info('Content invalidation requested (currently no-op)')
 }
 
-export async function regenerateContents() {
+interface RegenerateContentsOptions {
+  triggerImages?: boolean
+  triggerLogId?: number
+}
+
+export async function regenerateContents({
+  triggerImages = true,
+  triggerLogId,
+}: RegenerateContentsOptions = {}) {
   await invalidatePublicContent()
 
-  logger.info(`Triggering image generation at ${triggerUrl}`)
+  if (!triggerImages) {
+    return
+  }
 
-  await redeploy().then(logger.info).catch(logger.error)
+  try {
+    if (typeof triggerLogId === 'number' && Number.isFinite(triggerLogId)) {
+      const triggered = await triggerLogImageIfPending(triggerLogId)
+
+      if (triggered) {
+        return
+      }
+    }
+
+    await triggerFirstPendingImage()
+  } catch (error) {
+    logger.error('Failed to trigger image generation during content regeneration:', error)
+  }
 }
