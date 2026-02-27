@@ -402,7 +402,7 @@
 | **Prerequisites** | External tool (FB Debugger) or Real App |
 | **Steps** | 1. Copy link of event with generated image<br>2. Paste in Telegram chat |
 | **Expected Result** | - "Day #X" card generated correctly<br>- Event image visible<br>- Engaging description |
-| **Notes** | Verifies OpenGraph meta tags in `page.tsx` work as specified |
+| **Notes** | Verifies OpenGraph meta tags in route files work as specified |
 
 ---
 

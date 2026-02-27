@@ -7,9 +7,7 @@ Purranormal Activity is a whimsical web app for documenting paranormal events ca
 **Current live**: https://purranormal-activity.pages.dev/ (Cloudflare Pages)
 **Migration target**: https://purranormal-activity.workers.dev (Cloudflare Workers)
 
-> **Active migration in progress.** See `plan.md` for the full spec and `backlog.md` for deferred work.
-> The codebase is being migrated from Next.js 15 App Router to TanStack Start + Vite + Cloudflare Workers.
-> Do not introduce new Next.js-specific patterns in newly written code.
+> **Migration complete.** The codebase has been migrated from Next.js to TanStack Start + Vite + Cloudflare Workers. See `plan.md` for historical specs and `backlog.md` for deferred work.
 
 ## Commands
 
@@ -22,12 +20,10 @@ pnpm lint:fix         # Auto-fix lint issues (biome check --write .)
 pnpm generate         # Push DB schema changes to Turso (drizzle-kit push)
 ```
 
-### Build (dual-build mode — active during Phases 1-3)
+### Build
 
 ```bash
-pnpm run build:next   # Next.js build (primary gate during Phases 1-3)
-pnpm run build:start  # TanStack Start / Vite build (added in Phase 1)
-pnpm build            # Alias: build:next (Phases 1-3) → build:start (from Phase 4)
+pnpm build            # Production build (TanStack Start / Vite)
 ```
 
 ### Workers / Cloudflare
@@ -42,18 +38,13 @@ Husky + lint-staged auto-formats staged files on commit via Biome.
 
 ## Tech Stack
 
-### Current (active codebase — being migrated)
-
-- **Framework**: Next.js 15 (App Router) with TypeScript
-- **Deployment**: Cloudflare Pages via `@cloudflare/next-on-pages`
-
-### Target (post-migration)
+### Primary Tech Stack
 
 - **Framework**: TanStack Start 1.162.9 + TanStack Router 1.162.9
 - **Build**: Vite 7.3.1 + `@cloudflare/vite-plugin` 1.25.5
 - **Deployment**: Cloudflare Workers via `wrangler deploy`
 
-### Shared (unchanged by migration)
+### Shared Infrastructure (unchanged by migration)
 
 - **Database**: Turso (SQLite) + Drizzle ORM
 - **Styling**: Tailwind CSS v4 (custom mystical palette: deep-purple, midnight-blue, ghost-white, neon-green)
@@ -68,7 +59,7 @@ Husky + lint-staged auto-formats staged files on commit via Biome.
 
 ### Directory Layout
 
-- `app/` - Next.js App Router pages and API routes *(being migrated to `routes/` in TanStack Start)*
+- `app/` - TanStack Start routes and API endpoints
 - `components/` - React components organized by feature (hero/, events/, explore/, newLog/, editLog/, etc.)
 - `db/schema.ts` - Drizzle ORM schema (3 tables: `log`, `category`, `log_category`)
 - `drizzle/index.ts` - Database connection (`drizzle-orm/libsql/web`, Workers-compatible)
@@ -78,7 +69,7 @@ Husky + lint-staged auto-formats staged files on commit via Biome.
 - `env/` - Environment variable modules (db.ts, openai.ts, cloudflare.ts, secret.ts, telegram.ts)
 - `instances/` - Singleton clients (openai.ts, s3.ts)
 - `data/enum/` - Enumerations (logStatus: Created|ImageGenerated|Error, imageStyle: 16+ styles)
-- `types/` - TypeScript types (search.ts) — `types/next.ts` removed in Phase 2
+- `types/` - TypeScript types (search.ts)
 - `constants.ts` - Validation limits and UI config
 
 ### Data Flow
@@ -115,16 +106,16 @@ Three tables in Turso (SQLite): `log` (events with title, description, status, i
 ### Key Patterns
 
 - Path alias: `@/*` maps to project root
-- Favor React Server Components; minimize `use client`, `useEffect`, `setState`
-- Wrap client components in Suspense with fallback
+- Favor server functions and TanStack loaders for data fetching; minimize unnecessary client-side state
+- Wrap components in Suspense with fallback where appropriate
 - Use `classnames` library for conditional CSS classes
 - Named exports for components
 - Arrow functions preferred over function declarations
 - Interfaces preferred over type aliases
 - Maps preferred over enums
 - Lowercase-with-dashes for directory names (e.g., `components/auth-wizard`)
-- URL state management for explore filters: `nuqs` with `nuqs/adapters/tanstack-router` *(migrated from `nuqs/adapters/next/app`)*
-- Cache strategy: fresh SSR / no-store on Workers (no ISR emulation); advanced edge caching is deferred backlog
+- URL state management for explore filters: `nuqs` with `nuqs/adapters/tanstack-router`
+- Cache strategy: fresh SSR / no-store on Workers; advanced edge caching is deferred backlog
 
 ## Design Theme
 
