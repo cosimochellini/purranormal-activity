@@ -13,6 +13,7 @@ import { Route as NewRouteImport } from './routes/new'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as IdRouteImport } from './routes/$id'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as IdIndexRouteImport } from './routes/$id/index'
 import { Route as ApiScriptRouteImport } from './routes/api/script'
 import { Route as ApiLogRouteImport } from './routes/api/log'
 import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
@@ -45,6 +46,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const IdIndexRoute = IdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => IdRoute,
 } as any)
 const ApiScriptRoute = ApiScriptRouteImport.update({
   id: '/api/script',
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/api/categories': typeof ApiCategoriesRoute
   '/api/log': typeof ApiLogRouteWithChildren
   '/api/script': typeof ApiScriptRoute
+  '/$id/': typeof IdIndexRoute
   '/api/log/$id': typeof ApiLogIdRouteWithChildren
   '/api/log/all': typeof ApiLogAllRoute
   '/api/log/refine': typeof ApiLogRefineRoute
@@ -127,13 +134,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/$id': typeof IdRouteWithChildren
   '/explore': typeof ExploreRoute
   '/new': typeof NewRoute
   '/$id/edit': typeof IdEditRoute
   '/api/categories': typeof ApiCategoriesRoute
   '/api/log': typeof ApiLogRouteWithChildren
   '/api/script': typeof ApiScriptRoute
+  '/$id': typeof IdIndexRoute
   '/api/log/$id': typeof ApiLogIdRouteWithChildren
   '/api/log/all': typeof ApiLogAllRoute
   '/api/log/refine': typeof ApiLogRefineRoute
@@ -153,6 +160,7 @@ export interface FileRoutesById {
   '/api/categories': typeof ApiCategoriesRoute
   '/api/log': typeof ApiLogRouteWithChildren
   '/api/script': typeof ApiScriptRoute
+  '/$id/': typeof IdIndexRoute
   '/api/log/$id': typeof ApiLogIdRouteWithChildren
   '/api/log/all': typeof ApiLogAllRoute
   '/api/log/refine': typeof ApiLogRefineRoute
@@ -173,6 +181,7 @@ export interface FileRouteTypes {
     | '/api/categories'
     | '/api/log'
     | '/api/script'
+    | '/$id/'
     | '/api/log/$id'
     | '/api/log/all'
     | '/api/log/refine'
@@ -184,13 +193,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/$id'
     | '/explore'
     | '/new'
     | '/$id/edit'
     | '/api/categories'
     | '/api/log'
     | '/api/script'
+    | '/$id'
     | '/api/log/$id'
     | '/api/log/all'
     | '/api/log/refine'
@@ -209,6 +218,7 @@ export interface FileRouteTypes {
     | '/api/categories'
     | '/api/log'
     | '/api/script'
+    | '/$id/'
     | '/api/log/$id'
     | '/api/log/all'
     | '/api/log/refine'
@@ -261,6 +271,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/$id/': {
+      id: '/$id/'
+      path: '/'
+      fullPath: '/$id/'
+      preLoaderRoute: typeof IdIndexRouteImport
+      parentRoute: typeof IdRoute
     }
     '/api/script': {
       id: '/api/script'
@@ -351,10 +368,12 @@ declare module '@tanstack/react-router' {
 
 interface IdRouteChildren {
   IdEditRoute: typeof IdEditRoute
+  IdIndexRoute: typeof IdIndexRoute
 }
 
 const IdRouteChildren: IdRouteChildren = {
   IdEditRoute: IdEditRoute,
+  IdIndexRoute: IdIndexRoute,
 }
 
 const IdRouteWithChildren = IdRoute._addFileChildren(IdRouteChildren)
