@@ -1,9 +1,7 @@
-'use client'
-
 import type { ComponentType } from 'react'
 import { useState } from 'react'
-import type { FollowUpQuestion } from '@/app/api/log/refine/route'
 import { usePartialState } from '@/hooks/state'
+import type { FollowUpQuestion } from '@/types/api/log-refine'
 import { CompletedSection } from './completed'
 import { InitialSection } from './initial'
 import { RefinementSection } from './refinement'

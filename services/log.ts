@@ -1,6 +1,6 @@
 import type { SQL } from 'drizzle-orm'
 import { and, asc, desc, eq, gte, inArray, like, or, sql } from 'drizzle-orm'
-import type { Log, LogWithCategories } from '../db/schema'
+import type { Log } from '../db/schema'
 import { log, logCategory } from '../db/schema'
 import { db } from '../drizzle'
 import { SortBy, TimeRange } from '../types/search'

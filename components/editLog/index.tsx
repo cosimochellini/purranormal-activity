@@ -1,17 +1,15 @@
-'use client'
-
 import { IconRefresh } from '@tabler/icons-react'
+import { useNavigate } from '@tanstack/react-router'
 import classNames from 'classnames'
-import { useRouter } from 'next/navigation'
 import type { ChangeEvent, FormEvent } from 'react'
 import { Suspense, useRef, useState } from 'react'
-import type { DeleteResponse, PutBody, PutResponse } from '@/app/api/log/[id]/route'
-import type { UploadResponse } from '@/app/api/upload/[id]/route'
 import { SpookyButton } from '@/components/common/SpookyButton'
 import { EventImage } from '@/components/events/EventImage'
 import { UI_CONFIG } from '@/constants'
 import type { LogWithCategories } from '@/db/schema'
 import { usePartialState } from '@/hooks/state'
+import type { LogIdDeleteResponse, LogIdPutBody, LogIdPutResponse } from '@/types/api/log-id'
+import type { UploadIdResponse } from '@/types/api/upload-id'
 import { fetcher } from '@/utils/fetch'
 import { transitions } from '@/utils/viewTransition'
 import { SpookyInput } from '../common/SpookyInput'
@@ -22,20 +20,19 @@ interface Secret {
   secret: string
 }
 
-const updateLog = fetcher<PutResponse, never, PutBody>('/api/log/[id]', 'PUT')
-const deleteLog = fetcher<DeleteResponse, never, Secret>('/api/log/[id]', 'DELETE')
-const uploadImage = fetcher<UploadResponse, never, FormData>('/api/upload/[id]', 'POST')
+const updateLog = fetcher<LogIdPutResponse, never, LogIdPutBody>('/api/log/[id]', 'PUT')
+const deleteLog = fetcher<LogIdDeleteResponse, never, Secret>('/api/log/[id]', 'DELETE')
+const uploadImage = fetcher<UploadIdResponse, never, FormData>('/api/upload/[id]', 'POST')
 
 interface UpdateImageButtonProps {
   id: number
 }
 
 function UpdateImageButton({ id }: UpdateImageButtonProps) {
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
-  const router = useRouter()
-
   const handleClick = () => {
     fileInputRef.current?.click()
   }
@@ -60,7 +57,11 @@ function UpdateImageButton({ id }: UpdateImageButtonProps) {
         return
       }
 
-      router.push(`/${id}`)
+      await navigate({
+        to: '/$id',
+        params: { id: `${id}` },
+        viewTransition: true,
+      })
 
       setError('')
     } catch (err) {
@@ -106,8 +107,7 @@ interface EditLogFormProps {
 }
 
 export function EditLogForm({ initialData }: EditLogFormProps) {
-  const router = useRouter()
-
+  const navigate = useNavigate()
   const [submitting, setSubmitting] = usePartialState({ form: false, delete: false })
   const [error, setError] = useState('')
   const [formData, setFormData] = usePartialState(() => ({ ...initialData, secret: '' }))
@@ -124,13 +124,16 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
       })
 
       if (!response.success) {
-        const errors = Object.values(response.errors).flat()
+        const errors = Object.values(response.errors ?? {}).flat()
         setError(errors[0] ?? 'Failed to update')
         return
       }
 
-      router.push(`/${initialData.id}`)
-      router.refresh()
+      await navigate({
+        to: '/$id',
+        params: { id: `${initialData.id}` },
+        viewTransition: true,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update')
     } finally {
@@ -150,13 +153,12 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
       })
 
       if (!response.success) {
-        const errors = Object.values(response.errors).flat()
-        setError(errors[0] ?? 'Failed to update')
+        const errors = Object.values(response.errors ?? {}).flat()
+        setError(errors[0] ?? response.error ?? 'Failed to update')
         return
       }
 
-      router.push('/')
-      router.refresh()
+      await navigate({ to: '/', viewTransition: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete')
     } finally {

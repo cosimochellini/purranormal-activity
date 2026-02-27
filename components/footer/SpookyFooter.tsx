@@ -7,9 +7,8 @@ interface FooterLink {
 }
 
 const footerLinks: FooterLink[] = [
-  { text: 'Paranormal Stats', href: '/stats' },
   { text: 'New Haunting', href: '/new' },
-  { text: 'Dark Secrets', href: '/secrets' },
+  { text: 'Explore Archives', href: '/explore' },
 ] as const
 
 export function SpookyFooter() {

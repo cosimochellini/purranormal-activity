@@ -16,6 +16,13 @@ export function forbidden() {
   return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 })
 }
 
+export function methodNotAllowed(allow?: string) {
+  return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+    status: 405,
+    headers: allow ? { Allow: allow } : undefined,
+  })
+}
+
 export function notFound() {
   return new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 })
 }

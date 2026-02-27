@@ -1,17 +1,19 @@
-'use client'
-
-import Image from 'next/image'
-import { useTransitionRouter } from 'next-view-transitions'
+import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { UI_CONFIG } from '@/constants'
 import { LogStatus } from '@/data/enum/logStatus'
 import type { LogWithCategories } from '@/db/schema'
 import Bug from '@/images/bug.jpg'
 import { randomImage } from '@/images/loading'
-import { publicImage } from '@/utils/cloudflare'
+import { toAssetSrc } from '@/utils/image'
+import { logger } from '@/utils/logger'
+import { publicImage } from '@/utils/public-image'
 import { randomItem } from '../../utils/random'
 
-type ImageProps = React.ComponentProps<typeof Image>
+interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
+  priority?: boolean
+  quality?: number
+}
 
 interface EventImageProps extends ImageProps {
   log: LogWithCategories
@@ -101,18 +103,18 @@ const fallbackImage = randomImage()
 
 export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt'>) {
   const clickCounter = useRef(0)
-  const router = useTransitionRouter()
+  const navigate = useNavigate()
 
   const [imageError, setImageError] = useState(false)
 
   const { imageDescription, id, status } = log
 
   const image = useMemo(() => {
-    if (status === LogStatus.Created) return fallbackImage.src
+    if (status === LogStatus.Created) return toAssetSrc(fallbackImage)
 
-    if (status === LogStatus.Error) return Bug.src
+    if (status === LogStatus.Error) return toAssetSrc(Bug)
 
-    if (imageError) return Bug.src
+    if (imageError) return toAssetSrc(Bug)
 
     return publicImage(id)
   }, [id, imageError, status])
@@ -124,15 +126,32 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
   const onImageClick = () => {
     clickCounter.current += 1
 
-    if (clickCounter.current >= 5) return router.push(`/${log.id}/edit`)
+    if (clickCounter.current >= 5) {
+      navigate({
+        to: '/$id/edit',
+        params: { id: `${log.id}` },
+        viewTransition: true,
+      }).catch((error) => {
+        logger.error('Failed to navigate to edit route:', error)
+      })
+    }
   }
+
+  const {
+    priority,
+    quality: _quality,
+    loading,
+    ...imageProps
+  } = props as Omit<EventImageProps, 'src' | 'alt'>
 
   return (
     <div className="relative">
-      <Image
-        {...props}
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: hidden easter egg should only react to pointer clicks */}
+      <img
+        {...(imageProps as React.ImgHTMLAttributes<HTMLImageElement>)}
         src={image}
         alt={imageDescription ?? ''}
+        loading={priority ? 'eager' : loading}
         onError={onImageError}
         onClick={onImageClick}
       />

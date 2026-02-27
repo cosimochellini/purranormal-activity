@@ -1,8 +1,9 @@
-import Image from 'next/image'
+import { toAssetSrc } from '@/utils/image'
 import { randomImage } from '../../images/noResults'
 
 export function NoLogsFound() {
   const image = randomImage()
+  const src = toAssetSrc(image)
   return (
     <div className="relative flex flex-col items-center justify-center py-16 px-4">
       {/* Magical glow effects */}
@@ -15,12 +16,10 @@ export function NoLogsFound() {
       <div className="absolute top-1/2 -right-4 h-2 w-2 animate-sparkle delay-700 rounded-full bg-purple-300/80 blur-[1px]" />
 
       <div className="relative w-full max-w-md aspect-square mx-auto mb-6">
-        <Image
-          src={image}
+        <img
+          src={src}
           alt="No supernatural events found"
-          className="object-contain transition-transform duration-700 hover:scale-105 rounded-xl"
-          priority
-          fill
+          className="w-full h-full rounded-xl object-contain transition-transform duration-700 hover:scale-105"
         />
       </div>
 

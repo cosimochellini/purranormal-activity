@@ -1,8 +1,8 @@
 import { IconX } from '@tabler/icons-react'
 import cn from 'classnames'
 import { useState } from 'react'
-import type { FollowUpQuestion } from '@/app/api/log/refine/route'
-import type { Body, Response } from '@/app/api/log/submit/route'
+import type { FollowUpQuestion } from '@/types/api/log-refine'
+import type { LogSubmitBody, LogSubmitResponse } from '@/types/api/log-submit'
 import { fetcher } from '@/utils/fetch'
 import { logger } from '../../utils/logger'
 import { SpookyButton } from '../common/SpookyButton'
@@ -16,7 +16,7 @@ interface AnsweredQuestion extends FollowUpQuestion {
   otherText: string | null
 }
 
-const submitLog = fetcher<Response, never, Body>('/api/log/submit', 'POST')
+const submitLog = fetcher<LogSubmitResponse, never, LogSubmitBody>('/api/log/submit', 'POST')
 
 // Helper functions
 const MAX_OTHER_TEXT_LENGTH = 150

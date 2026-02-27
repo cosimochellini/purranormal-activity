@@ -1,10 +1,27 @@
-import { Link } from 'next-view-transitions'
-import type { ComponentProps } from 'react'
+import { Link, type LinkComponentProps } from '@tanstack/react-router'
+import type { ReactNode } from 'react'
 
-interface TransitionLinkProps extends ComponentProps<typeof Link> {
-  children: React.ReactNode
+interface TransitionLinkProps extends Omit<LinkComponentProps<'a'>, 'to' | 'preload' | 'children'> {
+  href: string
+  children: ReactNode
+  prefetch?: boolean
 }
 
-export function TransitionLink({ children, ...props }: TransitionLinkProps) {
-  return <Link {...props}>{children}</Link>
+const isInternalHref = (href: string) =>
+  href.startsWith('/') || href.startsWith('#') || href.startsWith('?')
+
+export function TransitionLink({ children, href, prefetch, ...anchorProps }: TransitionLinkProps) {
+  if (!isInternalHref(href)) {
+    return (
+      <a href={href} {...anchorProps}>
+        {children}
+      </a>
+    )
+  }
+
+  return (
+    <Link to={href} preload={prefetch ? 'intent' : false} viewTransition {...anchorProps}>
+      {children}
+    </Link>
+  )
 }

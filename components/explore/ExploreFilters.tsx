@@ -1,5 +1,3 @@
-'use client'
-
 import { useExploreData } from '../../hooks/useExporeData'
 import { SortBy, TimeRange } from '../../types/search'
 import { SpookyInput } from '../common/SpookyInput'

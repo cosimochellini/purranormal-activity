@@ -1,9 +1,7 @@
-'use client'
-
 import { IconBrandTelegram, IconCheck, IconX } from '@tabler/icons-react'
 import { useState } from 'react'
-import type { Response } from '@/app/api/telegram/[id]/route'
 import { useSound } from '@/hooks/useSound'
+import type { TelegramIdResponse } from '@/types/api/telegram-id'
 import { fetcher } from '../../utils/fetch'
 import { SpookyButton } from './SpookyButton'
 import { SpookyModal } from './SpookyModal'
@@ -11,12 +9,12 @@ import { SpookyModal } from './SpookyModal'
 interface SendNotificationButtonProps {
   logId: number
 }
-const sendNotification = fetcher<Response>('/api/telegram/[id]', 'POST')
+const sendNotification = fetcher<TelegramIdResponse>('/api/telegram/[id]', 'POST')
 
 export function SendNotificationButton({ logId }: SendNotificationButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
-  const [response, setResponse] = useState<Response | null>(null)
+  const [response, setResponse] = useState<TelegramIdResponse | null>(null)
 
   const { play: playMagicSound } = useSound('/sounds/magic.mp3', { volume: 0.6 })
 

@@ -1,6 +1,6 @@
 # 🧪 Purranormal Activity - Manual Test Cases
 
-> **Document for LLM Tester** | Chrome Mobile | Last Updated: 2025-12-29
+> **Document for LLM Tester** | Chrome Mobile | Last Updated: 2026-02-25
 
 ---
 
@@ -24,7 +24,7 @@
 |-----------|--------|
 | **Browser** | Chrome Mobile |
 | **Viewport** | 375x667 (iPhone SE) or 390x844 (iPhone 14) |
-| **Base URL** | `https://purranormal-activity.pages.dev/` |
+| **Base URL** | `https://purranormal-activity.workers.dev/` |
 | **Network** | Also test with "Slow 3G" throttling |
 
 ---
@@ -402,7 +402,7 @@
 | **Prerequisites** | External tool (FB Debugger) or Real App |
 | **Steps** | 1. Copy link of event with generated image<br>2. Paste in Telegram chat |
 | **Expected Result** | - "Day #X" card generated correctly<br>- Event image visible<br>- Engaging description |
-| **Notes** | Verifies OpenGraph meta tags in `page.tsx` work as specified |
+| **Notes** | Verifies OpenGraph meta tags in route files work as specified |
 
 ---
 

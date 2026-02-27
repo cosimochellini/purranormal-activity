@@ -1,2 +1,3 @@
-/* eslint-disable node/prefer-global/process */
-export const SECRET = process.env.SECRET as string
+import { getRequiredEnv } from './required'
+
+export const SECRET = getRequiredEnv('SECRET')
