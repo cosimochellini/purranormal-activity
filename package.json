@@ -1,6 +1,6 @@
 {
   "name": "purranormal-activity",
-  "version": "0.14.14",
+  "version": "0.14.15",
   "private": true,
   "engines": {
     "node": "22.x"
@@ -26,15 +26,15 @@
     ]
   },
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.31",
-    "@aws-sdk/client-s3": "3.996.0",
+    "@ai-sdk/openai": "^3.0.36",
+    "@aws-sdk/client-s3": "3.999.0",
     "@libsql/client": "^0.17.0",
     "@tabler/icons-react": "^3.37.1",
-    "ai": "^6.0.97",
+    "ai": "^6.0.103",
     "classnames": "^2.5.1",
     "drizzle-orm": "^0.45.1",
     "nuqs": "^2.8.8",
-    "openai": "^6.24.0",
+    "openai": "^6.25.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-intersection-observer": "^10.0.3",
@@ -43,11 +43,11 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.4",
-    "@cloudflare/vite-plugin": "1.25.5",
+    "@cloudflare/vite-plugin": "1.25.6",
     "@tailwindcss/postcss": "^4.2.1",
-    "@tanstack/react-router": "1.162.9",
-    "@tanstack/react-start": "1.162.9",
-    "@types/node": "^25.3.0",
+    "@tanstack/react-router": "1.163.2",
+    "@tanstack/react-start": "1.163.2",
+    "@types/node": "^25.3.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "5.1.4",
@@ -59,6 +59,6 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vite": "7.3.1",
-    "wrangler": "4.68.1"
+    "wrangler": "4.69.0"
   }
 }
