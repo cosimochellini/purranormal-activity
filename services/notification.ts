@@ -3,6 +3,7 @@ import { generateTelegramMessage } from '@/services/ai'
 import { sendMessage, sendPhoto } from '@/services/telegram'
 import type { SendEventNotificationResult } from '@/services/telegram/types'
 import { logger } from '@/utils/logger'
+import { publicImage } from '@/utils/public-image'
 
 /**
  * Formats and sends a paranormal event notification
@@ -27,7 +28,14 @@ export async function sendEventNotification(
         error: result.error || 'Failed to send message',
       }
     }
-    const imageURL = `https://pub-9cd2e6644bc8418a87242879f6146869.r2.dev/${event.id}/cover.webp`
+    const imageURL = publicImage(event.id)
+
+    if (!imageURL) {
+      return {
+        success: false,
+        error: 'Missing public image base URL',
+      }
+    }
 
     const photoResult = await sendPhoto({
       photo: imageURL,

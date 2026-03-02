@@ -1,2 +1,3 @@
-// eslint-disable-next-line node/prefer-global/process
-export const OPENAI_API_KEY = process.env.OPENAI_API_KEY as string
+import { getRequiredEnv } from './required'
+
+export const OPENAI_API_KEY = getRequiredEnv('OPENAI_API_KEY')

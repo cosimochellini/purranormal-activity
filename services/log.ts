@@ -1,5 +1,6 @@
 import type { SQL } from 'drizzle-orm'
 import { and, asc, desc, eq, gte, inArray, like, or, sql } from 'drizzle-orm'
+import { LogStatus } from '@/data/enum/logStatus'
 import type { Log } from '../db/schema'
 import { log, logCategory } from '../db/schema'
 import { db } from '../drizzle'
@@ -13,13 +14,11 @@ const sorting = {
   [SortBy.Title]: [asc(log.title)],
 } as const satisfies Record<SortBy, SQL[]>
 
-const now = Date.now()
-
 const ranges = {
   [TimeRange.All]: 0,
-  [TimeRange.Day]: now - time({ days: 1 }),
-  [TimeRange.Week]: now - time({ days: 7 }),
-  [TimeRange.Month]: now - time({ days: 30 }),
+  [TimeRange.Day]: time({ days: 1 }),
+  [TimeRange.Week]: time({ days: 7 }),
+  [TimeRange.Month]: time({ days: 30 }),
 } as const satisfies Record<TimeRange, number>
 
 async function addCategories(logs: Log[]) {
@@ -75,6 +74,9 @@ export async function getLogs({
   sortBy = SortBy.Recent,
   timeRange = TimeRange.All,
 }: GetLogsOptions) {
+  const safeSkip = Math.max(skip, 0)
+  const safeLimit = Math.min(Math.max(limit, 1), 50)
+
   const categoryCondition =
     categories.length > 0
       ? sql`
@@ -91,15 +93,15 @@ export async function getLogs({
     : undefined
 
   const timeRangeCondition =
-    timeRange !== TimeRange.All ? gte(log.createdAt, ranges[timeRange]) : undefined
+    timeRange !== TimeRange.All ? gte(log.createdAt, Date.now() - ranges[timeRange]) : undefined
 
   const logs = await db
     .select()
     .from(log)
     .where(and(gte(log.id, 1), searchCondition, categoryCondition, timeRangeCondition))
     .orderBy(...sorting[sortBy])
-    .limit(limit)
-    .offset(skip)
+    .limit(safeLimit)
+    .offset(safeSkip)
 
   return addCategories(logs)
 }
@@ -110,7 +112,11 @@ export async function setLogError(id: number | undefined, error: unknown) {
 
     await db
       .update(log)
-      .set({ error: error instanceof Error ? error.message : JSON.stringify(error) })
+      .set({
+        error: error instanceof Error ? error.message : JSON.stringify(error),
+        status: LogStatus.Error,
+        updatedAt: Date.now(),
+      })
       .where(eq(log.id, id))
   } catch (error) {
     logger.error('Failed to set log error:', error)

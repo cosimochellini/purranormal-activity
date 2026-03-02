@@ -23,6 +23,8 @@ export async function generateLogImage(logId: number) {
     .update(log)
     .set({
       status: LogStatus.ImageGenerated,
+      error: null,
+      updatedAt: Date.now(),
     })
     .where(eq(log.id, logId))
 }

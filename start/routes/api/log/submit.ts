@@ -4,12 +4,14 @@ import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants
 import { LogStatus } from '@/data/enum/logStatus'
 import { category, log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
-import { SECRET } from '@/env/secret'
 import { generateLogDetails } from '@/services/ai'
 import { regenerateContents } from '@/services/content'
 import type { LogSubmitResponse } from '@/types/api/log-submit'
-import { ok } from '@/utils/http'
+import { ok, StatusCode } from '@/utils/http'
 import { logger } from '@/utils/logger'
+import { applyRateLimit } from '@/utils/rate-limit'
+import { isSecretValid } from '@/utils/security'
+import { time } from '@/utils/time'
 
 const answerSchema = z.object({
   question: z.string(),
@@ -27,7 +29,9 @@ const submitFormSchema = z.object({
   secret: z
     .string()
     .min(1, VALIDATION_MESSAGES.SECRET_REQUIRED)
-    .refine((val) => val.toLowerCase() === SECRET, { message: VALIDATION_MESSAGES.SECRET_INVALID }),
+    .refine((val) => isSecretValid(val, { caseInsensitive: true }), {
+      message: VALIDATION_MESSAGES.SECRET_INVALID,
+    }),
 })
 
 export const Route = createFileRoute('/api/log/submit')({
@@ -35,24 +39,43 @@ export const Route = createFileRoute('/api/log/submit')({
     handlers: {
       POST: async ({ request }) => {
         try {
+          const rateLimitResult = applyRateLimit(request, {
+            namespace: 'api:log-submit',
+            maxRequests: 8,
+            windowMs: time({ minutes: 1 }),
+          })
+
+          if (!rateLimitResult.allowed) {
+            return ok<LogSubmitResponse>(
+              {
+                success: false,
+                errors: {
+                  general: [`Too many requests. Retry in ~${rateLimitResult.retryAfterSeconds}s.`],
+                },
+              },
+              { status: StatusCode.TooManyRequests },
+            )
+          }
+
           const data = await request.json()
           const result = await submitFormSchema.safeParseAsync(data)
 
           if (!result.success) {
-            return ok<LogSubmitResponse>({
-              success: false,
-              errors: Object.fromEntries(
-                Object.entries(z.treeifyError(result.error).properties || {}).map(
-                  ([key, value]) => [key, value?.errors || []],
+            return ok<LogSubmitResponse>(
+              {
+                success: false,
+                errors: Object.fromEntries(
+                  Object.entries(z.treeifyError(result.error).properties || {}).map(
+                    ([key, value]) => [key, value?.errors || []],
+                  ),
                 ),
-              ),
-            })
+              },
+              { status: StatusCode.BadRequest },
+            )
           }
 
-          const { title, description, categories, imageDescription } = await generateLogDetails(
-            result.data.description,
-            result.data.answers,
-          )
+          const { title, description, categories, missingCategories, imageDescription } =
+            await generateLogDetails(result.data.description, result.data.answers)
 
           const allCategories = (await db.select({ id: category.id }).from(category)).map(
             (category) => category.id,
@@ -75,12 +98,18 @@ export const Route = createFileRoute('/api/log/submit')({
             .filter(({ categoryId }) => allCategories.includes(categoryId))
 
           if (categoriesToInsert.length > 0) {
-            await db.insert(logCategory).values(categoriesToInsert)
+            await db
+              .insert(logCategory)
+              .values(
+                Array.from(
+                  new Map(categoriesToInsert.map((item) => [item.categoryId, item])).values(),
+                ),
+              )
           }
 
           await regenerateContents({ triggerLogId: newLog.id })
 
-          return ok<LogSubmitResponse>({ success: true, id: newLog.id, missingCategories: [] })
+          return ok<LogSubmitResponse>({ success: true, id: newLog.id, missingCategories })
         } catch (error) {
           logger.error('Failed to submit log:', error)
 
@@ -96,12 +125,15 @@ export const Route = createFileRoute('/api/log/submit')({
             }
           }
 
-          return ok<LogSubmitResponse>({
-            success: false,
-            errors: {
-              general: [errorMessage],
+          return ok<LogSubmitResponse>(
+            {
+              success: false,
+              errors: {
+                general: [errorMessage],
+              },
             },
-          })
+            { status: StatusCode.InternalServerError },
+          )
         }
       },
     },

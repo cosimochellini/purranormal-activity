@@ -5,12 +5,12 @@ import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants
 import { LogStatus } from '@/data/enum/logStatus'
 import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
-import { SECRET } from '@/env/secret'
 import { regenerateContents } from '@/services/content'
 import type { LogIdDeleteResponse, LogIdGetResponse, LogIdPutResponse } from '@/types/api/log-id'
 import { deleteFromR2 } from '@/utils/cloudflare'
-import { ok } from '@/utils/http'
+import { ok, StatusCode } from '@/utils/http'
 import { logger } from '@/utils/logger'
+import { isSecretValid } from '@/utils/security'
 
 const schema = z.object({
   title: z
@@ -25,11 +25,11 @@ const schema = z.object({
     .array(z.number())
     .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.CATEGORIES_REQUIRED),
   imageDescription: z.string().nullable(),
-  secret: z.string().refine((val) => val === SECRET, { message: 'Invalid secret' }),
+  secret: z.string().refine((val) => isSecretValid(val), { message: 'Invalid secret' }),
 })
 
 const deleteSchema = z.object({
-  secret: z.string().refine((val) => val === SECRET, { message: 'Invalid secret' }),
+  secret: z.string().refine((val) => isSecretValid(val), { message: 'Invalid secret' }),
 })
 
 const getLog = async (id: number) => (await db.select().from(log).where(eq(log.id, id)))[0]
@@ -41,27 +41,36 @@ export const Route = createFileRoute('/api/log/$id')({
         const id = Number(params.id)
 
         if (Number.isNaN(id)) {
-          return ok<LogIdGetResponse>({
-            success: false,
-          })
+          return ok<LogIdGetResponse>(
+            {
+              success: false,
+            },
+            { status: StatusCode.BadRequest },
+          )
         }
 
         try {
           const entry = await getLog(id)
 
           if (!entry) {
-            return ok<LogIdGetResponse>({
-              success: false,
-            })
+            return ok<LogIdGetResponse>(
+              {
+                success: false,
+              },
+              { status: StatusCode.NotFound },
+            )
           }
 
           return ok<LogIdGetResponse>({ success: true, data: entry })
         } catch (error) {
           logger.error('Failed to fetch log entry:', error)
 
-          return ok<LogIdGetResponse>({
-            success: false,
-          })
+          return ok<LogIdGetResponse>(
+            {
+              success: false,
+            },
+            { status: StatusCode.InternalServerError },
+          )
         }
       },
       PUT: async ({ request, params }) => {
@@ -69,28 +78,37 @@ export const Route = createFileRoute('/api/log/$id')({
           const id = Number(params.id)
 
           if (Number.isNaN(id)) {
-            return ok<LogIdPutResponse>({
-              success: false,
-              errors: { title: ['Invalid log id'] },
-            })
+            return ok<LogIdPutResponse>(
+              {
+                success: false,
+                errors: { title: ['Invalid log id'] },
+              },
+              { status: StatusCode.BadRequest },
+            )
           }
 
           const data = await request.json()
           const result = await schema.safeParseAsync(data)
 
           if (!result.success) {
-            return ok<LogIdPutResponse>({
-              success: false,
-              errors: result.error.flatten().fieldErrors,
-            })
+            return ok<LogIdPutResponse>(
+              {
+                success: false,
+                errors: result.error.flatten().fieldErrors,
+              },
+              { status: StatusCode.BadRequest },
+            )
           }
 
           const currentLog = await getLog(id)
           if (!currentLog) {
-            return ok<LogIdPutResponse>({
-              success: false,
-              errors: { title: ['Log not found'] },
-            })
+            return ok<LogIdPutResponse>(
+              {
+                success: false,
+                errors: { title: ['Log not found'] },
+              },
+              { status: StatusCode.NotFound },
+            )
           }
 
           const { title, description, categories, imageDescription } = result.data
@@ -128,12 +146,15 @@ export const Route = createFileRoute('/api/log/$id')({
         } catch (error) {
           logger.error('Failed to update log:', error)
 
-          return ok<LogIdPutResponse>({
-            success: false,
-            errors: {
-              title: ['Failed to update log'],
+          return ok<LogIdPutResponse>(
+            {
+              success: false,
+              errors: {
+                title: ['Failed to update log'],
+              },
             },
-          })
+            { status: StatusCode.InternalServerError },
+          )
         }
       },
       DELETE: async ({ request, params }) => {
@@ -142,19 +163,25 @@ export const Route = createFileRoute('/api/log/$id')({
           const parsed = deleteSchema.safeParse(data)
 
           if (!parsed.success) {
-            return ok<LogIdDeleteResponse>({
-              success: false,
-              error: 'Invalid secret',
-            })
+            return ok<LogIdDeleteResponse>(
+              {
+                success: false,
+                error: 'Invalid secret',
+              },
+              { status: StatusCode.Unauthorized },
+            )
           }
 
           const id = Number(params.id)
 
           if (Number.isNaN(id)) {
-            return ok<LogIdDeleteResponse>({
-              success: false,
-              error: 'Invalid log id',
-            })
+            return ok<LogIdDeleteResponse>(
+              {
+                success: false,
+                error: 'Invalid log id',
+              },
+              { status: StatusCode.BadRequest },
+            )
           }
 
           await db.delete(log).where(eq(log.id, id))
@@ -165,10 +192,13 @@ export const Route = createFileRoute('/api/log/$id')({
         } catch (error) {
           logger.error('Failed to delete log:', error)
 
-          return ok<LogIdDeleteResponse>({
-            success: false,
-            error: 'Failed to delete log',
-          })
+          return ok<LogIdDeleteResponse>(
+            {
+              success: false,
+              error: 'Failed to delete log',
+            },
+            { status: StatusCode.InternalServerError },
+          )
         }
       },
     },

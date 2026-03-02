@@ -18,8 +18,8 @@ export const CHARACTER_LIMITS = {
   GENERATED_TITLE: 60,
   /** Maximum characters for generated descriptions */
   GENERATED_DESCRIPTION: 550,
-  /** Maximum characters for image prompts */
-  IMAGE_PROMPT: 200,
+  /** Target characters for generated image prompts */
+  IMAGE_PROMPT: 700,
   /** Maximum characters for telegram description */
   TELEGRAM_DESCRIPTION: 500,
   /** Maximum characters for telegram link text */

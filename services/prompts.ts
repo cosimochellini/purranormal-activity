@@ -1,4 +1,5 @@
 // cspell:disable
+import { APP_URL } from '@/env/public'
 import { ARRAY_LIMITS, CHARACTER_LIMITS } from '../constants'
 import type { ImageStyle } from '../data/enum/imageStyle'
 import type { LogWithCategories } from '../db/schema'
@@ -32,13 +33,12 @@ export const COMMON_PROMPT_INSTRUCTIONS = `
     Un piccolo pulcino coraggioso ti ha chiesto aiuto per investigare strani eventi paranormali causati dalla sua amata gattina strega.
 
   - Relazione:
-    La micio e il pulcino vivono insieme in una relazione amorevole ma caotica.
-    C'è tensione (anche sessuale) perché la magia incontrollata della gattina crea situazioni complicate,
-    e i suoi istinti felini a volte fanno preoccupare il pulcino di essere accidentalmente mangiato.
+    Il micio e il pulcino vivono insieme in una relazione amorevole, buffa e caotica.
+    Il pulcino è spesso spaventato dalla magia incontrollata della gattina, ma cerca sempre di aiutarla.
 
   - Istruzioni:
     - Usa un linguaggio conciso e chiaro con un tocco di umorismo stravagante e dolce.
-    - Includi riferimenti specifici a luoghi, negozi, o serie TV, presenti nella descrizione del pulcino, per rendere la storia più vivida e riconoscibile.
+    - Se presenti nella descrizione del pulcino, includi riferimenti specifici a luoghi, negozi o serie TV per rendere la storia più vivida.
 `
 
 export function CREATE_QUESTIONS_PROMPT(description: string) {
@@ -52,31 +52,31 @@ export function CREATE_QUESTIONS_PROMPT(description: string) {
   La descrizione del pulcino dell'attività paranormale è:
   "${description}"
 
-  Devi generare FINO a ${ARRAY_LIMITS.MAX_QUESTIONS} domande di follow-up in italiano, ognuna progettata per estrarre dettagli che arricchiranno la storia,
-   rendendola più completa, più chiara visualmente e coinvolgente.
-   Queste domande dovrebbero aiutare a creare uno scenario più ricco sia per la narrativa che per la generazione di immagini, tramite AI.
+  Devi generare FINO a ${ARRAY_LIMITS.MAX_QUESTIONS} domande di follow-up in italiano per raccogliere dettagli visivi e narrativi utili.
 
-  **Aree prioritarie da esplorare:**
-  - **Reazioni dei Personaggi**: Come ha reagito il pulcino? Come appariva la gattina durante/dopo la magia?
-  - **Incidenti Magici**: La magia è andata storta in qualche modo? Ci sono stati effetti collaterali inaspettati?
-  - **Dettagli dell'Ambientazione**: Posizione specifica, ora del giorno, illuminazione, oggetti presenti
+  Priorità:
+  1. Reazione emotiva e fisica del pulcino.
+  2. Azione magica specifica del micio e suoi effetti collaterali.
+  3. Luogo preciso, oggetti coinvolti, illuminazione e momento della giornata.
 
-  **Linee Guida per le Domande:**
-  - Chiedi dettagli visivi che renderebbero l'immagine più chiara e carina
-  - Includi domande sulle espressioni e il linguaggio del corpo dei personaggi
-  - Esplora le conseguenze o gli effetti dell'evento magico
+  Requisiti di qualità:
+  - Domande brevi, concrete e non ridondanti.
+  - Evita domande troppo generiche o sì/no.
+  - Ogni domanda deve avere risposte mutualmente distinguibili.
+  - Le risposte devono essere brevi, naturali e visuali.
+  - Non includere brand o personaggi coperti da copyright nelle risposte.
 
+  Vincoli:
+  - MAX ${CHARACTER_LIMITS.QUESTION} caratteri per domanda
+  - Da 2 a ${ARRAY_LIMITS.MAX_ANSWERS} risposte per domanda
+  - MAX ${CHARACTER_LIMITS.ANSWER} caratteri per risposta
 
-  Ogni domanda dovrebbe avere 3-${ARRAY_LIMITS.MAX_ANSWERS} risposte brevi e varie in italiano che portino ad avere una chiara generazione dell'immagine dell'accaduto.
-
-  Il tuo output deve essere RIGOROSAMENTE JSON valido—nessun testo extra o markdown. Usa esattamente questa struttura:
-
+  Restituisci SOLO JSON valido (niente markdown, niente testo extra) in questo formato:
   [
     {
-      question: string, // MAX ${CHARACTER_LIMITS.QUESTION} caratteri
-      availableAnswers: string[] // MAX ${ARRAY_LIMITS.MAX_ANSWERS} risposte, MAX ${CHARACTER_LIMITS.ANSWER} caratteri per risposta
-    },
-    ...
+      "question": "string",
+      "availableAnswers": ["string", "string"]
+    }
   ]
 ` as const
 }
@@ -110,53 +110,41 @@ export function GENERATE_LOG_DETAILS_PROMPT({
   Categorie Disponibili:
   ${categories.map((c) => `{ "id": ${c.id}, "name": "${c.name}" }`).join(', ')}
 
-  Output Richiesto (RIGOROSAMENTE JSON valido, nessun testo aggiuntivo):
+  Obiettivo:
+  Genera una versione rifinita dell'evento utile sia alla lettura che alla generazione immagine.
+
+  Regole importanti:
+  - Non inventare eventi non supportati dai dati ricevuti.
+  - Mantieni il tono giocoso/misterioso, senza contenuti espliciti.
+  - I riferimenti specifici (luoghi/negozi/serie) vanno mantenuti in titolo/descrizione se presenti nei dati.
+  - Nel campo imageDescription usa equivalenti generici al posto di brand/IP protetti.
+
+  Output richiesto (RIGOROSAMENTE JSON valido, nessun testo aggiuntivo):
   {
-    "title": string,        // Un titolo accattivante, stile giornalistico in italiano (max ${CHARACTER_LIMITS.GENERATED_TITLE} caratteri)
-    "description": string,  // Un racconto stravagante in italiano, mantenendo l'essenza della storia originale (max ${CHARACTER_LIMITS.GENERATED_DESCRIPTION} caratteri)
-    "categories": { "id": number, "name": string }[], // Seleziona le categorie più rilevanti dalla lista disponibile (massimo ${ARRAY_LIMITS.MAX_CATEGORIES})
-    "imageDescription": string      // Un prompt per generare l'immagine riassuntiva dell'accaduto, tramite AI
+    "title": "string",
+    "description": "string",
+    "categories": [{ "id": 1 }],
+    "missingCategories": ["string"],
+    "imageDescription": "string"
   }
 
-  **Linee Guida per il Titolo:**
-  - Rendilo come un titolo divertente e accattivante di giornale su animali domestici soprannaturali
-  - Includi parole d'azione ed elementi emotivi
-  - Esempi: "Micio trasforma casa in caos magico!" o "Cosetto testimone di magia felina!"
+  Vincoli campi:
+  - "title": italiano, max ${CHARACTER_LIMITS.GENERATED_TITLE} caratteri, dinamico e giornalistico.
+  - "description": italiano, max ${CHARACTER_LIMITS.GENERATED_DESCRIPTION} caratteri.
+  - "categories": scegli SOLO id presenti in Categorie Disponibili, max ${ARRAY_LIMITS.MAX_CATEGORIES}, senza duplicati.
+  - "missingCategories": max ${ARRAY_LIMITS.MAX_CATEGORIES}, solo nomi sintetici per categorie utili ma assenti.
+  - "imageDescription": deve essere in INGLESE, in un solo paragrafo, visivo e pronto per un modello text-to-image.
 
-  **Linee Guida per la Descrizione:**
-  - Inizia con quello che il micio stava cercando di fare (la sua intenzione)
-  - Descrivi cosa è realmente successo (l'incidente magico)
-  - Includi la reazione del pulcino
-  - Termina con la situazione attuale o le conseguenze
-  - Usa immagini vivide e divertenti ed espressioni italiane dolci
-  - Fallo leggere come un rapporto di incidente da favola incantevole
-  - Aggiungi sottili riferimenti per adulti che i bambini non capiranno ma che renderanno la storia più divertente per i genitori
-  - IMPORTANTE: Includi i riferimenti specifici a luoghi, negozi, marchi, o serie TV menzionati nella descrizione del pulcino
+  Linee guida per imageDescription:
+  - Soggetto principale: black kitten with a purple witch hat and bright green eyes.
+  - Soggetto secondario: small yellow chick visibly reacting.
+  - Specifica azione magica, ambientazione, ora del giorno, composizione, illuminazione, atmosfera.
+  - Includi dettagli utili (props, motion cues, magical effects) senza essere prolisso.
+  - Vietato: testo nell'immagine, watermark, logo, brand names, gore, contenuti espliciti.
+  - Chiudi con: "Style: ${currentStyle}".
+  - Target lunghezza: circa ${CHARACTER_LIMITS.IMAGE_PROMPT} caratteri.
 
-  **Linee Guida per la Descrizione dell'Immagine:**
-  - Stile: ${currentStyle}
-  - Composizione: Metti la gattina come focus principale, pulcino visibile ma secondario
-  - Dettagli della Gattina: Descrivi la sua azione magica, espressione (determinata, sorpresa, orgogliosa), e gli effetti magici intorno a lei. SEMPRE: gattina nera con cappello viola e occhi verdi
-  - Dettagli del Pulcino: Mostra la sua reazione (nascondendosi, guardando con stupore, preoccupato) e posizione relativa alla gattina. SEMPRE: piccolo pulcino giallo
-  - Ambiente: Includi oggetti specifici, illuminazione, e dettagli dell'ambientazione dalla storia
-  - Atmosfera: Enfatizza l'atmosfera paranormale, carina e stravagante
-  - Interesse Visivo: Includi dettagli che rendano la scena visivamente coinvolgente
-
-  **Struttura Esempio Immagine:**
-  "Una adorabile gattina magica nera con cappello viola e occhi verdi [azione specifica] in [luogo], con [effetti magici].
-  Un piccolo pulcino giallo [reazione specifica] nelle vicinanze. [Dettagli ambientali]. [Illuminazione/atmosfera].
-
-  Stile: ${currentStyle}"
-
-  RICORDA SEMPRE:
-  Mantieni l'incidente originale come focus principale
-  - Mantieni un equilibrio tra stravaganza e investigazione paranormale, dai priorità all'umorismo e dolcezza in titolo e descrizione
-  - Rendi la descrizione dell'immagine vivida e specifica per una migliore generazione AI
-  - Assicurati che tutto il testo italiano sia grammaticalmente corretto e suoni autenticamente divertente
-  - Restituisci SOLO la struttura JSON, nessun testo aggiuntivo
-  - Basa tutto sull'incidente originale e le risposte (con minore importanza) - non inventare nuovi eventi
-  - La scena dovrebbe essere visivamente attraente ed emotivamente coinvolgente
-  - SEMPRE includi i dettagli fisici specifici: gattina nera con cappello viola e occhi verdi, pulcino piccolo e giallo
+  Restituisci SOLO JSON valido.
 
 ` as const
 }
@@ -168,43 +156,28 @@ interface GenerateImagePromptParams {
 
 export function GENERATE_IMAGE_PROMPT({ description, imageStyle }: GenerateImagePromptParams) {
   return `
-  Sei un ingegnere di prompt di livello mondiale.
-  Leggi attentamente la seguente descrizione dell'utente e trasformala in una singola, concisa descrizione per il prompt dell'immagine:
+  Sei un prompt engineer specializzato in text-to-image.
+  Trasforma la descrizione in un prompt immagine ad alta resa visiva, in inglese.
 
   ---
   Descrizione Utente:
   "${description}"
   ---
 
-  **Il Tuo Compito**:
-  1. Identifica la posizione dalla descrizione dell'utente. Se non è chiaramente specificata, assumi che siano a casa.
-  2. Estrai gli oggetti principali menzionati nella descrizione dell'utente (oltre alla gattina e al pulcino), e assicurati che siano inclusi nella scena finale dell'immagine.
-  3. Determina cosa sta facendo la gattina, specialmente qualsiasi azione magica o soprannaturale.
-  4. Includi un piccolo pulcino giallo carino sullo sfondo, che reagisce con paura o stupore ai poteri della gattina.
-  5. Converti qualsiasi riferimento a oggetti del mondo reale, con copyright, o marchi registrati in equivalenti generici. Evita di menzionare nomi di brand o prodotti.
-  6. Non includere testo o scritte nell'immagine.
-  7. Mantieni uno stile generale "carino" o "adorabile".
-  8. Concentrati nel descrivere la scena visiva in dettaglio, assicurandoti che sia facile da visualizzare.
-  9. Usa lo stile: ${imageStyle}
-  10. Mantieni l'output finale in un singolo paragrafo, sotto le ${CHARACTER_LIMITS.IMAGE_PROMPT} parole se possibile.
-  11. Il prompt finale **deve** iniziare con: "Create un'immagine con un magico gattino nero con cappello viola e occhi verdi..."
-      e finire con: "... - ${imageStyle}"
+  Requisiti:
+  1. Se il luogo non è chiaro, assumi un ambiente domestico.
+  2. Includi SEMPRE:
+     - "black kitten with a purple witch hat and bright green eyes"
+     - "small yellow chick"
+  3. Rendi la gattina il soggetto principale e il pulcino chiaramente visibile come soggetto secondario.
+  4. Descrivi azione magica, composizione, inquadratura, illuminazione, atmosfera e oggetti utili.
+  5. Converti brand/IP/copyright in equivalenti generici.
+  6. Escludi testo, watermark, logo, gore, contenuti espliciti.
+  7. Mantieni tono cute + paranormal + whimsical.
+  8. Un solo paragrafo, target circa ${CHARACTER_LIMITS.IMAGE_PROMPT} caratteri.
+  9. Termina con: "Style: ${imageStyle}".
 
-  **Struttura esempio** (solo per riferimento; non copiare letteralmente):
-  "Creare un'immagine con un magico gattino nero con cappello viola e occhi verdi al centro, il gattino è [AZIONE].
-   Sullo sfondo c'è un piccolo pulcino giallo.
-   Il luogo è [LOCATION].
-   Oggetti aggiuntivi: [OGGETTI].
-   - STILE_QUI
-
-  **Importante**:
-  - Sostituisci [ACTION] con la principale attività magica o soprannaturale che sta facendo la gattina.
-  - Sostituisci [LOCATION] con la posizione identificata o predefinita.
-  - Sostituisci [OBJECTS] con qualsiasi oggetto principale aggiuntivo dalla descrizione dell'utente che dovrebbe apparire.
-  - Sostituisci [STYLE_HERE] con lo stile finale che decidi tra quelli forniti.
-  - SEMPRE includi: gattina nera con cappello viola e occhi verdi, pulcino piccolo e giallo.
-
-  Ora, genera il prompt finale come una singola stringa.
+  Restituisci solo la stringa finale del prompt.
 ` as const
 }
 
@@ -213,7 +186,7 @@ interface GenerateTelegramPromptParams {
 }
 
 export function GENERATE_TELEGRAM_PROMPT({ log }: GenerateTelegramPromptParams) {
-  const linkURL = `https://purranormal-activity.pages.dev/${log.id}`
+  const linkURL = `${APP_URL}/${log.id}`
 
   return `
   ${COMMON_PROMPT_INSTRUCTIONS}
@@ -222,7 +195,7 @@ export function GENERATE_TELEGRAM_PROMPT({ log }: GenerateTelegramPromptParams) 
 
   ${CHARACTER_DESCRIPTIONS.chick}
 
-  Hai già indivituato e categorizzato la seguente attività paranormale:
+  Hai già individuato e categorizzato la seguente attività paranormale:
   JSON: ${JSON.stringify(log)}
 
   Il tuo scopo è generare un messaggio catchphrase per un evento paranormale da pubblicare come messaggio su Telegram.

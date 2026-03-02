@@ -5,7 +5,7 @@ import { LogStatus } from '@/data/enum/logStatus'
 import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import type { LogPostResponse } from '@/types/api/log'
-import { ok } from '@/utils/http'
+import { ok, StatusCode } from '@/utils/http'
 import { logger } from '@/utils/logger'
 
 const logFormSchema = z.object({
@@ -30,10 +30,13 @@ export const Route = createFileRoute('/api/log')({
         const result = await logFormSchema.safeParseAsync(data)
 
         if (!result.success) {
-          return ok<LogPostResponse>({
-            success: false,
-            errors: result.error.flatten().fieldErrors,
-          })
+          return ok<LogPostResponse>(
+            {
+              success: false,
+              errors: result.error.flatten().fieldErrors,
+            },
+            { status: StatusCode.BadRequest },
+          )
         }
 
         try {
@@ -59,12 +62,15 @@ export const Route = createFileRoute('/api/log')({
           return ok<LogPostResponse>({ success: true })
         } catch (error) {
           logger.error('Failed to create log:', error)
-          return ok<LogPostResponse>({
-            success: false,
-            errors: {
-              general: ['Failed to create log. Please try again.'],
+          return ok<LogPostResponse>(
+            {
+              success: false,
+              errors: {
+                general: ['Failed to create log. Please try again.'],
+              },
             },
-          })
+            { status: StatusCode.InternalServerError },
+          )
         }
       },
     },

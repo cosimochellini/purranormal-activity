@@ -4,7 +4,7 @@ import { ARRAY_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { category } from '@/db/schema'
 import { db } from '@/drizzle'
 import type { CategoriesGetResponse, CategoriesPostResponse } from '@/types/api/categories'
-import { ok } from '@/utils/http'
+import { ok, StatusCode } from '@/utils/http'
 import { logger } from '@/utils/logger'
 
 const schema = z.object({
@@ -22,7 +22,7 @@ export const Route = createFileRoute('/api/categories')({
           return ok<CategoriesGetResponse>(categories)
         } catch (error) {
           logger.error('Failed to fetch categories:', error)
-          return ok<CategoriesGetResponse>([])
+          return ok<CategoriesGetResponse>([], { status: StatusCode.InternalServerError })
         }
       },
       POST: async ({ request }) => {
@@ -31,10 +31,13 @@ export const Route = createFileRoute('/api/categories')({
           const result = await schema.safeParseAsync(data)
 
           if (!result.success) {
-            return ok<CategoriesPostResponse>({
-              success: false,
-              errors: result.error.flatten().fieldErrors,
-            })
+            return ok<CategoriesPostResponse>(
+              {
+                success: false,
+                errors: result.error.flatten().fieldErrors,
+              },
+              { status: StatusCode.BadRequest },
+            )
           }
 
           const { categories: newCategories } = result.data
@@ -58,12 +61,15 @@ export const Route = createFileRoute('/api/categories')({
         } catch (error) {
           logger.error('Failed to create categories:', error)
 
-          return ok<CategoriesPostResponse>({
-            success: false,
-            errors: {
-              categories: ['Failed to create categories'],
+          return ok<CategoriesPostResponse>(
+            {
+              success: false,
+              errors: {
+                categories: ['Failed to create categories'],
+              },
             },
-          })
+            { status: StatusCode.InternalServerError },
+          )
         }
       },
     },

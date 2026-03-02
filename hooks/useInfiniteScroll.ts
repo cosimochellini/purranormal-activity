@@ -52,6 +52,11 @@ export function useInfiniteScroll({ initialLogs, initialLimit }: UseInfiniteScro
             hasMore: apiHasMore,
             isLoading: false,
           })
+        } else {
+          setState({
+            isLoading: false,
+            hasMore: false,
+          })
         }
       } catch (_error) {
         // Just set loading to false and continue

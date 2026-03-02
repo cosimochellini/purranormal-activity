@@ -4,7 +4,7 @@ import { ARRAY_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import type { LogIdCategoriesPostResponse } from '@/types/api/log-id-categories'
-import { ok } from '@/utils/http'
+import { ok, StatusCode } from '@/utils/http'
 import { logger } from '@/utils/logger'
 
 const schema = z.object({
@@ -21,22 +21,28 @@ export const Route = createFileRoute('/api/log/$id/categories')({
           const logId = Number(params.id)
 
           if (Number.isNaN(logId)) {
-            return ok<LogIdCategoriesPostResponse>({
-              success: false,
-              errors: {
-                categories: ['Invalid log id'],
+            return ok<LogIdCategoriesPostResponse>(
+              {
+                success: false,
+                errors: {
+                  categories: ['Invalid log id'],
+                },
               },
-            })
+              { status: StatusCode.BadRequest },
+            )
           }
 
           const data = await request.json()
           const result = await schema.safeParseAsync(data)
 
           if (!result.success) {
-            return ok<LogIdCategoriesPostResponse>({
-              success: false,
-              errors: result.error.flatten().fieldErrors,
-            })
+            return ok<LogIdCategoriesPostResponse>(
+              {
+                success: false,
+                errors: result.error.flatten().fieldErrors,
+              },
+              { status: StatusCode.BadRequest },
+            )
           }
 
           const { categories } = result.data
@@ -52,12 +58,15 @@ export const Route = createFileRoute('/api/log/$id/categories')({
         } catch (error) {
           logger.error('Failed to add categories to log:', error)
 
-          return ok<LogIdCategoriesPostResponse>({
-            success: false,
-            errors: {
-              categories: ['Failed to add categories to log'],
+          return ok<LogIdCategoriesPostResponse>(
+            {
+              success: false,
+              errors: {
+                categories: ['Failed to add categories to log'],
+              },
             },
-          })
+            { status: StatusCode.InternalServerError },
+          )
         }
       },
     },

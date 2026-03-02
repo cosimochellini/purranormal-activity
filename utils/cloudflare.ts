@@ -55,14 +55,14 @@ export async function uploadToCloudflareImages(
   }
 }
 
-export async function uploadToR2(buffer: Buffer, logId: number) {
+export async function uploadToR2(buffer: Buffer, logId: number, contentType = 'image/webp') {
   try {
     return S3.send(
       new PutObjectCommand({
         Bucket: BUCKET_NAME,
         Key: `${logId}/cover.webp`,
         Body: buffer,
-        ContentType: 'image/webp',
+        ContentType: contentType,
       }),
     )
   } catch (error) {

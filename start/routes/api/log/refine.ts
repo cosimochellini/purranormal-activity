@@ -3,8 +3,10 @@ import { z } from 'zod'
 import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { createQuestions } from '@/services/ai'
 import type { LogRefineResponse } from '@/types/api/log-refine'
-import { ok } from '@/utils/http'
+import { ok, StatusCode } from '@/utils/http'
 import { logger } from '@/utils/logger'
+import { applyRateLimit } from '@/utils/rate-limit'
+import { time } from '@/utils/time'
 
 const schema = z.object({
   description: z
@@ -18,12 +20,35 @@ export const Route = createFileRoute('/api/log/refine')({
     handlers: {
       POST: async ({ request }) => {
         try {
+          const rateLimitResult = applyRateLimit(request, {
+            namespace: 'api:log-refine',
+            maxRequests: 12,
+            windowMs: time({ minutes: 1 }),
+          })
+
+          if (!rateLimitResult.allowed) {
+            return ok<LogRefineResponse>(
+              {
+                success: false,
+                errors: {
+                  description: [
+                    `Too many requests. Retry in ~${rateLimitResult.retryAfterSeconds}s.`,
+                  ],
+                },
+              },
+              { status: StatusCode.TooManyRequests },
+            )
+          }
+
           const data = await request.json()
           const result = await schema.safeParseAsync(data)
 
           if (!result.success) {
             const errors = result.error.flatten().fieldErrors
-            return ok<LogRefineResponse>({ success: false, errors })
+            return ok<LogRefineResponse>(
+              { success: false, errors },
+              { status: StatusCode.BadRequest },
+            )
           }
 
           const { description } = result.data
@@ -44,12 +69,15 @@ export const Route = createFileRoute('/api/log/refine')({
             }
           }
 
-          return ok<LogRefineResponse>({
-            success: false,
-            errors: {
-              description: [errorMessage],
+          return ok<LogRefineResponse>(
+            {
+              success: false,
+              errors: {
+                description: [errorMessage],
+              },
             },
-          })
+            { status: StatusCode.InternalServerError },
+          )
         }
       },
     },

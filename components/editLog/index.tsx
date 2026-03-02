@@ -26,14 +26,21 @@ const uploadImage = fetcher<UploadIdResponse, never, FormData>('/api/upload/[id]
 
 interface UpdateImageButtonProps {
   id: number
+  secret: string
 }
 
-function UpdateImageButton({ id }: UpdateImageButtonProps) {
+function UpdateImageButton({ id, secret }: UpdateImageButtonProps) {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
   const handleClick = () => {
+    if (!secret.trim()) {
+      setError('Enter the secret before uploading a new image')
+      return
+    }
+
+    setError('')
     fileInputRef.current?.click()
   }
 
@@ -45,6 +52,7 @@ function UpdateImageButton({ id }: UpdateImageButtonProps) {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('secret', secret)
 
       const data = await uploadImage({
         params: { id },
@@ -53,7 +61,7 @@ function UpdateImageButton({ id }: UpdateImageButtonProps) {
 
       if (!data.success) {
         const errors = Object.values(data.errors ?? {}).flat()
-        setError(errors[0] ?? 'Failed to upload image')
+        setError(errors[0] ?? data.error ?? 'Failed to upload image')
         return
       }
 
@@ -178,7 +186,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
           height={200}
           style={styles.image}
         />
-        <UpdateImageButton id={initialData.id} />
+        <UpdateImageButton id={initialData.id} secret={formData.secret} />
       </div>
 
       <form onSubmit={handleSubmit} className="w-full max-w-2xl space-y-6 p-4">
