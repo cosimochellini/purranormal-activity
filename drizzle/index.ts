@@ -15,10 +15,14 @@ const libsqlFetch: typeof fetch = (input, init) => {
   }
 
   const requestLike = input as FetchRequestLike
-  const headers =
-    requestLike.headers && typeof requestLike.headers === 'object' && 'entries' in requestLike.headers
-      ? Object.fromEntries(requestLike.headers.entries?.() ?? [])
-      : (requestLike.headers as HeadersInit | undefined)
+  const rawHeaders = requestLike.headers
+  const entriesFn =
+    rawHeaders && typeof rawHeaders === 'object' && 'entries' in rawHeaders
+      ? (rawHeaders as { entries?: () => IterableIterator<[string, string]> }).entries
+      : undefined
+  const headers = entriesFn
+    ? Object.fromEntries(entriesFn.call(rawHeaders))
+    : (rawHeaders as HeadersInit | undefined)
 
   return globalThis.fetch(requestLike.url, {
     method: requestLike.method,

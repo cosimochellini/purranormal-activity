@@ -10,6 +10,8 @@ interface TransitionLinkProps extends Omit<LinkComponentProps<'a'>, 'to' | 'prel
 const isInternalHref = (href: string) =>
   href.startsWith('/') || href.startsWith('#') || href.startsWith('?')
 
+type LinkTo = LinkComponentProps<'a'>['to']
+
 export function TransitionLink({ children, href, prefetch, ...anchorProps }: TransitionLinkProps) {
   if (!isInternalHref(href)) {
     return (
@@ -20,7 +22,7 @@ export function TransitionLink({ children, href, prefetch, ...anchorProps }: Tra
   }
 
   return (
-    <Link to={href} preload={prefetch ? 'intent' : false} viewTransition {...anchorProps}>
+    <Link to={href as LinkTo} preload={prefetch ? 'intent' : false} viewTransition {...anchorProps}>
       {children}
     </Link>
   )

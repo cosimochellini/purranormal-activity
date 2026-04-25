@@ -5,6 +5,7 @@
   "engines": {
     "node": ">=22.12"
   },
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "preview": "vite preview",
     "deploy": "pnpm run build:start && wrangler deploy --config dist/server/wrangler.json",
@@ -16,6 +17,7 @@
     "lint": "biome check .",
     "format": "biome format . --write",
     "lint:fix": "biome check --write .",
+    "typecheck": "tsc --noEmit -p tsconfig.build.json",
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
@@ -25,7 +27,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "biome format --write --no-errors-on-unmatched"
+      "biome check --write --no-errors-on-unmatched"
     ]
   },
   "dependencies": {
