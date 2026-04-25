@@ -26,11 +26,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint with Biome
+      - name: Lint and check formatting with Biome
         run: pnpm lint
-
-      - name: Check formatting with Biome
-        run: npx @biomejs/biome format . --check
 
   test:
     runs-on: ubuntu-latest
