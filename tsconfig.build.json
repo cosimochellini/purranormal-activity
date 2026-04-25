@@ -1,12 +1,4 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": [
-    "node_modules",
-    "dist",
-    "drizzle",
-    "tests/**",
-    "**/*.test.ts",
-    "**/*.test.tsx",
-    "specs/**"
-  ]
+  "exclude": ["node_modules", "dist", "tests/**", "**/*.test.ts", "**/*.test.tsx", "specs/**"]
 }
