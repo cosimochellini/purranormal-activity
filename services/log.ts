@@ -105,14 +105,19 @@ export async function getLogs({
 }
 
 export async function setLogError(id: number | undefined, error: unknown) {
-  try {
-    if (!id) return
+  if (!id) return
 
+  try {
     await db
       .update(log)
       .set({ error: error instanceof Error ? error.message : JSON.stringify(error) })
       .where(eq(log.id, id))
-  } catch (error) {
-    logger.error('Failed to set log error:', error)
+  } catch (writeError) {
+    // Preserve the full error (including stack) for postmortem.
+    logger.error('Failed to set log error:', {
+      logId: id,
+      originalError: error,
+      writeError,
+    })
   }
 }

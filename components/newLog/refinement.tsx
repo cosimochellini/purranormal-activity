@@ -103,6 +103,19 @@ export function RefinementSection({
     setErrorMessage(undefined)
     setFieldErrors({})
 
+    // Guard: any answer marked "Other" must have non-empty otherText
+    const otherErrors: Record<string, string[]> = {}
+    answers.forEach((a) => {
+      if (isOtherOption(a.answer) && !(a.otherText ?? '').trim()) {
+        otherErrors[a.question] = ['Please specify the "Other" answer before submitting.']
+      }
+    })
+    if (Object.keys(otherErrors).length > 0) {
+      setFieldErrors(otherErrors)
+      setErrorMessage(Object.values(otherErrors).flat().join(', '))
+      return
+    }
+
     try {
       setIsSubmitting(true)
 
@@ -167,9 +180,7 @@ export function RefinementSection({
   const allAnswersFilled = answers.every((a) => {
     const hasAnswer = a.answer.length > 0
     const needsOtherText = isOtherOption(a.answer)
-    const hasValidOtherText = needsOtherText
-      ? a.otherText?.length && validateOtherText(a.otherText)
-      : true
+    const hasValidOtherText = needsOtherText ? validateOtherText(a.otherText ?? '') : true
     return hasAnswer && hasValidOtherText
   })
 
@@ -235,6 +246,22 @@ export function RefinementSection({
                     </div>
                   )}
                 </div>
+                {fieldErrors[q.question] && fieldErrors[q.question].length > 0 && (
+                  <div
+                    className="animate-fadeIn space-y-1 mt-2"
+                    data-testid={`question-error-${q.question}`}
+                  >
+                    {fieldErrors[q.question].map((error, index) => (
+                      <p
+                        key={`${error}-${index}`}
+                        className="text-sm text-red-400 flex items-start gap-2"
+                      >
+                        <span className="text-red-400">⚠</span>
+                        <span>{error}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}

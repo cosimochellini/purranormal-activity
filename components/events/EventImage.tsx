@@ -106,6 +106,7 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
   const navigate = useNavigate()
 
   const [imageError, setImageError] = useState(false)
+  const [navError, setNavError] = useState(false)
 
   const { imageDescription, id, status } = log
 
@@ -133,6 +134,7 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
         viewTransition: true,
       }).catch((error) => {
         logger.error('Failed to navigate to edit route:', error)
+        setNavError(true)
       })
     }
   }
@@ -141,16 +143,22 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
     priority,
     quality: _quality,
     loading,
+    className,
     ...imageProps
-  } = props as Omit<EventImageProps, 'src' | 'alt'>
+  } = props as Omit<EventImageProps, 'src' | 'alt'> & { className?: string }
+
+  const composedClassName = navError
+    ? `${className ?? ''} ring-2 ring-red-500/70`.trim()
+    : className
 
   return (
-    <div className="relative">
+    <div className="relative" data-nav-error={navError ? 'true' : undefined}>
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: hidden easter egg should only react to pointer clicks */}
       <img
         {...(imageProps as React.ImgHTMLAttributes<HTMLImageElement>)}
         src={image}
         alt={imageDescription ?? ''}
+        className={composedClassName}
         loading={priority ? 'eager' : loading}
         onError={onImageError}
         onClick={onImageClick}

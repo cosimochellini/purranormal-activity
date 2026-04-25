@@ -3,6 +3,12 @@ import { db } from '../drizzle'
 
 let cachedCategories: Map<number, Category> | null = null
 
+// Test-only helper. Resets the module-level cache so tests stay isolated.
+// Safe to call in production (no-op when cache is already null).
+export function __resetCategoryCache() {
+  cachedCategories = null
+}
+
 export async function getCategoriesMap(force = false) {
   if (!force && cachedCategories?.size) return cachedCategories
 

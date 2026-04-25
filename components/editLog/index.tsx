@@ -11,6 +11,7 @@ import { usePartialState } from '@/hooks/state'
 import type { LogIdDeleteResponse, LogIdPutBody, LogIdPutResponse } from '@/types/api/log-id'
 import type { UploadIdResponse } from '@/types/api/upload-id'
 import { fetcher } from '@/utils/fetch'
+import { logger } from '@/utils/logger'
 import { transitions } from '@/utils/viewTransition'
 import { SpookyInput } from '../common/SpookyInput'
 import { SpookyTextarea } from '../common/SpookyTextarea'
@@ -65,7 +66,7 @@ function UpdateImageButton({ id }: UpdateImageButtonProps) {
 
       setError('')
     } catch (err) {
-      console.error('Failed to upload image:', err)
+      logger.error('Failed to upload image:', err)
       setError('Failed to upload image')
     } finally {
       setIsLoading(false)
@@ -137,7 +138,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update')
     } finally {
-      setSubmitting({ delete: false, form: false })
+      setSubmitting({ form: false })
     }
   }
 
@@ -162,7 +163,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete')
     } finally {
-      setSubmitting({ delete: false, form: false })
+      setSubmitting({ delete: false })
     }
   }
 

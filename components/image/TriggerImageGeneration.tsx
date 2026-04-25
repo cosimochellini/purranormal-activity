@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { LogStatus } from '../../data/enum/logStatus'
 import type { LogWithCategories } from '../../db/schema'
 import { fetcher } from '../../utils/fetch'
+import { logger } from '../../utils/logger'
 import { Refetch } from '../timer/refetch'
 
 interface TriggerImageGenerationProps {
@@ -17,8 +18,10 @@ export function TriggerImageGeneration({ log }: TriggerImageGenerationProps) {
     if (log.status !== LogStatus.Created) return
 
     triggerGeneration({ params: { id: log.id } })
-      .catch(() => null)
       .then(() => setShouldRefetch(true))
+      .catch((error) => {
+        logger.error('Failed to trigger image generation:', error)
+      })
   }, [log])
 
   return <Refetch interval={500} shouldRefetch={shouldRefetch} />
