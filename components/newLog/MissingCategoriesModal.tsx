@@ -37,6 +37,7 @@ export function MissingCategoriesModal({
   )
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // Handlers
   const handleToggleCategory = (category: string) => {
@@ -54,6 +55,7 @@ export function MissingCategoriesModal({
 
     try {
       setIsSubmitting(true)
+      setErrorMessage(null)
       const res = await addCategories({
         body: { categories: categoriesToAdd },
       })
@@ -62,10 +64,19 @@ export function MissingCategoriesModal({
 
       const categoryIds = res.categories.map((category) => category.id)
 
-      await addLogCategories({
+      const linkRes = await addLogCategories({
         body: { categories: categoryIds },
         params: { id: logId },
       })
+
+      if (!linkRes.success) {
+        const message =
+          Object.values(linkRes.errors ?? {})
+            .flat()
+            .at(0) ?? 'Failed to link categories to this event'
+        setErrorMessage(message)
+        return
+      }
 
       // Remove saved categories from the list
       setSelectedCategories((prev) =>
@@ -73,6 +84,7 @@ export function MissingCategoriesModal({
       )
     } catch (error) {
       logger.error('Failed to save categories:', error)
+      setErrorMessage('Failed to save categories. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -84,6 +96,16 @@ export function MissingCategoriesModal({
         <p className="text-purple-200/80">
           Select the categories you'd like to add to your mystical collection:
         </p>
+
+        {errorMessage && (
+          <div
+            role="alert"
+            className="rounded-md bg-red-900/30 p-3 text-sm text-red-200"
+            data-testid="missing-categories-error"
+          >
+            {errorMessage}
+          </div>
+        )}
 
         <ul className="space-y-2">
           {selectedCategories.map(({ category, selected }) => (

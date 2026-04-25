@@ -39,12 +39,12 @@ export const Route = createFileRoute('/api/log/submit')({
           const result = await submitFormSchema.safeParseAsync(data)
 
           if (!result.success) {
+            const tree = z.treeifyError(result.error)
+            const properties = tree?.properties ?? {}
             return ok<LogSubmitResponse>({
               success: false,
               errors: Object.fromEntries(
-                Object.entries(z.treeifyError(result.error).properties || {}).map(
-                  ([key, value]) => [key, value?.errors || []],
-                ),
+                Object.entries(properties).map(([key, value]) => [key, value?.errors ?? []]),
               ),
             })
           }
