@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { LogWithCategories } from '@/db/schema'
 import type { LogAllQuery, LogAllResponse } from '@/types/api/log-all'
 
 import { fetcher } from '@/utils/fetch'
-import { useExploreData } from '../../hooks/useExporeData'
+import { logger } from '@/utils/logger'
+import { useExploreData } from '../../hooks/useExploreData'
 import { Loading } from '../common/Loading'
 import { EventCard } from '../events/EventCard'
 import { NoLogsFound } from './NoLogsFound'
@@ -13,34 +14,39 @@ const searchLogs = fetcher<LogAllResponse, LogAllQuery>('/api/log/all')
 export function ExploreResults() {
   const [{ page, limit, search, categories, sortBy, timeRange }] = useExploreData()
   const [logs, setLogs] = useState<LogWithCategories[]>([])
-  const isLoadingRef = useRef(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
+    const controller = new AbortController()
+
     const getItems = async () => {
-      isLoadingRef.current = true
+      setIsLoading(true)
       try {
         const response = await searchLogs({
           query: { page, limit, search, categories, sortBy, timeRange },
+          signal: controller.signal,
         })
+
+        if (controller.signal.aborted) return
 
         if (!response.success) throw new Error(response.error)
 
         setLogs(response.data)
       } catch (error) {
-        console.error('Failed to search logs:', error)
+        if (controller.signal.aborted) return
+        logger.error('Failed to search logs:', error)
         setLogs([])
       } finally {
-        isLoadingRef.current = false
+        if (!controller.signal.aborted) setIsLoading(false)
       }
     }
 
-    if (isLoadingRef.current) return
-
     getItems()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    return () => controller.abort()
   }, [page, limit, search, categories, sortBy, timeRange])
 
-  if (isLoadingRef.current) return <Loading />
+  if (isLoading) return <Loading />
 
   if (!logs.length) return <NoLogsFound />
 

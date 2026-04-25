@@ -1,4 +1,4 @@
-import { useExploreData } from '../../hooks/useExporeData'
+import { useExploreData } from '../../hooks/useExploreData'
 import { SortBy, TimeRange } from '../../types/search'
 import { SpookyInput } from '../common/SpookyInput'
 import { SpookySelect } from '../common/SpookySelect'

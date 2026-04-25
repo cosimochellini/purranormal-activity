@@ -40,7 +40,7 @@ export async function sendEventNotification(
       logger.error('Failed to send photo:', { error: photoResult.error, eventId: event.id })
       return {
         success: false,
-        error: result.error,
+        error: photoResult.error || 'Failed to send photo',
       }
     }
 

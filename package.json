@@ -16,6 +16,9 @@
     "lint": "biome check .",
     "format": "biome format . --write",
     "lint:fix": "biome check --write .",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
     "generate": "pnpm run increase && npx drizzle-kit push",
     "increase": "npm --no-git-tag-version version patch",
     "prepare": "husky"
@@ -47,11 +50,15 @@
     "@tailwindcss/postcss": "^4.2.1",
     "@tanstack/react-router": "1.163.2",
     "@tanstack/react-start": "1.163.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^25.3.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "5.1.4",
+    "@vitest/coverage-v8": "^4.1.5",
     "drizzle-kit": "^0.31.9",
+    "happy-dom": "^20.9.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "postcss": "^8.5.6",
@@ -59,6 +66,7 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vite": "7.3.1",
+    "vitest": "^4.1.5",
     "wrangler": "4.69.0"
   }
 }

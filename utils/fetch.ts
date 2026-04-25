@@ -13,6 +13,7 @@ interface FetchOptions<TQuery extends Record<string, QueryValues> = never, TBody
   query?: Record<keyof TQuery, QueryValues>
   body?: TBody
   params?: Record<string, string | null | number>
+  signal?: AbortSignal
 }
 
 export function fetcher<TResult, TQuery extends Record<string, QueryValues> = never, TBody = never>(
@@ -39,6 +40,7 @@ export function fetcher<TResult, TQuery extends Record<string, QueryValues> = ne
       method,
       headers,
       body,
+      signal: options?.signal,
     })
       .then((r) => (r.ok ? (r.json() as Promise<TResult>) : Promise.reject(r)))
       .catch((e) => {
