@@ -13,13 +13,17 @@ export function Refetch({ interval, shouldRefetch }: RefetchProps) {
   useEffect(() => {
     if (!shouldRefetch) return
 
-    const intervalId = setInterval(() => {
+    // One-shot delayed refetch. Matches the previous self-limiting
+    // window.location.reload() behavior — fire once after `interval` ms,
+    // then stop. The parent must flip `shouldRefetch` back to true (e.g. by
+    // remounting) if it wants another round.
+    const timeoutId = setTimeout(() => {
       router.invalidate().catch((error) => {
         logger.error('Failed to invalidate router:', error)
       })
     }, interval)
 
-    return () => clearInterval(intervalId)
+    return () => clearTimeout(timeoutId)
   }, [interval, shouldRefetch, router])
 
   return null

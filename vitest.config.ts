@@ -50,10 +50,10 @@ export default defineConfig({
         'dist/**',
         'drizzle/**',
         'static/**',
-        '**/index.ts',
         '**/routeTree.gen.ts',
         'tests/**',
         'instances/**',
+        'images/**',
       ],
       thresholds: {
         lines: 50,

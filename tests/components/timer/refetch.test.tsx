@@ -37,14 +37,17 @@ describe('Refetch — Bug #11 regression', () => {
     expect(reloadSpy).not.toHaveBeenCalled()
   })
 
-  it('calls router.invalidate() instead of reload, on each interval tick', () => {
+  it('calls router.invalidate() exactly once after the interval (no infinite loop)', () => {
     render(<Refetch interval={500} shouldRefetch />)
 
     vi.advanceTimersByTime(500)
     expect(invalidateMock).toHaveBeenCalledTimes(1)
 
-    vi.advanceTimersByTime(500)
-    expect(invalidateMock).toHaveBeenCalledTimes(2)
+    // Critical regression guard: the legacy implementation used setInterval,
+    // which combined with the no-op SPA invalidation produced a perpetual
+    // loop. The fix uses setTimeout, so further ticks must NOT fire.
+    vi.advanceTimersByTime(5_000)
+    expect(invalidateMock).toHaveBeenCalledTimes(1)
   })
 
   it('does not call invalidate when shouldRefetch=false', () => {
@@ -53,14 +56,11 @@ describe('Refetch — Bug #11 regression', () => {
     expect(invalidateMock).not.toHaveBeenCalled()
   })
 
-  it('cleans up the interval on unmount', () => {
+  it('cleans up the timeout on unmount', () => {
     const { unmount } = render(<Refetch interval={500} shouldRefetch />)
-    vi.advanceTimersByTime(500)
-    expect(invalidateMock).toHaveBeenCalledTimes(1)
 
     unmount()
     vi.advanceTimersByTime(2_000)
-    // No more calls after unmount
-    expect(invalidateMock).toHaveBeenCalledTimes(1)
+    expect(invalidateMock).not.toHaveBeenCalled()
   })
 })

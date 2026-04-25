@@ -57,6 +57,7 @@
       "!**/node_modules",
       "!**/dist",
       "!**/build",
+      "!**/coverage",
       "!**/.vercel",
       "!**/.wrangler",
       "!**/routeTree.gen.ts",
