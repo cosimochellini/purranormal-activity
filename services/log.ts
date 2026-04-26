@@ -4,7 +4,6 @@ import type { Log } from '../db/schema'
 import { log, logCategory } from '../db/schema'
 import { db } from '../drizzle'
 import { SortBy, TimeRange } from '../types/search'
-import { logger } from '../utils/logger'
 import { time } from '../utils/time'
 
 const sorting = {
@@ -102,22 +101,4 @@ export async function getLogs({
     .offset(skip)
 
   return addCategories(logs)
-}
-
-export async function setLogError(id: number | undefined, error: unknown) {
-  if (!id) return
-
-  try {
-    await db
-      .update(log)
-      .set({ error: error instanceof Error ? error.message : JSON.stringify(error) })
-      .where(eq(log.id, id))
-  } catch (writeError) {
-    // Preserve the full error (including stack) for postmortem.
-    logger.error('Failed to set log error:', {
-      logId: id,
-      originalError: error,
-      writeError,
-    })
-  }
 }

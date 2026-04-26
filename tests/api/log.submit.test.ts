@@ -37,11 +37,14 @@ vi.mock('@/services/storyForge', () => ({
   },
 }))
 
-vi.mock('@/services/content', () => ({
-  regenerateContents: vi.fn(async () => ({ imageTriggered: true })),
+vi.mock('@/services/imagePipeline', () => ({
+  imagePipeline: {
+    run: vi.fn(async (id: number) => ({ kind: 'success', logId: id })),
+  },
+  logPipelineOutcome: vi.fn(),
 }))
 
-import { regenerateContents } from '@/services/content'
+import { imagePipeline } from '@/services/imagePipeline'
 import { storyForge } from '@/services/storyForge'
 import { Route } from '@/start/routes/api/log/submit'
 
@@ -68,7 +71,7 @@ describe('POST /api/log/submit', () => {
     vi.mocked(storyForge.logDetails).mockReset()
     vi.mocked(storyForge.categories).mockReset()
     vi.mocked(storyForge.categories).mockResolvedValue([])
-    vi.mocked(regenerateContents).mockClear()
+    vi.mocked(imagePipeline.run).mockClear()
   })
 
   describe('Bug #12 — defensive treeifyError handling', () => {
@@ -146,7 +149,7 @@ describe('POST /api/log/submit', () => {
       })
 
       expect(fakeDb.values).toHaveBeenLastCalledWith([{ logId: 123, categoryId: 1 }])
-      expect(regenerateContents).toHaveBeenCalledWith({ triggerLogId: 123 })
+      expect(imagePipeline.run).toHaveBeenCalledWith(123)
     })
 
     it('skips the category-junction insert when AI returns zero usable categories', async () => {

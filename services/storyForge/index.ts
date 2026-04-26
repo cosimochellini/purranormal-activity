@@ -173,7 +173,7 @@ export function createStoryForge(overrides: Partial<Deps> = {}): StoryForge {
     }
 
     // Reject whitespace-only responses too — DALL-E would otherwise be
-    // invoked with a useless prompt downstream in services/trigger.ts.
+    // invoked with a useless prompt downstream in services/imagePipeline.ts.
     if (!raw.trim()) {
       return { ok: false, error: 'validation', message: 'Empty image prompt' }
     }
