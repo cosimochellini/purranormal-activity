@@ -80,7 +80,10 @@ export const Route = createFileRoute('/api/log/submit')({
 
           await regenerateContents({ triggerLogId: newLog.id })
 
-          return ok<LogSubmitResponse>({ success: true, id: newLog.id, missingCategories: [] })
+          return ok<LogSubmitResponse>(
+            { success: true, id: newLog.id, missingCategories: [] },
+            { invalidate: ['logs', `log:${newLog.id}`] },
+          )
         } catch (error) {
           logger.error('Failed to submit log:', error)
 

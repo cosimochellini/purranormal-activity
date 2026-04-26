@@ -56,7 +56,7 @@ export const Route = createFileRoute('/api/log')({
             )
           }
 
-          return ok<LogPostResponse>({ success: true })
+          return ok<LogPostResponse>({ success: true }, { invalidate: ['logs'] })
         } catch (error) {
           logger.error('Failed to create log:', error)
           return ok<LogPostResponse>({

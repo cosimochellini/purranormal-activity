@@ -51,6 +51,7 @@ describe('POST /api/log/$id/categories', () => {
   it('inserts the category-junction rows on success', async () => {
     const res = await callPost('7', { categories: [11, 22] })
     expect(await res.json()).toEqual({ success: true })
+    expect(res.headers.get('X-Invalidate')).toBe('logs,log:7')
 
     expect(fakeDb.insert).toHaveBeenCalledOnce()
     expect(fakeDb.values).toHaveBeenCalledWith([

@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { invalidatePublicContent } from '@/services/content'
 import { setLogError } from '@/services/log'
 import { generateLogImage } from '@/services/trigger'
 import { ok } from '@/utils/http'
@@ -21,17 +20,21 @@ export const Route = createFileRoute('/api/trigger/$id')({
           }
 
           await generateLogImage(logId)
-          await invalidatePublicContent()
 
-          return ok({ success: true })
+          return ok({ success: true }, { invalidate: [`log:${logId}`] })
         } catch (error) {
           logger.error('Failed to generate image:', error)
           await setLogError(logId, error)
 
-          return ok({
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error',
-          })
+          return ok(
+            {
+              success: false,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            },
+            typeof logId === 'number' && !Number.isNaN(logId)
+              ? { invalidate: [`log:${logId}`] }
+              : undefined,
+          )
         }
       },
     },

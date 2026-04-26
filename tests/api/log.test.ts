@@ -55,6 +55,7 @@ describe('POST /api/log', () => {
     })
 
     expect(res.status).toBe(200)
+    expect(res.headers.get('X-Invalidate')).toBe('logs')
     expect(await res.json()).toEqual({ success: true })
 
     // First insert into log (with title/description/categories[]) — drizzle pattern.

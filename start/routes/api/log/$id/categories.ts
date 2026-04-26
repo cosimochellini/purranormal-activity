@@ -48,7 +48,10 @@ export const Route = createFileRoute('/api/log/$id/categories')({
             })),
           )
 
-          return ok<LogIdCategoriesPostResponse>({ success: true })
+          return ok<LogIdCategoriesPostResponse>(
+            { success: true },
+            { invalidate: ['logs', `log:${logId}`] },
+          )
         } catch (error) {
           logger.error('Failed to add categories to log:', error)
 
