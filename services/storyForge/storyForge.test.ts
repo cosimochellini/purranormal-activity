@@ -202,6 +202,23 @@ describe('storyForge.logDetails', () => {
     if (!r.ok) expect(r.error).toBe('validation')
   })
 
+  it('returns ok:false error:validation when AI returns structurally-typed but empty strings', async () => {
+    // Even if every field is the right TYPE, blank strings would corrupt the
+    // log row — the validation rejects them so submit.ts cannot insert garbage.
+    const llm = recordingLlm([
+      JSON.stringify({
+        title: '',
+        description: '',
+        imageDescription: '',
+        categories: [],
+      }),
+    ])
+    const sf = createStoryForge({ categories: fakeCategoriesPort(), llm, randomStyle: fakeStyle })
+    const r = await sf.logDetails('event', [])
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.error).toBe('validation')
+  })
+
   it('returns ok:false error:model when categories.all rejects', async () => {
     const sf = createStoryForge({
       categories: {
@@ -297,6 +314,44 @@ describe('storyForge.telegramMessage', () => {
     })
     const r = await sf.telegramMessage(sampleLog)
     expect(r).toEqual({ ok: false, error: 'model', message: 'telegram model down' })
+  })
+})
+
+// ---------- public categories() accessor ----------
+
+describe('storyForge.categories', () => {
+  it('exposes the cached categories with id+name only', async () => {
+    const cats = fakeCategoriesPort()
+    const sf = createStoryForge({
+      categories: cats,
+      llm: recordingLlm([]),
+      randomStyle: fakeStyle,
+    })
+
+    const result = await sf.categories()
+    expect(result).toEqual([
+      { id: 1, name: 'magic' },
+      { id: 2, name: 'mystery' },
+    ])
+  })
+
+  it('reuses the same cache the prompt path uses', async () => {
+    const cats = fakeCategoriesPort()
+    const llm = recordingLlm([
+      JSON.stringify({
+        title: 'a',
+        description: 'b',
+        categories: [],
+        imageDescription: 'c',
+      }),
+    ])
+    const sf = createStoryForge({ categories: cats, llm, randomStyle: fakeStyle })
+
+    await sf.logDetails('event', [])
+    expect(cats.fetched).toBe(1)
+    await sf.categories()
+    // No additional fetch — the cache is shared.
+    expect(cats.fetched).toBe(1)
   })
 })
 

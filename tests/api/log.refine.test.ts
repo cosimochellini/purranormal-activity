@@ -6,6 +6,7 @@ vi.mock('@/services/storyForge', () => ({
     logDetails: vi.fn(),
     imagePrompt: vi.fn(),
     telegramMessage: vi.fn(),
+    categories: vi.fn(async () => []),
     invalidateCategories: vi.fn(),
   },
 }))

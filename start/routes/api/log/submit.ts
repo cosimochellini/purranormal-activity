@@ -2,11 +2,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { LogStatus } from '@/data/enum/logStatus'
-import { category, log, logCategory } from '@/db/schema'
+import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
 import { regenerateContents } from '@/services/content'
-import { storyForge } from '@/services/storyForge'
+import { type AIError, storyForge } from '@/services/storyForge'
 import type { LogSubmitResponse } from '@/types/api/log-submit'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
@@ -30,7 +30,10 @@ const submitFormSchema = z.object({
     .refine((val) => val.toLowerCase() === SECRET, { message: VALIDATION_MESSAGES.SECRET_INVALID }),
 })
 
-const mapAiMessageToFriendlyText = (message: string) => {
+const friendlyAiErrorText = (_kind: AIError) =>
+  'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.'
+
+const friendlyCatchText = (message: string) => {
   if (message.includes('AI') || message.includes('OpenAI')) {
     return 'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.'
   }
@@ -70,15 +73,13 @@ export const Route = createFileRoute('/api/log/submit')({
             logger.error('storyForge.logDetails returned !ok', detailsResult)
             return ok<LogSubmitResponse>({
               success: false,
-              errors: { general: [mapAiMessageToFriendlyText(detailsResult.message)] },
+              errors: { general: [friendlyAiErrorText(detailsResult.error)] },
             })
           }
 
           const { title, description, categories, imageDescription } = detailsResult.value
 
-          const allCategories = (await db.select({ id: category.id }).from(category)).map(
-            (category) => category.id,
-          )
+          const allCategoryIds = (await storyForge.categories()).map((c) => c.id)
 
           const [newLog] = await db
             .insert(log)
@@ -94,7 +95,7 @@ export const Route = createFileRoute('/api/log/submit')({
 
           const categoriesToInsert = categories
             .map(({ id }) => ({ logId: newLog.id, categoryId: id }))
-            .filter(({ categoryId }) => allCategories.includes(categoryId))
+            .filter(({ categoryId }) => allCategoryIds.includes(categoryId))
 
           if (categoriesToInsert.length > 0) {
             await db.insert(logCategory).values(categoriesToInsert)
@@ -113,7 +114,7 @@ export const Route = createFileRoute('/api/log/submit')({
           return ok<LogSubmitResponse>({
             success: false,
             errors: {
-              general: [mapAiMessageToFriendlyText(message)],
+              general: [friendlyCatchText(message)],
             },
           })
         }

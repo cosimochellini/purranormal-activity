@@ -32,6 +32,7 @@ vi.mock('@/services/storyForge', () => ({
     logDetails: vi.fn(),
     imagePrompt: vi.fn(),
     telegramMessage: vi.fn(),
+    categories: vi.fn(async () => []),
     invalidateCategories: vi.fn(),
   },
 }))
@@ -65,6 +66,8 @@ describe('POST /api/log/submit', () => {
   beforeEach(() => {
     fakeDb.__reset()
     vi.mocked(storyForge.logDetails).mockReset()
+    vi.mocked(storyForge.categories).mockReset()
+    vi.mocked(storyForge.categories).mockResolvedValue([])
     vi.mocked(regenerateContents).mockClear()
   })
 
@@ -122,7 +125,10 @@ describe('POST /api/log/submit', () => {
         },
       })
 
-      vi.mocked(fakeDb.from).mockReturnValueOnce([{ id: 1 }, { id: 2 }] as never)
+      vi.mocked(storyForge.categories).mockResolvedValueOnce([
+        { id: 1, name: 'Levitation' },
+        { id: 2, name: 'Other' },
+      ])
       fakeDb.__queue('returning', [{ id: 123 }])
 
       const res = await callPost({
@@ -154,7 +160,7 @@ describe('POST /api/log/submit', () => {
         },
       })
 
-      vi.mocked(fakeDb.from).mockReturnValueOnce([{ id: 1 }] as never)
+      vi.mocked(storyForge.categories).mockResolvedValueOnce([{ id: 1, name: 'Real' }])
       fakeDb.__queue('returning', [{ id: 5 }])
 
       const res = await callPost({

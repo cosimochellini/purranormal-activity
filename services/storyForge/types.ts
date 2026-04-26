@@ -32,6 +32,13 @@ export interface StoryForge {
   logDetails(description: string, answers: Answer[]): Promise<AIResult<LogDetails>>
   imagePrompt(description: string): Promise<AIResult<string>>
   telegramMessage(log: LogWithCategories): Promise<AIResult<string>>
+  /**
+   * Returns the cached list of categories (id + name only). Callers that need
+   * to validate AI-returned category ids against the canonical set should use
+   * this instead of querying the DB directly so they share the same in-process
+   * cache as the prompt-rendering path.
+   */
+  categories(): Promise<LogDetailsCategory[]>
   invalidateCategories(): void
 }
 

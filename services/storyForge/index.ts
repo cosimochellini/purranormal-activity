@@ -64,13 +64,16 @@ const isLogDetailsCategory = (value: unknown): value is LogDetailsCategory => {
   return typeof v.id === 'number' && typeof v.name === 'string'
 }
 
+const nonEmptyString = (value: unknown): value is string =>
+  typeof value === 'string' && value.length > 0
+
 const isLogDetails = (value: unknown): value is LogDetails => {
   if (typeof value !== 'object' || value === null) return false
   const v = value as Record<string, unknown>
   return (
-    typeof v.title === 'string' &&
-    typeof v.description === 'string' &&
-    typeof v.imageDescription === 'string' &&
+    nonEmptyString(v.title) &&
+    nonEmptyString(v.description) &&
+    nonEmptyString(v.imageDescription) &&
     Array.isArray(v.categories) &&
     v.categories.every(isLogDetailsCategory)
   )
@@ -195,11 +198,17 @@ export function createStoryForge(overrides: Partial<Deps> = {}): StoryForge {
     return { ok: true, value: stripped }
   }
 
+  async function categories(): Promise<LogDetailsCategory[]> {
+    const rows = await deps.categories.all()
+    return rows.map((row) => ({ id: row.id, name: row.name }))
+  }
+
   return {
     questions,
     logDetails,
     imagePrompt,
     telegramMessage,
+    categories,
     invalidateCategories: () => deps.categories.invalidate(),
   }
 }

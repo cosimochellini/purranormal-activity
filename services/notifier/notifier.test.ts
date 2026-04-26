@@ -12,6 +12,7 @@ vi.mock('@/services/storyForge', () => ({
     logDetails: vi.fn(),
     imagePrompt: vi.fn(),
     telegramMessage: vi.fn(async () => ({ ok: true, value: 'default text' })),
+    categories: vi.fn(async () => []),
     invalidateCategories: vi.fn(),
   },
 }))

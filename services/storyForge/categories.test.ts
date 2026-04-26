@@ -66,6 +66,36 @@ describe('createDefaultCategories', () => {
     expect(counter).toBe(2)
   })
 
+  it('coalesces concurrent in-flight all() callers into a single DB read', async () => {
+    let resolveDb: (value: Category[]) => void = () => {}
+    const dbPromise = new Promise<Category[]>((resolve) => {
+      resolveDb = resolve
+    })
+    let calls = 0
+    const db = {
+      select: vi.fn(() => ({
+        from: vi.fn(() => {
+          calls++
+          return dbPromise
+        }),
+      })),
+    }
+    // biome-ignore lint/suspicious/noExplicitAny: test-only
+    const cats = createDefaultCategories(db as any)
+
+    const a = cats.all()
+    const b = cats.all()
+    const c = cats.all()
+    expect(calls).toBe(1)
+
+    resolveDb(sampleCategories)
+    const [ra, rb, rc] = await Promise.all([a, b, c])
+    expect(ra).toEqual(sampleCategories)
+    expect(rb).toEqual(sampleCategories)
+    expect(rc).toEqual(sampleCategories)
+    expect(calls).toBe(1)
+  })
+
   it('concurrent invalidate during in-flight all() does not poison the cache', async () => {
     let resolveDb: (value: Category[]) => void = () => {}
     const dbPromise = new Promise<Category[]>((resolve) => {

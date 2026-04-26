@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants'
-import { storyForge } from '@/services/storyForge'
+import { type AIError, storyForge } from '@/services/storyForge'
 import type { LogRefineResponse } from '@/types/api/log-refine'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
@@ -13,7 +13,10 @@ const schema = z.object({
     .max(CHARACTER_LIMITS.REFINEMENT_DESCRIPTION, VALIDATION_MESSAGES.DESCRIPTION_TOO_LONG),
 })
 
-const mapAiMessageToFriendlyText = (message: string) => {
+const friendlyAiErrorText = (_kind: AIError) =>
+  'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.'
+
+const friendlyCatchText = (message: string) => {
   if (message.includes('AI') || message.includes('OpenAI')) {
     return 'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.'
   }
@@ -45,7 +48,7 @@ export const Route = createFileRoute('/api/log/refine')({
             logger.error('storyForge.questions returned !ok', r)
             return ok<LogRefineResponse>({
               success: false,
-              errors: { description: [mapAiMessageToFriendlyText(r.message)] },
+              errors: { description: [friendlyAiErrorText(r.error)] },
             })
           }
           return ok<LogRefineResponse>({ success: true, content: r.value })
@@ -56,7 +59,7 @@ export const Route = createFileRoute('/api/log/refine')({
           return ok<LogRefineResponse>({
             success: false,
             errors: {
-              description: [mapAiMessageToFriendlyText(message)],
+              description: [friendlyCatchText(message)],
             },
           })
         }
