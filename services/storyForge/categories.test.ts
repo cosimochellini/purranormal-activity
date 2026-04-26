@@ -29,7 +29,10 @@ describe('createDefaultCategories', () => {
     expect(db.select).toHaveBeenCalledTimes(1)
 
     const second = await cats.all()
-    expect(second).toBe(first)
+    // Defensive copy — equal contents, not the same reference, so
+    // downstream mutators cannot poison the shared cache.
+    expect(second).toEqual(first)
+    expect(second).not.toBe(first)
     expect(db.select).toHaveBeenCalledTimes(1)
   })
 

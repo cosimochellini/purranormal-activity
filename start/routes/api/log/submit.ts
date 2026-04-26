@@ -30,20 +30,30 @@ const submitFormSchema = z.object({
     .refine((val) => val.toLowerCase() === SECRET, { message: VALIDATION_MESSAGES.SECRET_INVALID }),
 })
 
-const friendlyAiErrorText = (_kind: AIError) =>
+const AI_UNAVAILABLE =
   'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.'
+const DB_UNAVAILABLE = 'Unable to save the event at this time. Please try again shortly.'
+const CONNECTION_ISSUE = 'Connection issue detected. Please check your internet and try again.'
+const AI_UNEXPECTED_RESPONSE =
+  'Our mystical AI assistant returned an unexpected response. Please try again.'
+const GENERIC_SUBMIT_FALLBACK = 'Unable to process your paranormal event. Please try again.'
+
+const matchInfraMessage = (message: string) => {
+  if (message.includes('network') || message.includes('fetch')) return CONNECTION_ISSUE
+  return null
+}
+
+const friendlyAiErrorText = (kind: AIError, message: string) => {
+  if (kind === 'parse' || kind === 'validation') return AI_UNEXPECTED_RESPONSE
+  // kind === 'model' — surface the underlying connection/timeout message
+  // when it matches a known infra pattern; otherwise generic AI-unavailable.
+  return matchInfraMessage(message) ?? AI_UNAVAILABLE
+}
 
 const friendlyCatchText = (message: string) => {
-  if (message.includes('AI') || message.includes('OpenAI')) {
-    return 'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.'
-  }
-  if (message.includes('database') || message.includes('DB')) {
-    return 'Unable to save the event at this time. Please try again shortly.'
-  }
-  if (message.includes('network') || message.includes('fetch')) {
-    return 'Connection issue detected. Please check your internet and try again.'
-  }
-  return 'Unable to process your paranormal event. Please try again.'
+  if (message.includes('AI') || message.includes('OpenAI')) return AI_UNAVAILABLE
+  if (message.includes('database') || message.includes('DB')) return DB_UNAVAILABLE
+  return matchInfraMessage(message) ?? GENERIC_SUBMIT_FALLBACK
 }
 
 export const Route = createFileRoute('/api/log/submit')({
@@ -73,7 +83,9 @@ export const Route = createFileRoute('/api/log/submit')({
             logger.error('storyForge.logDetails returned !ok', detailsResult)
             return ok<LogSubmitResponse>({
               success: false,
-              errors: { general: [friendlyAiErrorText(detailsResult.error)] },
+              errors: {
+                general: [friendlyAiErrorText(detailsResult.error, detailsResult.message)],
+              },
             })
           }
 

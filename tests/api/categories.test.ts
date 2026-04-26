@@ -6,6 +6,18 @@ vi.mock('@/drizzle', async () => {
   return { db: make() }
 })
 
+vi.mock('@/services/storyForge', () => ({
+  storyForge: {
+    questions: vi.fn(),
+    logDetails: vi.fn(),
+    imagePrompt: vi.fn(),
+    telegramMessage: vi.fn(),
+    categories: vi.fn(async () => []),
+    invalidateCategories: vi.fn(),
+  },
+}))
+
+import { storyForge } from '@/services/storyForge'
 import { Route } from '@/start/routes/api/categories'
 
 const { db: fakeDb } = (await import('@/drizzle')) as unknown as {
@@ -52,6 +64,7 @@ describe('GET /api/categories', () => {
 describe('POST /api/categories', () => {
   beforeEach(() => {
     fakeDb.__reset()
+    vi.mocked(storyForge.invalidateCategories).mockClear()
   })
 
   it('returns success:false with field errors when the body is invalid', async () => {
@@ -86,9 +99,12 @@ describe('POST /api/categories', () => {
     expect(inserted).toHaveLength(2)
     expect(inserted[0]).toMatchObject({ name: 'Ghosts', icon: 'questionMark' })
     expect(inserted[1]).toMatchObject({ name: 'Vapors', icon: 'questionMark' })
+    // The StoryForge category cache must be dropped after a successful
+    // insert so the next /api/log/submit sees the new ids.
+    expect(storyForge.invalidateCategories).toHaveBeenCalledOnce()
   })
 
-  it('returns the catch-all error response when DB throws', async () => {
+  it('does NOT invalidate the StoryForge cache when the insert throws', async () => {
     vi.mocked(fakeDb.values).mockImplementationOnce(() => {
       throw new Error('boom')
     })
@@ -96,5 +112,6 @@ describe('POST /api/categories', () => {
     const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
     expect(body.success).toBe(false)
     expect(body.errors.categories).toEqual(['Failed to create categories'])
+    expect(storyForge.invalidateCategories).not.toHaveBeenCalled()
   })
 })

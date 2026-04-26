@@ -30,6 +30,8 @@ export interface StoryForge {
   logDetails(description: string, answers: Answer[]): Promise<AIResult<LogDetails>>
   imagePrompt(description: string): Promise<AIResult<string>>
   telegramMessage(log: LogWithCategories): Promise<AIResult<string>>
+  /** Cached id+name list for callers that need to validate AI-returned ids. */
+  categories(): Promise<LogDetailsCategory[]>
   invalidateCategories(): void
 }
 

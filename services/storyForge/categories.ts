@@ -17,7 +17,9 @@ export function createDefaultCategories(
 
   return {
     async all() {
-      if (cache && cache.length > 0) return cache
+      // Return a fresh copy so a downstream mutator (e.g. `.sort()`,
+      // `.push()`) cannot poison the shared cached reference.
+      if (cache && cache.length > 0) return cache.slice()
       if (inFlight) return inFlight
 
       const myToken = token
@@ -28,7 +30,7 @@ export function createDefaultCategories(
           // Skip caching if invalidate() ran during the in-flight fetch:
           // the rows we just received may already be stale.
           if (myToken === token) cache = rows
-          return rows
+          return rows.slice()
         })
         .finally(() => {
           if (inFlight === fetchPromise) inFlight = null

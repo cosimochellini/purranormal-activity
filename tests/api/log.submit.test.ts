@@ -214,8 +214,46 @@ describe('POST /api/log/submit', () => {
 
       const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
       expect(body.success).toBe(false)
-      expect(body.errors.general?.length).toBeGreaterThan(0)
+      // Parse errors map to "unexpected response" copy, not "AI unavailable"
+      expect(body.errors.general?.[0]).toMatch(/unexpected response/i)
       expect(res.headers.get('X-Invalidate')).toBeNull()
+      expect(fakeDb.insert).not.toHaveBeenCalled()
+    })
+
+    it('maps validation errors to the "unexpected response" copy', async () => {
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: false,
+        error: 'validation',
+        message: 'Expected LogDetails shape',
+      })
+
+      const res = await callPost({
+        description: 'a description that is long enough',
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+      expect(body.success).toBe(false)
+      expect(body.errors.general?.[0]).toMatch(/unexpected response/i)
+      expect(fakeDb.insert).not.toHaveBeenCalled()
+    })
+
+    it('maps model errors with network messages to the "connection issue" copy', async () => {
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: false,
+        error: 'model',
+        message: 'fetch failed: ECONNREFUSED',
+      })
+
+      const res = await callPost({
+        description: 'a description that is long enough',
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+      expect(body.errors.general?.[0]).toMatch(/connection issue/i)
       expect(fakeDb.insert).not.toHaveBeenCalled()
     })
 
