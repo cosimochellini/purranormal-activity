@@ -66,34 +66,44 @@ export const createNotifier = (overrides: Partial<NotifierDeps> = {}): Notifier 
     photoUrl: string,
     eventId: number,
   ): Promise<ChatRollup> => {
+    let txt: ChatResult
     try {
-      const txt = await deps.sendMessage(chatId, text)
-      if (!txt.success) {
-        deps.logger.error('telegram text failed', {
-          chatId,
-          error: txt.error,
-          eventId,
-        })
-        return { chatId, textOk: false, photoOk: false, messageId: undefined }
-      }
-
-      const pho = await deps.sendPhoto(chatId, photoUrl)
-      if (!pho.success) {
-        deps.logger.error('telegram photo failed', {
-          chatId,
-          error: pho.error,
-          eventId,
-        })
-      }
-      return {
-        chatId,
-        textOk: true,
-        photoOk: pho.success,
-        messageId: txt.messageId,
-      }
+      txt = await deps.sendMessage(chatId, text)
     } catch (error) {
-      deps.logger.error('telegram chat threw', { chatId, error, eventId })
+      deps.logger.error('telegram text threw', { chatId, error, eventId })
       return { chatId, textOk: false, photoOk: false, messageId: undefined }
+    }
+    if (!txt.success) {
+      deps.logger.error('telegram text failed', {
+        chatId,
+        error: txt.error,
+        eventId,
+      })
+      return { chatId, textOk: false, photoOk: false, messageId: undefined }
+    }
+
+    // Text succeeded: a thrown sendPhoto must not retroactively flip the
+    // chat to textOk:false — it would undercount reachedChats and hide
+    // the chat from failedPhotoChats, defeating the partial-retry contract.
+    let pho: ChatResult
+    try {
+      pho = await deps.sendPhoto(chatId, photoUrl)
+    } catch (error) {
+      deps.logger.error('telegram photo threw', { chatId, error, eventId })
+      return { chatId, textOk: true, photoOk: false, messageId: txt.messageId }
+    }
+    if (!pho.success) {
+      deps.logger.error('telegram photo failed', {
+        chatId,
+        error: pho.error,
+        eventId,
+      })
+    }
+    return {
+      chatId,
+      textOk: true,
+      photoOk: pho.success,
+      messageId: txt.messageId,
     }
   }
 

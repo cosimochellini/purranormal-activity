@@ -190,7 +190,35 @@ describe('createNotifier.notify', () => {
     expect(sendPhoto).toHaveBeenCalledTimes(1)
     expect(sendPhoto).toHaveBeenCalledWith('c2', expect.any(String))
     expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
-      'telegram chat threw',
+      'telegram text threw',
+      expect.objectContaining({ chatId: 'c1', eventId: 7 }),
+    )
+  })
+
+  it('keeps textOk:true when sendPhoto throws after a successful sendMessage', async () => {
+    const sendMessage = vi.fn<NotifierDeps['sendMessage']>()
+    sendMessage.mockResolvedValueOnce(ok(11)).mockResolvedValueOnce(ok(12))
+    const sendPhoto = vi.fn<NotifierDeps['sendPhoto']>()
+    sendPhoto
+      .mockImplementationOnce(async () => {
+        throw new Error('photo socket reset')
+      })
+      .mockResolvedValueOnce(ok(22))
+
+    const deps = buildDeps({ sendMessage, sendPhoto })
+    const outcome = await createNotifier(deps).notify(event)
+
+    // Text reached every chat; photo only failed on c1 — so c1 belongs in
+    // failedPhotoChats, NOT in the text-failure bucket.
+    expect(outcome).toEqual({
+      delivered: false,
+      reachedChats: 2,
+      totalChats: 2,
+      failedPhotoChats: ['c1'],
+      messageId: 12,
+    })
+    expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
+      'telegram photo threw',
       expect.objectContaining({ chatId: 'c1', eventId: 7 }),
     )
   })
