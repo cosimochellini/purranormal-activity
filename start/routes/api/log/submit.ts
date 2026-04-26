@@ -5,8 +5,8 @@ import { LogStatus } from '@/data/enum/logStatus'
 import { category, log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
-import { generateLogDetails } from '@/services/ai'
 import { regenerateContents } from '@/services/content'
+import { storyForge } from '@/services/storyForge'
 import type { LogSubmitResponse } from '@/types/api/log-submit'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
@@ -30,6 +30,19 @@ const submitFormSchema = z.object({
     .refine((val) => val.toLowerCase() === SECRET, { message: VALIDATION_MESSAGES.SECRET_INVALID }),
 })
 
+const mapAiMessageToFriendlyText = (message: string) => {
+  if (message.includes('AI') || message.includes('OpenAI')) {
+    return 'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.'
+  }
+  if (message.includes('database') || message.includes('DB')) {
+    return 'Unable to save the event at this time. Please try again shortly.'
+  }
+  if (message.includes('network') || message.includes('fetch')) {
+    return 'Connection issue detected. Please check your internet and try again.'
+  }
+  return 'Unable to process your paranormal event. Please try again.'
+}
+
 export const Route = createFileRoute('/api/log/submit')({
   server: {
     handlers: {
@@ -49,10 +62,19 @@ export const Route = createFileRoute('/api/log/submit')({
             })
           }
 
-          const { title, description, categories, imageDescription } = await generateLogDetails(
+          const detailsResult = await storyForge.logDetails(
             result.data.description,
             result.data.answers,
           )
+          if (!detailsResult.ok) {
+            logger.error('storyForge.logDetails returned !ok', detailsResult)
+            return ok<LogSubmitResponse>({
+              success: false,
+              errors: { general: [mapAiMessageToFriendlyText(detailsResult.message)] },
+            })
+          }
+
+          const { title, description, categories, imageDescription } = detailsResult.value
 
           const allCategories = (await db.select({ id: category.id }).from(category)).map(
             (category) => category.id,
@@ -87,22 +109,11 @@ export const Route = createFileRoute('/api/log/submit')({
         } catch (error) {
           logger.error('Failed to submit log:', error)
 
-          let errorMessage = 'Unable to process your paranormal event. Please try again.'
-          if (error instanceof Error) {
-            if (error.message.includes('AI') || error.message.includes('OpenAI')) {
-              errorMessage =
-                'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.'
-            } else if (error.message.includes('database') || error.message.includes('DB')) {
-              errorMessage = 'Unable to save the event at this time. Please try again shortly.'
-            } else if (error.message.includes('network') || error.message.includes('fetch')) {
-              errorMessage = 'Connection issue detected. Please check your internet and try again.'
-            }
-          }
-
+          const message = error instanceof Error ? error.message : ''
           return ok<LogSubmitResponse>({
             success: false,
             errors: {
-              general: [errorMessage],
+              general: [mapAiMessageToFriendlyText(message)],
             },
           })
         }

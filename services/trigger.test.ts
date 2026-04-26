@@ -7,16 +7,26 @@ vi.mock('@/drizzle', async () => {
   return { db: make() }
 })
 
-vi.mock('@/services/ai', () => ({
-  generateImagePrompt: vi.fn(),
+vi.mock('@/services/imageGen', () => ({
   generateImageBase64: vi.fn(),
+}))
+
+vi.mock('@/services/storyForge', () => ({
+  storyForge: {
+    questions: vi.fn(),
+    logDetails: vi.fn(),
+    imagePrompt: vi.fn(),
+    telegramMessage: vi.fn(),
+    invalidateCategories: vi.fn(),
+  },
 }))
 
 vi.mock('@/utils/cloudflare', () => ({
   uploadToR2: vi.fn(async () => undefined),
 }))
 
-import { generateImageBase64, generateImagePrompt } from '@/services/ai'
+import { generateImageBase64 } from '@/services/imageGen'
+import { storyForge } from '@/services/storyForge'
 import {
   generateLogImage,
   triggerFirstPendingImage,
@@ -28,14 +38,16 @@ const { db: fakeDb } = (await import('@/drizzle')) as unknown as {
   db: ReturnType<typeof makeFakeDb>
 }
 
+const resetMocks = () => {
+  fakeDb.__reset()
+  vi.mocked(storyForge.imagePrompt).mockReset()
+  vi.mocked(generateImageBase64).mockReset()
+  vi.mocked(uploadToR2).mockReset()
+  vi.mocked(uploadToR2).mockImplementation(async () => undefined as never)
+}
+
 describe('generateLogImage', () => {
-  beforeEach(() => {
-    fakeDb.__reset()
-    vi.mocked(generateImagePrompt).mockReset()
-    vi.mocked(generateImageBase64).mockReset()
-    vi.mocked(uploadToR2).mockReset()
-    vi.mocked(uploadToR2).mockImplementation(async () => undefined as never)
-  })
+  beforeEach(resetMocks)
 
   it('throws when the log is not found', async () => {
     vi.mocked(fakeDb.where).mockReturnValueOnce([] as never)
@@ -51,35 +63,43 @@ describe('generateLogImage', () => {
 
     await generateLogImage(7)
 
-    expect(generateImagePrompt).not.toHaveBeenCalled()
+    expect(storyForge.imagePrompt).not.toHaveBeenCalled()
     expect(generateImageBase64).toHaveBeenCalledWith('cached prompt')
     expect(uploadToR2).toHaveBeenCalledWith(expect.any(Buffer), 7)
     expect(fakeDb.update).toHaveBeenCalled()
     expect(fakeDb.set).toHaveBeenCalledWith({ status: LogStatus.ImageGenerated })
   })
 
-  it('falls back to generateImagePrompt when imageDescription is null', async () => {
+  it('falls back to storyForge.imagePrompt when imageDescription is null', async () => {
     vi.mocked(fakeDb.where).mockReturnValueOnce([
       { id: 7, description: 'a description', imageDescription: null, status: LogStatus.Created },
     ] as never)
-    vi.mocked(generateImagePrompt).mockResolvedValueOnce('fresh prompt')
+    vi.mocked(storyForge.imagePrompt).mockResolvedValueOnce({ ok: true, value: 'fresh prompt' })
     vi.mocked(generateImageBase64).mockResolvedValueOnce('data:image/png;base64,aGVsbG8=')
 
     await generateLogImage(7)
 
-    expect(generateImagePrompt).toHaveBeenCalledWith('a description')
+    expect(storyForge.imagePrompt).toHaveBeenCalledWith('a description')
     expect(generateImageBase64).toHaveBeenCalledWith('fresh prompt')
+  })
+
+  it('throws when storyForge.imagePrompt returns ok:false (preserves the per-log catch contract in services/script.ts)', async () => {
+    vi.mocked(fakeDb.where).mockReturnValueOnce([
+      { id: 7, description: 'a description', imageDescription: null, status: LogStatus.Created },
+    ] as never)
+    vi.mocked(storyForge.imagePrompt).mockResolvedValueOnce({
+      ok: false,
+      error: 'model',
+      message: 'rate limit',
+    })
+
+    await expect(generateLogImage(7)).rejects.toThrow('rate limit')
+    expect(generateImageBase64).not.toHaveBeenCalled()
   })
 })
 
 describe('triggerLogImageIfPending', () => {
-  beforeEach(() => {
-    fakeDb.__reset()
-    vi.mocked(generateImagePrompt).mockReset()
-    vi.mocked(generateImageBase64).mockReset()
-    vi.mocked(uploadToR2).mockReset()
-    vi.mocked(uploadToR2).mockImplementation(async () => undefined as never)
-  })
+  beforeEach(resetMocks)
 
   it('returns false when the log does not exist', async () => {
     vi.mocked(fakeDb.where).mockReturnValueOnce([] as never)
@@ -98,9 +118,7 @@ describe('triggerLogImageIfPending', () => {
   })
 
   it('triggers image generation when the log is pending', async () => {
-    // 1) status lookup → Created
     vi.mocked(fakeDb.where).mockReturnValueOnce([{ id: 7, status: LogStatus.Created }] as never)
-    // 2) generateLogImage's own log lookup
     vi.mocked(fakeDb.where).mockReturnValueOnce([
       { id: 7, description: 'd', imageDescription: 'p', status: LogStatus.Created },
     ] as never)
@@ -113,16 +131,9 @@ describe('triggerLogImageIfPending', () => {
 })
 
 describe('triggerFirstPendingImage', () => {
-  beforeEach(() => {
-    fakeDb.__reset()
-    vi.mocked(generateImagePrompt).mockReset()
-    vi.mocked(generateImageBase64).mockReset()
-    vi.mocked(uploadToR2).mockReset()
-    vi.mocked(uploadToR2).mockImplementation(async () => undefined as never)
-  })
+  beforeEach(resetMocks)
 
   it('returns false when there are no pending logs', async () => {
-    // limit() is the terminal in the chain.
     vi.mocked(fakeDb.limit).mockReturnValueOnce([] as never)
     const result = await triggerFirstPendingImage()
     expect(result).toBe(false)
@@ -130,11 +141,7 @@ describe('triggerFirstPendingImage', () => {
   })
 
   it('triggers image generation for the first pending log', async () => {
-    // Chain 1 (the find-first lookup) ends in `.limit(1)` → that's its terminal.
     vi.mocked(fakeDb.limit).mockReturnValueOnce([{ id: 11 }] as never)
-    // Chain 1 still calls `.where()`, but that must remain chainable. Queue
-    // a pass-through proxy for chain 1's `.where`, then the terminal for
-    // chain 2's `.where` (the one inside generateLogImage).
     vi.mocked(fakeDb.where)
       .mockReturnValueOnce(fakeDb as never)
       .mockReturnValueOnce([

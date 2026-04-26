@@ -1,6 +1,6 @@
 import type { LogWithCategories } from '@/db/schema'
 import { TELEGRAM_BOT_CHAT_IDS } from '@/env/telegram'
-import { generateTelegramMessage } from '@/services/ai'
+import { storyForge } from '@/services/storyForge'
 import {
   sendMessage as telegramSendMessage,
   sendPhoto as telegramSendPhoto,
@@ -8,6 +8,14 @@ import {
 import type { ChatResult } from '@/services/telegram/types'
 import { logger as defaultLogger, type Logger } from '@/utils/logger'
 import { publicImage } from '@/utils/public-image'
+
+const composeViaStoryForge = async (event: LogWithCategories): Promise<string> => {
+  const r = await storyForge.telegramMessage(event)
+  if (!r.ok) {
+    throw new Error(r.message || 'Telegram message generation failed')
+  }
+  return r.value
+}
 
 export interface NotifyOutcome {
   /** True iff every configured chat received both the text and the photo. */
@@ -55,7 +63,7 @@ export const createNotifier = (overrides: Partial<NotifierDeps> = {}): Notifier 
     chatIds: overrides.chatIds ?? TELEGRAM_BOT_CHAT_IDS,
     sendMessage: overrides.sendMessage ?? ((chatId, body) => telegramSendMessage(chatId, body)),
     sendPhoto: overrides.sendPhoto ?? ((chatId, url) => telegramSendPhoto(chatId, url)),
-    composeMessage: overrides.composeMessage ?? generateTelegramMessage,
+    composeMessage: overrides.composeMessage ?? composeViaStoryForge,
     resolveImageUrl: overrides.resolveImageUrl ?? publicImage,
     logger: overrides.logger ?? defaultLogger,
   }

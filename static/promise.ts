@@ -5,13 +5,16 @@ import { logger } from '../utils/logger'
 const emptyCategories: CategoriesGetResponse = []
 const fetchCategories = fetcher<CategoriesGetResponse>('/api/categories')
 
+const fetchCategoriesOnServer = async (): Promise<CategoriesGetResponse> => {
+  const [{ db }, { category }] = await Promise.all([import('../drizzle'), import('../db/schema')])
+  return db.select().from(category)
+}
+
 export const getCategories = import.meta.env.SSR
-  ? import('../services/categories')
-      .then((module) => module.getCategories())
-      .catch((error) => {
-        logger.error('Failed to fetch categories on server:', error)
-        return emptyCategories
-      })
+  ? fetchCategoriesOnServer().catch((error) => {
+      logger.error('Failed to fetch categories on server:', error)
+      return emptyCategories
+    })
   : fetchCategories().catch((error) => {
       logger.error('Failed to fetch categories:', error)
       return emptyCategories
