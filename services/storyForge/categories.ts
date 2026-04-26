@@ -8,6 +8,9 @@ interface DbLike {
   }
 }
 
+const cloneRow = (row: Category): Category => ({ ...row })
+const cloneRows = (rows: Category[]): Category[] => rows.map(cloneRow)
+
 export function createDefaultCategories(
   db: DbLike = defaultDb as unknown as DbLike,
 ): CategoriesPort {
@@ -17,10 +20,10 @@ export function createDefaultCategories(
 
   return {
     async all() {
-      // Return a fresh copy so a downstream mutator (e.g. `.sort()`,
-      // `.push()`) cannot poison the shared cached reference.
-      if (cache && cache.length > 0) return cache.slice()
-      if (inFlight) return inFlight
+      // Return per-row copies so a downstream mutator (e.g. `.sort()`,
+      // `obj.name = 'X'`) cannot poison the shared cached references.
+      if (cache && cache.length > 0) return cloneRows(cache)
+      if (inFlight) return inFlight.then(cloneRows)
 
       const myToken = token
       const fetchPromise: Promise<Category[]> = db
@@ -28,15 +31,18 @@ export function createDefaultCategories(
         .from(category)
         .then((rows) => {
           // Skip caching if invalidate() ran during the in-flight fetch:
-          // the rows we just received may already be stale.
+          // the rows we just received may already be stale. `invalidate()`
+          // intentionally does NOT cancel an in-flight fetch — the
+          // already-awaited callers still receive the fetched rows so
+          // we don't surface a synthetic "no categories" to them.
           if (myToken === token) cache = rows
-          return rows.slice()
+          return rows
         })
         .finally(() => {
           if (inFlight === fetchPromise) inFlight = null
         })
       inFlight = fetchPromise
-      return fetchPromise
+      return fetchPromise.then(cloneRows)
     },
     invalidate() {
       cache = null
