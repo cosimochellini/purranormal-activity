@@ -8,7 +8,10 @@ export const Route = createFileRoute('/api/script')({
       GET: async () => methodNotAllowed('POST'),
       POST: async () => {
         const response = await runImageGenerationScript()
-        return ok(response)
+        // Tag list-affecting routes only when at least one row was mutated.
+        // Today the caller is typically cron (no client router → no-op), but
+        // an admin UI invocation will pick this up automatically.
+        return ok(response, response.processed > 0 ? { invalidate: ['logs'] } : undefined)
       },
     },
   },
