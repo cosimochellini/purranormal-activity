@@ -124,7 +124,10 @@ export const Route = createFileRoute('/api/log/$id')({
             triggerLogId: updated.id,
           })
 
-          return ok<LogIdPutResponse>({ success: true, data: updated })
+          return ok<LogIdPutResponse>(
+            { success: true, data: updated },
+            { invalidate: ['logs', `log:${id}`] },
+          )
         } catch (error) {
           logger.error('Failed to update log:', error)
 
@@ -161,7 +164,7 @@ export const Route = createFileRoute('/api/log/$id')({
           await deleteFromR2(id)
           await regenerateContents({ triggerImages: false })
 
-          return ok<LogIdDeleteResponse>({ success: true })
+          return ok<LogIdDeleteResponse>({ success: true }, { invalidate: ['logs', `log:${id}`] })
         } catch (error) {
           logger.error('Failed to delete log:', error)
 

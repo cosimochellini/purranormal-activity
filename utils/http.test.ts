@@ -16,6 +16,7 @@ describe('http response builders', () => {
     it('returns 200 with the body serialized as JSON', async () => {
       const res = ok({ hello: 'world' })
       expect(res.status).toBe(200)
+      expect(res.headers.get('Content-Type')).toBe('application/json')
       expect(await parseBody(res)).toEqual({ hello: 'world' })
     })
 
@@ -23,6 +24,26 @@ describe('http response builders', () => {
       const res = ok('plain')
       expect(res.status).toBe(200)
       expect(await parseBody(res)).toBe('plain')
+    })
+
+    it('does not emit X-Invalidate when init is omitted', () => {
+      const res = ok({ hello: 'world' })
+      expect(res.headers.get('X-Invalidate')).toBeNull()
+    })
+
+    it('does not emit X-Invalidate when invalidate is an empty array', () => {
+      const res = ok({ ok: true }, { invalidate: [] })
+      expect(res.headers.get('X-Invalidate')).toBeNull()
+    })
+
+    it('emits a single X-Invalidate tag', () => {
+      const res = ok({ ok: true }, { invalidate: ['logs'] })
+      expect(res.headers.get('X-Invalidate')).toBe('logs')
+    })
+
+    it('joins multiple X-Invalidate tags with a single comma (no spaces)', () => {
+      const res = ok({ ok: true }, { invalidate: ['logs', 'log:7'] })
+      expect(res.headers.get('X-Invalidate')).toBe('logs,log:7')
     })
   })
 

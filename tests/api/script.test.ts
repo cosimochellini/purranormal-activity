@@ -21,7 +21,7 @@ describe('POST /api/script', () => {
     vi.mocked(runImageGenerationScript).mockReset()
   })
 
-  it('invokes runImageGenerationScript and returns its response', async () => {
+  it('invokes runImageGenerationScript and emits X-Invalidate when rows were processed', async () => {
     vi.mocked(runImageGenerationScript).mockResolvedValueOnce({
       success: true,
       processed: 3,
@@ -30,8 +30,32 @@ describe('POST /api/script', () => {
     const res = await callPost()
 
     expect(res.status).toBe(200)
+    expect(res.headers.get('X-Invalidate')).toBe('logs')
     expect(await res.json()).toEqual({ success: true, processed: 3 })
     expect(runImageGenerationScript).toHaveBeenCalledOnce()
+  })
+
+  it('omits X-Invalidate when no rows were processed (idle batch)', async () => {
+    vi.mocked(runImageGenerationScript).mockResolvedValueOnce({
+      success: true,
+      processed: 0,
+    })
+
+    const res = await callPost()
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get('X-Invalidate')).toBeNull()
+  })
+
+  it('omits X-Invalidate on the failure response', async () => {
+    vi.mocked(runImageGenerationScript).mockResolvedValueOnce({
+      success: false,
+      processed: 0,
+      error: 'Failed to process logs',
+    })
+
+    const res = await callPost()
+    expect(res.headers.get('X-Invalidate')).toBeNull()
   })
 
   it('GET responds with 405 Method Not Allowed advertising POST', async () => {

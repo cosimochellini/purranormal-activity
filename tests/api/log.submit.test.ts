@@ -136,6 +136,7 @@ describe('POST /api/log/submit', () => {
       })
 
       expect(res.status).toBe(200)
+      expect(res.headers.get('X-Invalidate')).toBe('logs,log:123')
       expect(await res.json()).toEqual({
         success: true,
         id: 123,
@@ -167,6 +168,7 @@ describe('POST /api/log/submit', () => {
       const body = (await res.json()) as { success: true; id: number }
       expect(body.success).toBe(true)
       expect(body.id).toBe(5)
+      expect(res.headers.get('X-Invalidate')).toBe('logs,log:5')
       // Only the log insert should have run; the category-junction insert is
       // skipped when nothing survives the filter.
       expect(fakeDb.insert).toHaveBeenCalledOnce()
@@ -184,6 +186,8 @@ describe('POST /api/log/submit', () => {
       const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
       expect(body.success).toBe(false)
       expect(body.errors.general?.[0]).toMatch(/AI assistant/i)
+      // Failure path must NOT carry an invalidation tag.
+      expect(res.headers.get('X-Invalidate')).toBeNull()
     })
   })
 })

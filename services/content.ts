@@ -3,11 +3,6 @@ import { getLog, setLogError } from '@/services/log'
 import { triggerFirstPendingImage, triggerLogImageIfPending } from '@/services/trigger'
 import { logger } from '@/utils/logger'
 
-// Framework-neutral placeholder for cache invalidation during migration.
-export async function invalidatePublicContent() {
-  logger.info('Content invalidation requested (currently no-op)')
-}
-
 interface RegenerateContentsOptions {
   triggerImages?: boolean
   triggerLogId?: number
@@ -34,8 +29,6 @@ export async function regenerateContents({
   triggerImages = true,
   triggerLogId,
 }: RegenerateContentsOptions = {}) {
-  await invalidatePublicContent()
-
   if (!triggerImages) {
     return { imageTriggered: false } satisfies RegenerateContentsResult
   }

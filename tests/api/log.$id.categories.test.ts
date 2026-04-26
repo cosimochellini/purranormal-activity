@@ -38,6 +38,7 @@ describe('POST /api/log/$id/categories', () => {
     expect(body.success).toBe(false)
     expect(body.errors.categories).toEqual(['Invalid log id'])
     expect(fakeDb.insert).not.toHaveBeenCalled()
+    expect(res.headers.get('X-Invalidate')).toBeNull()
   })
 
   it('returns flattened field errors when categories is empty', async () => {
@@ -46,11 +47,13 @@ describe('POST /api/log/$id/categories', () => {
     expect(body.success).toBe(false)
     expect(body.errors.categories?.length).toBeGreaterThan(0)
     expect(fakeDb.insert).not.toHaveBeenCalled()
+    expect(res.headers.get('X-Invalidate')).toBeNull()
   })
 
   it('inserts the category-junction rows on success', async () => {
     const res = await callPost('7', { categories: [11, 22] })
     expect(await res.json()).toEqual({ success: true })
+    expect(res.headers.get('X-Invalidate')).toBe('logs,log:7')
 
     expect(fakeDb.insert).toHaveBeenCalledOnce()
     expect(fakeDb.values).toHaveBeenCalledWith([

@@ -10,15 +10,10 @@ vi.mock('@/services/trigger', () => ({
   generateLogImage: vi.fn(async () => undefined),
 }))
 
-vi.mock('@/services/content', () => ({
-  invalidatePublicContent: vi.fn(async () => undefined),
-}))
-
 vi.mock('@/utils/promise', () => ({
   wait: vi.fn(async () => undefined),
 }))
 
-import { invalidatePublicContent } from '@/services/content'
 import { runImageGenerationScript } from '@/services/script'
 import { generateLogImage } from '@/services/trigger'
 import { wait } from '@/utils/promise'
@@ -31,21 +26,18 @@ describe('runImageGenerationScript', () => {
   beforeEach(() => {
     fakeDb.__reset()
     vi.mocked(generateLogImage).mockReset()
-    vi.mocked(invalidatePublicContent).mockReset()
     vi.mocked(wait).mockReset()
     vi.mocked(generateLogImage).mockImplementation(async () => undefined)
-    vi.mocked(invalidatePublicContent).mockImplementation(async () => undefined)
     vi.mocked(wait).mockImplementation(async () => undefined)
   })
 
-  it('returns processed:0 and skips invalidation when no logs are pending', async () => {
+  it('returns processed:0 when no logs are pending', async () => {
     // db.select(...).from(...).where(...) resolves to []
     vi.mocked(fakeDb.where).mockReturnValueOnce([] as never)
 
     const result = await runImageGenerationScript()
     expect(result).toEqual({ success: true, processed: 0 })
     expect(generateLogImage).not.toHaveBeenCalled()
-    expect(invalidatePublicContent).not.toHaveBeenCalled()
   })
 
   it('processes pending logs in batches of 5 with a delay between batches', async () => {
@@ -59,7 +51,6 @@ describe('runImageGenerationScript', () => {
     expect(generateLogImage).toHaveBeenCalledTimes(12)
     expect(wait).toHaveBeenCalledTimes(3)
     expect(wait).toHaveBeenCalledWith(5000)
-    expect(invalidatePublicContent).toHaveBeenCalledOnce()
   })
 
   it('keeps going when a single log fails (per-log try/catch)', async () => {
@@ -72,7 +63,6 @@ describe('runImageGenerationScript', () => {
     const result = await runImageGenerationScript()
     expect(result).toEqual({ success: true, processed: 3 })
     expect(generateLogImage).toHaveBeenCalledTimes(3)
-    expect(invalidatePublicContent).toHaveBeenCalledOnce()
   })
 
   it('returns success:false when the initial DB select throws', async () => {
@@ -87,6 +77,5 @@ describe('runImageGenerationScript', () => {
       error: 'Failed to process logs',
     })
     expect(generateLogImage).not.toHaveBeenCalled()
-    expect(invalidatePublicContent).not.toHaveBeenCalled()
   })
 })

@@ -2,7 +2,6 @@ import { eq } from 'drizzle-orm'
 import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
-import { invalidatePublicContent } from '@/services/content'
 import { generateLogImage } from '@/services/trigger'
 import { batch } from '@/utils/batch'
 import { logger } from '@/utils/logger'
@@ -34,10 +33,6 @@ export async function runImageGenerationScript(): Promise<RunImageGenerationScri
     for (const logBatch of logBatches) {
       await Promise.all(logBatch.map(processLog))
       await wait(DELAY_MS)
-    }
-
-    if (logs.length > 0) {
-      await invalidatePublicContent()
     }
 
     return {
