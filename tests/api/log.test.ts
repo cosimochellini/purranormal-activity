@@ -42,6 +42,8 @@ describe('POST /api/log', () => {
     expect(body.errors.categories?.length).toBeGreaterThan(0)
     // Validation should short-circuit before hitting the DB.
     expect(fakeDb.insert).not.toHaveBeenCalled()
+    // No row mutated → no invalidation tag.
+    expect(res.headers.get('X-Invalidate')).toBeNull()
   })
 
   it('inserts the log and its category links on a valid body', async () => {

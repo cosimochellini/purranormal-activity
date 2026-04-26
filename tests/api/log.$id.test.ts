@@ -111,6 +111,8 @@ describe('PUT /api/log/$id', () => {
     expect(body.errors.description?.length).toBeGreaterThan(0)
     expect(body.errors.categories?.length).toBeGreaterThan(0)
     expect(body.errors.secret?.length).toBeGreaterThan(0)
+    // Validation failure → no row mutated → no invalidation tag.
+    expect(res.headers.get('X-Invalidate')).toBeNull()
   })
 
   it('returns "Log not found" when no row matches the id', async () => {
@@ -197,6 +199,7 @@ describe('DELETE /api/log/$id', () => {
       params: { id: '7' },
     })
     expect(await res.json()).toEqual({ success: false, error: 'Invalid secret' })
+    expect(res.headers.get('X-Invalidate')).toBeNull()
   })
 
   it('rejects a non-numeric id', async () => {
