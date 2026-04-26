@@ -1,3 +1,7 @@
+import type { AnyRouteMatch } from '@tanstack/react-router'
+import { getActiveRouter } from '@/start/router'
+import { matchesTags, parseInvalidateHeader } from './invalidation'
+import { logger } from './logger'
 import { typedObjectEntries } from './typed'
 
 type Methods = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
@@ -14,6 +18,22 @@ interface FetchOptions<TQuery extends Record<string, QueryValues> = never, TBody
   body?: TBody
   params?: Record<string, string | null | number>
   signal?: AbortSignal
+}
+
+async function applyInvalidation(response: Response): Promise<void> {
+  const tags = parseInvalidateHeader(response.headers.get('X-Invalidate'))
+  if (tags.length === 0) return
+
+  const router = getActiveRouter()
+  if (!router) return
+
+  try {
+    await router.invalidate({
+      filter: (match: AnyRouteMatch) => matchesTags(match, tags),
+    })
+  } catch (error) {
+    logger.error('Failed to apply X-Invalidate:', error)
+  }
 }
 
 export function fetcher<TResult, TQuery extends Record<string, QueryValues> = never, TBody = never>(
@@ -36,15 +56,19 @@ export function fetcher<TResult, TQuery extends Record<string, QueryValues> = ne
     const headers = isFormData ? formDataHeaders : defaultHeaders
     const body = (isFormData ? options?.body : JSON.stringify(options?.body)) as BodyInit
 
-    return fetch(`${replacedUrl}?${params.toString()}`, {
+    const response = await fetch(`${replacedUrl}?${params.toString()}`, {
       method,
       headers,
       body,
       signal: options?.signal,
     })
-      .then((r) => (r.ok ? (r.json() as Promise<TResult>) : Promise.reject(r)))
-      .catch((e) => {
-        throw e
-      })
+
+    if (!response.ok) {
+      throw response
+    }
+
+    await applyInvalidation(response)
+
+    return (await response.json()) as TResult
   }
 }
