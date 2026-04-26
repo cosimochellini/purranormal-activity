@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { getLog } from '@/services/log'
-import { sendEventNotification } from '@/services/notification'
+import { notifier } from '@/services/notifier'
 import type { TelegramIdResponse } from '@/types/api/telegram-id'
 import { ok } from '@/utils/http'
 
@@ -26,17 +26,24 @@ export const Route = createFileRoute('/api/telegram/$id')({
             })
           }
 
-          const telegramResult = await sendEventNotification(event)
-          if (!telegramResult.success) {
+          const outcome = await notifier.notify(event)
+          if (outcome.delivered) {
             return ok<TelegramIdResponse>({
-              success: false,
-              error: telegramResult.error || 'Unknown error',
+              success: true,
+              messageId: outcome.messageId ?? 0,
             })
           }
 
+          const error =
+            outcome.reachedChats === 0 ? 'Telegram fan-out failed' : 'Telegram fan-out partial'
           return ok<TelegramIdResponse>({
-            success: true,
-            messageId: telegramResult.messageId || 0,
+            success: false,
+            error,
+            partial: {
+              reachedChats: outcome.reachedChats,
+              totalChats: outcome.totalChats,
+              failedPhotoChats: outcome.failedPhotoChats,
+            },
           })
         } catch (error) {
           return ok<TelegramIdResponse>({
