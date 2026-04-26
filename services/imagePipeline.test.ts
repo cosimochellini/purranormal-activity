@@ -16,11 +16,13 @@ vi.mock('@/utils/cloudflare', () => ({
   uploadToR2: vi.fn(async () => undefined),
 }))
 
+import { generateImageBase64, generateImagePrompt } from '@/services/ai'
 import {
   createDefaultImagePipeline,
   createImagePipeline,
   type PipelineDeps,
 } from '@/services/imagePipeline'
+import { uploadToR2 } from '@/utils/cloudflare'
 
 const { db: fakeDb } = (await import('@/drizzle')) as unknown as {
   db: ReturnType<typeof makeFakeDb>
@@ -217,5 +219,76 @@ describe('createDefaultImagePipeline default recordError', () => {
       cause,
       writeError,
     })
+  })
+})
+
+describe('createDefaultImagePipeline default generate', () => {
+  beforeEach(() => {
+    fakeDb.__reset()
+    vi.mocked(generateImagePrompt).mockReset()
+    vi.mocked(generateImageBase64).mockReset()
+    vi.mocked(uploadToR2).mockReset()
+    vi.mocked(uploadToR2).mockImplementation(async () => undefined as never)
+  })
+
+  it('surfaces failed-recorded with cause "Log not found" when the row vanished between loadStatus and generate', async () => {
+    vi.mocked(fakeDb.where).mockReturnValueOnce([] as never)
+
+    const pipeline = createDefaultImagePipeline({
+      loadStatus: async () => ({ status: LogStatus.Created }),
+      markGenerated: async () => undefined,
+      recordError: async () => undefined,
+    })
+
+    const outcome = await pipeline.run(7)
+
+    expect(outcome.kind).toBe('failed-recorded')
+    if (outcome.kind === 'failed-recorded') {
+      expect(outcome.cause).toBeInstanceOf(Error)
+      expect((outcome.cause as Error).message).toBe('Log not found')
+    }
+    expect(uploadToR2).not.toHaveBeenCalled()
+  })
+
+  it('reuses an existing imageDescription, decodes the data-URL, and uploads the buffer', async () => {
+    vi.mocked(fakeDb.where).mockReturnValueOnce([
+      { id: 7, description: 'd', imageDescription: 'cached prompt', status: LogStatus.Created },
+    ] as never)
+    vi.mocked(generateImageBase64).mockResolvedValueOnce('data:image/png;base64,aGVsbG8=')
+
+    const pipeline = createDefaultImagePipeline({
+      loadStatus: async () => ({ status: LogStatus.Created }),
+      markGenerated: async () => undefined,
+    })
+
+    const outcome = await pipeline.run(7)
+
+    expect(outcome).toEqual({ kind: 'success', logId: 7 })
+    expect(generateImagePrompt).not.toHaveBeenCalled()
+    expect(generateImageBase64).toHaveBeenCalledWith('cached prompt')
+    expect(uploadToR2).toHaveBeenCalledTimes(1)
+    const [bufferArg, idArg] = vi.mocked(uploadToR2).mock.calls[0]
+    expect(idArg).toBe(7)
+    expect(bufferArg).toBeInstanceOf(Buffer)
+    expect((bufferArg as Buffer).toString('utf-8')).toBe('hello')
+  })
+
+  it('falls back to generateImagePrompt when imageDescription is null', async () => {
+    vi.mocked(fakeDb.where).mockReturnValueOnce([
+      { id: 7, description: 'a description', imageDescription: null, status: LogStatus.Created },
+    ] as never)
+    vi.mocked(generateImagePrompt).mockResolvedValueOnce('fresh prompt')
+    vi.mocked(generateImageBase64).mockResolvedValueOnce('data:image/png;base64,aGVsbG8=')
+
+    const pipeline = createDefaultImagePipeline({
+      loadStatus: async () => ({ status: LogStatus.Created }),
+      markGenerated: async () => undefined,
+    })
+
+    const outcome = await pipeline.run(7)
+
+    expect(outcome).toEqual({ kind: 'success', logId: 7 })
+    expect(generateImagePrompt).toHaveBeenCalledWith('a description')
+    expect(generateImageBase64).toHaveBeenCalledWith('fresh prompt')
   })
 })
