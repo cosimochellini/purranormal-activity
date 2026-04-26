@@ -12,7 +12,14 @@ import { publicImage } from '@/utils/public-image'
 const composeViaStoryForge = async (event: LogWithCategories): Promise<string> => {
   const r = await storyForge.telegramMessage(event)
   if (!r.ok) {
-    throw new Error(r.message || 'Telegram message generation failed')
+    // Preserve the AIError discriminator on `cause` so a future retry
+    // policy in the notifier (or its caller) can distinguish a model
+    // outage (worth retrying) from a parse / validation failure (retry
+    // will not help) without re-running the AI generation just to
+    // re-derive the kind.
+    throw new Error(r.message || 'Telegram message generation failed', {
+      cause: { kind: r.error },
+    })
   }
   return r.value
 }

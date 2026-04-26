@@ -18,10 +18,15 @@ export interface Answer {
   answer: string
 }
 
+export interface LogDetailsCategory {
+  id: number
+  name: string
+}
+
 export interface LogDetails {
   title: string
   description: string
-  categories: { id: number; name: string }[]
+  categories: LogDetailsCategory[]
   imageDescription: string
 }
 
@@ -35,9 +40,13 @@ export interface StoryForge {
   invalidateCategories(): void
 }
 
+/** Internal port row shape (full Drizzle row). */
 interface Category {
   id: number
   name: string
+  icon: string
+  createdAt: number
+  updatedAt: number
 }
 
 export interface Deps {

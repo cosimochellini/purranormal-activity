@@ -77,6 +77,16 @@ const looksLikeAiError = (message: string) => {
  *   2. Infra tokens (timeout/network/fetch) → CONNECTION_ISSUE /
  *      REQUEST_TIMEOUT.
  *   3. Generic AI_UNAVAILABLE fallback.
+ *
+ * NOTE the ordering is intentionally **DB-first** here, in contrast to
+ * `friendlyCatchText` below which is **AI-first**. The reason: the
+ * AIResult `model` envelope ALREADY tells us the failure originated in
+ * a domain method whose only AI-adjacent dependencies are
+ * `categories.all()` and the LLM itself, so a DB-shaped message is
+ * almost certainly the categories port, not the LLM. By contrast, the
+ * catch path receives raw exceptions including OpenAI client errors
+ * that mention `fetch failed` — there an AI-first ordering correctly
+ * attributes the failure to the LLM provider before infra heuristics.
  */
 export const friendlyAiErrorText = (
   kind: AIError,
