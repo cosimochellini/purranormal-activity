@@ -8,6 +8,7 @@ import { sendMessage as telegramSendMessage } from '@/services/telegram'
 import { batch } from '@/utils/batch'
 import { logger } from '@/utils/logger'
 import { wait } from '@/utils/promise'
+import { assertNever } from '@/utils/typed'
 
 const BATCH_SIZE = 5
 const DELAY_MS = 5000
@@ -70,6 +71,8 @@ async function processLog(logEntry: { id: number }) {
       })
       await alertWriteAlsoFailed(outcome.logId, outcome.cause, outcome.writeError)
       return
+    default:
+      return assertNever(outcome)
   }
 }
 

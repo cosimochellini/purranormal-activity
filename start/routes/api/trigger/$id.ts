@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { imagePipeline } from '@/services/imagePipeline'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
+import { assertNever } from '@/utils/typed'
 
 const errorMessage = (cause: unknown) => (cause instanceof Error ? cause.message : 'Unknown error')
 
@@ -46,6 +47,8 @@ export const Route = createFileRoute('/api/trigger/$id')({
               { success: false, error: errorMessage(outcome.cause) },
               { invalidate: [`log:${logId}`] },
             )
+          default:
+            return assertNever(outcome)
         }
       },
     },
