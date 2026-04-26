@@ -79,7 +79,24 @@ export const Route = createFileRoute('/api/log/submit')({
 
           const { title, description, categories, imageDescription } = detailsResult.value
 
-          const allCategoryIds = (await storyForge.categories()).map((c) => c.id)
+          let allCategoryIds: number[]
+          try {
+            allCategoryIds = (await storyForge.categories()).map((c) => c.id)
+          } catch (error) {
+            // categories.all() can throw if the DB blew up between the
+            // logDetails() prompt path (which already populated the cache)
+            // and this filter validation read — for example if a concurrent
+            // POST /api/categories invalidated the cache and the next read
+            // hit a transient DB outage. Surface a friendly DB-unavailable
+            // message rather than the catch-all generic copy.
+            logger.error('storyForge.categories() failed during submit:', error)
+            return ok<LogSubmitResponse>({
+              success: false,
+              errors: {
+                general: [messages.DB_UNAVAILABLE ?? messages.GENERIC_FALLBACK],
+              },
+            })
+          }
 
           const [newLog] = await db
             .insert(log)

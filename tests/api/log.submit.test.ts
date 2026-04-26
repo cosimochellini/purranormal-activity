@@ -239,6 +239,31 @@ describe('POST /api/log/submit', () => {
       expect(fakeDb.insert).not.toHaveBeenCalled()
     })
 
+    it('returns DB-unavailable copy and DOES NOT insert when storyForge.categories() throws after a successful logDetails', async () => {
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: true,
+        value: {
+          title: 't',
+          description: 'd',
+          imageDescription: 'i',
+          categories: [{ id: 1, name: 'magic' }],
+        },
+      })
+      vi.mocked(storyForge.categories).mockRejectedValueOnce(new Error('libsql connection lost'))
+
+      const res = await callPost({
+        description: 'a description that is long enough',
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+      expect(body.success).toBe(false)
+      expect(body.errors.general?.[0]).toMatch(/save the event|temporarily unavailable/i)
+      expect(res.headers.get('X-Invalidate')).toBeNull()
+      expect(fakeDb.insert).not.toHaveBeenCalled()
+    })
+
     it('maps model errors with network messages to the "connection issue" copy', async () => {
       vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
         ok: false,
