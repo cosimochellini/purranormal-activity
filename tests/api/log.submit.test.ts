@@ -30,12 +30,15 @@ vi.mock('@/services/ai', () => ({
   generateLogDetails: vi.fn(),
 }))
 
-vi.mock('@/services/content', () => ({
-  regenerateContents: vi.fn(async () => ({ imageTriggered: true })),
+vi.mock('@/services/imagePipeline', () => ({
+  imagePipeline: {
+    run: vi.fn(async (id: number) => ({ kind: 'success', logId: id })),
+  },
+  logPipelineOutcome: vi.fn(),
 }))
 
 import { generateLogDetails } from '@/services/ai'
-import { regenerateContents } from '@/services/content'
+import { imagePipeline } from '@/services/imagePipeline'
 import { Route } from '@/start/routes/api/log/submit'
 
 const { db: fakeDb } = (await import('@/drizzle')) as unknown as {
@@ -59,7 +62,7 @@ describe('POST /api/log/submit', () => {
   beforeEach(() => {
     fakeDb.__reset()
     vi.mocked(generateLogDetails).mockReset()
-    vi.mocked(regenerateContents).mockClear()
+    vi.mocked(imagePipeline.run).mockClear()
   })
 
   describe('Bug #12 — defensive treeifyError handling', () => {
@@ -145,7 +148,7 @@ describe('POST /api/log/submit', () => {
 
       // categoryId 1 maps to allCategories=[1,2] → kept; 99 → filtered out.
       expect(fakeDb.values).toHaveBeenLastCalledWith([{ logId: 123, categoryId: 1 }])
-      expect(regenerateContents).toHaveBeenCalledWith({ triggerLogId: 123 })
+      expect(imagePipeline.run).toHaveBeenCalledWith(123)
     })
 
     it('skips the category-junction insert when AI returns zero usable categories', async () => {

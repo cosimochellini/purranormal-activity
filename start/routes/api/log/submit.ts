@@ -6,7 +6,7 @@ import { category, log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
 import { generateLogDetails } from '@/services/ai'
-import { regenerateContents } from '@/services/content'
+import { imagePipeline, logPipelineOutcome } from '@/services/imagePipeline'
 import type { LogSubmitResponse } from '@/types/api/log-submit'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
@@ -78,7 +78,8 @@ export const Route = createFileRoute('/api/log/submit')({
             await db.insert(logCategory).values(categoriesToInsert)
           }
 
-          await regenerateContents({ triggerLogId: newLog.id })
+          const outcome = await imagePipeline.run(newLog.id)
+          logPipelineOutcome(outcome, 'POST /api/log/submit')
 
           return ok<LogSubmitResponse>(
             { success: true, id: newLog.id, missingCategories: [] },

@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LogStatus } from '@/data/enum/logStatus'
 import { SortBy, TimeRange } from '@/types/search'
-import { logger } from '@/utils/logger'
 
 const { fakeDb } = vi.hoisted(() => {
   // Inline a minimal chainable proxy to avoid `require()` from a hoisted block
@@ -35,7 +34,7 @@ const { fakeDb } = vi.hoisted(() => {
 
 vi.mock('@/drizzle', () => ({ db: fakeDb }))
 
-import { getLog, getLogs, setLogError } from './log'
+import { getLog, getLogs } from './log'
 
 const baseLog = {
   id: 1,
@@ -180,51 +179,5 @@ describe('getLogs', () => {
     queueGetLogsResult([], [])
     const result = await getLogs({})
     expect(result).toEqual([])
-  })
-})
-
-describe('setLogError', () => {
-  it('is a no-op when id is undefined', async () => {
-    await setLogError(undefined, new Error('boom'))
-    expect(fakeDb.update).not.toHaveBeenCalled()
-  })
-
-  it('writes the error message of an Error instance', async () => {
-    fakeDb.where.mockResolvedValueOnce(undefined as unknown as never)
-    await setLogError(5, new Error('something broke'))
-
-    expect(fakeDb.update).toHaveBeenCalled()
-    expect(fakeDb.set).toHaveBeenCalledWith({ error: 'something broke' })
-    expect(fakeDb.where).toHaveBeenCalled()
-  })
-
-  it('serializes non-Error values via JSON.stringify', async () => {
-    fakeDb.where.mockResolvedValueOnce(undefined as unknown as never)
-    await setLogError(5, { code: 'X', detail: 'plain' })
-    expect(fakeDb.set).toHaveBeenCalledWith({
-      error: JSON.stringify({ code: 'X', detail: 'plain' }),
-    })
-  })
-
-  // Bug #16 regression: when the DB write throws, logger.error must be called
-  // with an object that contains both the originalError and the writeError
-  // (and the logId), preserving the postmortem context.
-  it('logs the originalError, writeError and logId when the DB write throws (Bug #16)', async () => {
-    const originalError = new Error('upstream failure')
-    const writeError = new Error('db is down')
-    fakeDb.where.mockRejectedValueOnce(writeError)
-
-    await setLogError(42, originalError)
-
-    expect(vi.mocked(logger.error)).toHaveBeenCalledTimes(1)
-    const [msg, payload] = vi.mocked(logger.error).mock.calls[0]
-    expect(msg).toBe('Failed to set log error:')
-    expect(payload).toEqual(
-      expect.objectContaining({
-        logId: 42,
-        originalError,
-        writeError,
-      }),
-    )
   })
 })

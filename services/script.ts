@@ -2,20 +2,85 @@ import { eq } from 'drizzle-orm'
 import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
-import { generateLogImage } from '@/services/trigger'
+import { TELEGRAM_BOT_CHAT_IDS } from '@/env/telegram'
+import { imagePipeline } from '@/services/imagePipeline'
+import { sendMessage as telegramSendMessage } from '@/services/telegram'
 import { batch } from '@/utils/batch'
 import { logger } from '@/utils/logger'
 import { wait } from '@/utils/promise'
+import { assertNever } from '@/utils/typed'
 
 const BATCH_SIZE = 5
 const DELAY_MS = 5000
 
+const formatCause = (value: unknown) =>
+  value instanceof Error ? value.message : JSON.stringify(value)
+
+// Telegram's default sendMessage parse_mode is HTML. Raw error text frequently
+// contains '<', '>', '&' (e.g. "Cannot read properties of <undefined>"), which
+// the HTML parser rejects with "Bad Request: can't parse entities" — making
+// the loud alert silently fail. Escape to keep the spec's "never silent"
+// contract intact.
+const escapeHTML = (text: string) =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+const alertWriteAlsoFailed = async (logId: number, cause: unknown, writeError: unknown) => {
+  if (TELEGRAM_BOT_CHAT_IDS.length === 0) return
+
+  const text = [
+    '🚨 Image pipeline write-also-failed',
+    `logId: ${logId}`,
+    `cause: ${escapeHTML(formatCause(cause))}`,
+    `writeError: ${escapeHTML(formatCause(writeError))}`,
+  ].join('\n')
+
+  await Promise.all(
+    TELEGRAM_BOT_CHAT_IDS.map(async (chatId) => {
+      try {
+        const result = await telegramSendMessage(chatId, text)
+        if (!result.success) {
+          logger.error('Pipeline alert: Telegram rejected the message', {
+            chatId,
+            logId,
+            error: result.error,
+          })
+        }
+      } catch (error) {
+        logger.error('Pipeline alert: Telegram threw while sending', {
+          chatId,
+          logId,
+          error,
+        })
+      }
+    }),
+  )
+}
+
 async function processLog(logEntry: { id: number }) {
-  try {
-    logger.info(`Processing log ${logEntry.id}`)
-    await generateLogImage(logEntry.id)
-  } catch (error) {
-    logger.error(`Failed to process log ${logEntry.id}:`, error)
+  logger.info(`Processing log ${logEntry.id}`)
+
+  const outcome = await imagePipeline.run(logEntry.id)
+
+  switch (outcome.kind) {
+    case 'success':
+      return
+    case 'skipped':
+      logger.warn(`Skipped log ${logEntry.id}: ${outcome.reason}`)
+      return
+    case 'failed-recorded':
+      logger.error(`Image pipeline recorded an error for log ${logEntry.id}`, {
+        cause: outcome.cause,
+      })
+      return
+    case 'failed-write-also-failed':
+      logger.error(`Image pipeline failed to write the error column for log ${logEntry.id}`, {
+        cause: outcome.cause,
+        writeError: outcome.writeError,
+      })
+      await alertWriteAlsoFailed(outcome.logId, outcome.cause, outcome.writeError)
+      return
+    default:
+      return assertNever(outcome)
   }
 }
 

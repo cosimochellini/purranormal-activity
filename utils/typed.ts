@@ -7,3 +7,7 @@ export const typedObjectKeys: <T extends Record<string, unknown>>(obj: T) => (ke
 
 export const typedObjectValues: <T extends Record<string, unknown>>(obj: T) => T[keyof T][] =
   Object.values
+
+export const assertNever = (value: never): never => {
+  throw new Error(`Unhandled discriminated-union variant: ${JSON.stringify(value)}`)
+}
