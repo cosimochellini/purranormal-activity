@@ -34,6 +34,7 @@ vi.mock('@/services/imagePipeline', () => ({
   imagePipeline: {
     run: vi.fn(async (id: number) => ({ kind: 'success', logId: id })),
   },
+  logPipelineOutcome: vi.fn(),
 }))
 
 import { generateLogDetails } from '@/services/ai'

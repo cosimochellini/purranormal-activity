@@ -6,7 +6,7 @@ import { LogStatus } from '@/data/enum/logStatus'
 import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
-import { imagePipeline } from '@/services/imagePipeline'
+import { imagePipeline, logPipelineOutcome } from '@/services/imagePipeline'
 import type { LogIdDeleteResponse, LogIdGetResponse, LogIdPutResponse } from '@/types/api/log-id'
 import { deleteFromR2 } from '@/utils/cloudflare'
 import { ok } from '@/utils/http'
@@ -119,7 +119,8 @@ export const Route = createFileRoute('/api/log/$id')({
               .values(categories.map((category) => ({ logId: id, categoryId: category })))
           }
 
-          await imagePipeline.run(updated.id)
+          const outcome = await imagePipeline.run(updated.id)
+          logPipelineOutcome(outcome, 'PUT /api/log/$id')
 
           return ok<LogIdPutResponse>(
             { success: true, data: updated },

@@ -127,6 +127,29 @@ describe('runImageGenerationScript', () => {
     )
   })
 
+  it('HTML-escapes <, >, & in the alert text so Telegram (parseMode HTML) does not reject it', async () => {
+    const logs = [{ id: 9 }]
+    vi.mocked(fakeDb.where).mockReturnValueOnce(logs as never)
+    vi.mocked(imagePipeline.run).mockImplementationOnce(async () => ({
+      kind: 'failed-write-also-failed',
+      logId: 9,
+      cause: new Error('Cannot read <undefined> & friends'),
+      writeError: new Error('SQL: SELECT > FROM bad'),
+    }))
+
+    await runImageGenerationScript()
+
+    const calls = vi.mocked(sendMessage).mock.calls
+    expect(calls.length).toBeGreaterThan(0)
+    const text = calls[0][1] as string
+    expect(text).toContain('&lt;undefined&gt;')
+    expect(text).toContain('&amp; friends')
+    expect(text).toContain('SELECT &gt; FROM bad')
+    // Raw entities must NOT survive — that's the whole point of escaping.
+    expect(text).not.toContain('<undefined>')
+    expect(text).not.toMatch(/[^&]& /)
+  })
+
   it('keeps the batch alive when a per-chat Telegram send throws', async () => {
     const logs = [{ id: 1 }]
     vi.mocked(fakeDb.where).mockReturnValueOnce(logs as never)

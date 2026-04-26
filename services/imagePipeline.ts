@@ -4,6 +4,8 @@ import { log } from '@/db/schema'
 import { db } from '@/drizzle'
 import { generateImageBase64, generateImagePrompt } from '@/services/ai'
 import { uploadToR2 } from '@/utils/cloudflare'
+import { logger } from '@/utils/logger'
+import { assertNever } from '@/utils/typed'
 
 export type PipelineOutcome =
   | { kind: 'success'; logId: number }
@@ -101,3 +103,33 @@ export const createDefaultImagePipeline = (overrides: Partial<PipelineDeps> = {}
   })
 
 export const imagePipeline: ImagePipeline = createDefaultImagePipeline()
+
+// Fire-and-forget observability helper for entry points that don't surface
+// the outcome in their HTTP response (submit, edit-PUT). Keeps the spec's
+// US1#2 promise — every entry point exhaustively switches on outcome.kind —
+// even when the response shape is unchanged.
+export const logPipelineOutcome = (outcome: PipelineOutcome, contextLabel: string): void => {
+  switch (outcome.kind) {
+    case 'success':
+      return
+    case 'skipped':
+      logger.info(`${contextLabel}: pipeline skipped log ${outcome.logId} (${outcome.reason})`)
+      return
+    case 'failed-recorded':
+      logger.error(`${contextLabel}: pipeline recorded an error for log ${outcome.logId}`, {
+        cause: outcome.cause,
+      })
+      return
+    case 'failed-write-also-failed':
+      logger.error(
+        `${contextLabel}: pipeline failed to write the error column for log ${outcome.logId}`,
+        {
+          cause: outcome.cause,
+          writeError: outcome.writeError,
+        },
+      )
+      return
+    default:
+      assertNever(outcome)
+  }
+}

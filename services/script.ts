@@ -16,14 +16,22 @@ const DELAY_MS = 5000
 const formatCause = (value: unknown) =>
   value instanceof Error ? value.message : JSON.stringify(value)
 
+// Telegram's default sendMessage parse_mode is HTML. Raw error text frequently
+// contains '<', '>', '&' (e.g. "Cannot read properties of <undefined>"), which
+// the HTML parser rejects with "Bad Request: can't parse entities" — making
+// the loud alert silently fail. Escape to keep the spec's "never silent"
+// contract intact.
+const escapeHTML = (text: string) =>
+  text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
 const alertWriteAlsoFailed = async (logId: number, cause: unknown, writeError: unknown) => {
   if (TELEGRAM_BOT_CHAT_IDS.length === 0) return
 
   const text = [
     '🚨 Image pipeline write-also-failed',
     `logId: ${logId}`,
-    `cause: ${formatCause(cause)}`,
-    `writeError: ${formatCause(writeError)}`,
+    `cause: ${escapeHTML(formatCause(cause))}`,
+    `writeError: ${escapeHTML(formatCause(writeError))}`,
   ].join('\n')
 
   await Promise.all(

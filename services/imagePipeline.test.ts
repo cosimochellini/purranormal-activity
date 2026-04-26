@@ -20,9 +20,11 @@ import { generateImageBase64, generateImagePrompt } from '@/services/ai'
 import {
   createDefaultImagePipeline,
   createImagePipeline,
+  logPipelineOutcome,
   type PipelineDeps,
 } from '@/services/imagePipeline'
 import { uploadToR2 } from '@/utils/cloudflare'
+import { logger } from '@/utils/logger'
 
 const { db: fakeDb } = (await import('@/drizzle')) as unknown as {
   db: ReturnType<typeof makeFakeDb>
@@ -290,5 +292,42 @@ describe('createDefaultImagePipeline default generate', () => {
     expect(outcome).toEqual({ kind: 'success', logId: 7 })
     expect(generateImagePrompt).toHaveBeenCalledWith('a description')
     expect(generateImageBase64).toHaveBeenCalledWith('fresh prompt')
+  })
+})
+
+describe('logPipelineOutcome', () => {
+  beforeEach(() => {
+    vi.mocked(logger.info).mockClear()
+    vi.mocked(logger.error).mockClear()
+  })
+
+  it('is silent on success', () => {
+    logPipelineOutcome({ kind: 'success', logId: 7 }, 'ctx')
+    expect(vi.mocked(logger.info)).not.toHaveBeenCalled()
+    expect(vi.mocked(logger.error)).not.toHaveBeenCalled()
+  })
+
+  it('logs an info line on skipped', () => {
+    logPipelineOutcome({ kind: 'skipped', logId: 7, reason: 'not-pending' }, 'ctx')
+    expect(vi.mocked(logger.info)).toHaveBeenCalledWith('ctx: pipeline skipped log 7 (not-pending)')
+  })
+
+  it('logs an error with the cause on failed-recorded', () => {
+    const cause = new Error('AI down')
+    logPipelineOutcome({ kind: 'failed-recorded', logId: 7, cause }, 'ctx')
+    expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
+      'ctx: pipeline recorded an error for log 7',
+      { cause },
+    )
+  })
+
+  it('logs an error with cause + writeError on failed-write-also-failed', () => {
+    const cause = new Error('AI down')
+    const writeError = new Error('db down')
+    logPipelineOutcome({ kind: 'failed-write-also-failed', logId: 7, cause, writeError }, 'ctx')
+    expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
+      'ctx: pipeline failed to write the error column for log 7',
+      { cause, writeError },
+    )
   })
 })

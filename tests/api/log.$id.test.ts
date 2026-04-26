@@ -15,6 +15,7 @@ vi.mock('@/services/imagePipeline', () => ({
   imagePipeline: {
     run: vi.fn(async (id: number) => ({ kind: 'success', logId: id })),
   },
+  logPipelineOutcome: vi.fn(),
 }))
 
 vi.mock('@/utils/cloudflare', () => ({
