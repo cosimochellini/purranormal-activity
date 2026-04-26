@@ -11,15 +11,9 @@ vi.mock('@/services/trigger', () => ({
   triggerFirstPendingImage: vi.fn(),
 }))
 
-import { invalidatePublicContent, regenerateContents } from '@/services/content'
+import { regenerateContents } from '@/services/content'
 import { getLog, setLogError } from '@/services/log'
 import { triggerFirstPendingImage, triggerLogImageIfPending } from '@/services/trigger'
-
-describe('invalidatePublicContent', () => {
-  it('resolves without throwing (no-op placeholder)', async () => {
-    await expect(invalidatePublicContent()).resolves.toBeUndefined()
-  })
-})
 
 describe('regenerateContents', () => {
   beforeEach(() => {
