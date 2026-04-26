@@ -296,5 +296,26 @@ describe('POST /api/log/submit', () => {
       expect(body.errors.general?.[0]).toMatch(/AI assistant/i)
       expect(res.headers.get('X-Invalidate')).toBeNull()
     })
+
+    it('attributes a thrown "fetch failed" (typical OpenAI undici surface) to the AI assistant, not the connection', async () => {
+      vi.mocked(storyForge.logDetails).mockRejectedValueOnce(
+        // The catch path receives an Error whose message is just "fetch failed"
+        // when the OpenAI SDK fails to reach the upstream — without the AI
+        // matcher running first this would be misrouted to "Connection issue".
+        Object.assign(new Error('fetch failed'), { name: 'OpenAIError' }),
+      )
+
+      const res = await callPost({
+        description: 'a description',
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+      // OpenAIError name in the matcher input → "openai" tokens fire →
+      // the user sees the AI-assistant copy, not "Connection issue".
+      expect(body.errors.general?.[0]).toMatch(/AI assistant/i)
+      expect(fakeDb.insert).not.toHaveBeenCalled()
+    })
   })
 })

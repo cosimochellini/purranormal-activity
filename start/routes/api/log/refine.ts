@@ -50,7 +50,11 @@ export const Route = createFileRoute('/api/log/refine')({
         } catch (error) {
           logger.error('Failed to generate follow-up questions:', error)
 
-          const message = error instanceof Error ? error.message : ''
+          // Include `error.name` in the matcher input so client-class
+          // errors (e.g. `OpenAIError`, `APIConnectionError`,
+          // `AbortError`) are correctly attributed even when their
+          // message is bland (e.g. just `"fetch failed"`).
+          const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
           return ok<LogRefineResponse>({
             success: false,
             errors: {

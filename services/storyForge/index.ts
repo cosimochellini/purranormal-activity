@@ -172,7 +172,9 @@ export function createStoryForge(overrides: Partial<Deps> = {}): StoryForge {
       return { ok: false, error: 'model', message: errorMessage(error) }
     }
 
-    if (!raw) {
+    // Reject whitespace-only responses too — DALL-E would otherwise be
+    // invoked with a useless prompt downstream in services/trigger.ts.
+    if (!raw.trim()) {
       return { ok: false, error: 'validation', message: 'Empty image prompt' }
     }
 
@@ -191,7 +193,9 @@ export function createStoryForge(overrides: Partial<Deps> = {}): StoryForge {
     }
 
     const stripped = stripHtmlFences(raw)
-    if (!stripped) {
+    // After fence-stripping, a whitespace-only payload would still be sent
+    // to Telegram and rendered literally — treat it as a validation error.
+    if (!stripped.trim()) {
       return { ok: false, error: 'validation', message: 'Empty telegram message' }
     }
 

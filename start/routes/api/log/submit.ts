@@ -83,12 +83,20 @@ export const Route = createFileRoute('/api/log/submit')({
           try {
             allCategoryIds = (await storyForge.categories()).map((c) => c.id)
           } catch (error) {
-            // categories.all() can throw if the DB blew up between the
-            // logDetails() prompt path (which already populated the cache)
-            // and this filter validation read — for example if a concurrent
-            // POST /api/categories invalidated the cache and the next read
-            // hit a transient DB outage. Surface a friendly DB-unavailable
-            // message rather than the catch-all generic copy.
+            // This guard is rarely tripped in practice — `logDetails()`
+            // already populated the StoryForge cache with the same row
+            // set, so the public `categories()` accessor is normally a
+            // memoised read with no DB round-trip. The two paths where
+            // this catch CAN fire:
+            //   (a) `invalidateCategories()` ran between `logDetails()`
+            //       and this read (e.g. concurrent `POST /api/categories`
+            //       on the same Worker instance) and the re-fetch hit a
+            //       transient DB outage.
+            //   (b) the cache was empty during `logDetails()` (intentional
+            //       per spec — empty results are NOT memoised) and this
+            //       second fault read also fails.
+            // In both cases we surface DB_UNAVAILABLE rather than insert
+            // an under-categorised log row.
             logger.error('storyForge.categories() failed during submit:', error)
             return ok<LogSubmitResponse>({
               success: false,
@@ -127,7 +135,11 @@ export const Route = createFileRoute('/api/log/submit')({
         } catch (error) {
           logger.error('Failed to submit log:', error)
 
-          const message = error instanceof Error ? error.message : ''
+          // Include `error.name` in the matcher input so client-class
+          // errors (e.g. `OpenAIError`, `APIConnectionError`,
+          // `AbortError`) are correctly attributed even when their
+          // message is bland (e.g. just `"fetch failed"`).
+          const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
           return ok<LogSubmitResponse>({
             success: false,
             errors: {
