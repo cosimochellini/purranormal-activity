@@ -1,13 +1,12 @@
-import { TELEGRAM_BOT_API_KEY, TELEGRAM_BOT_CHAT_IDS } from '@/env/telegram'
+import { TELEGRAM_BOT_API_KEY } from '@/env/telegram'
 import { fetcher } from '@/utils/fetch'
 import { logger } from '../../utils/logger'
 import type {
+  ChatResult,
   SendMessageBody,
-  SendMessageInput,
-  SendMessageResult,
+  SendMessageOptions,
   SendPhotoBody,
-  SendPhotoInput,
-  SendPhotoResult,
+  SendPhotoOptions,
   TelegramApiResponse,
 } from './types'
 
@@ -22,51 +21,44 @@ const sendPhotoAPI = fetcher<TelegramApiResponse, never, SendPhotoBody>(
 )
 
 /**
- * Generic function to send messages via Telegram Bot API
+ * Send a single Telegram message to a single chat.
+ *
+ * Multi-chat fan-out lives in `services/notifier` — this module
+ * intentionally exposes only single-chat primitives so future channels
+ * (Slack, email, ...) can re-use the same fan-out infrastructure.
  */
-export async function sendMessage(input: SendMessageInput): Promise<SendMessageResult> {
+export async function sendMessage(
+  chatId: string,
+  text: string,
+  options: SendMessageOptions = {},
+): Promise<ChatResult> {
+  const { parseMode = 'HTML', disableWebPagePreview = true, silent = false } = options
+
   try {
-    const { text, options = {} } = input
-    const {
-      parseMode = 'HTML',
-      disableWebPagePreview = true,
-      silent = false,
-      chatIds = TELEGRAM_BOT_CHAT_IDS,
-    } = options
+    const responseData = await sendMessageAPI({
+      body: {
+        chat_id: chatId.trim(),
+        text,
+        parse_mode: parseMode,
+        disable_web_page_preview: disableWebPagePreview,
+        disable_notification: silent,
+      },
+    })
 
-    const messageIds: number[] = []
-
-    for (const chatId of chatIds) {
-      try {
-        const responseData = await sendMessageAPI({
-          body: {
-            chat_id: chatId.trim(),
-            text,
-            parse_mode: parseMode,
-            disable_web_page_preview: disableWebPagePreview,
-            disable_notification: silent,
-          },
-        })
-
-        if (!responseData.ok) {
-          logger.error(`Telegram API error for chat ${chatId}:`, responseData.description)
-          continue
-        }
-
-        const messageId = responseData.result?.message_id || 0
-        messageIds.push(messageId)
-      } catch (_error) {
-        // Continue to next chat on error
+    if (!responseData.ok) {
+      logger.error(`Telegram API error for chat ${chatId}:`, responseData.description)
+      return {
+        success: false,
+        error: responseData.description ?? 'Telegram API rejected the message',
       }
     }
 
     return {
-      success: messageIds.length > 0,
-      messageIds: messageIds.length > 0 ? messageIds : undefined,
-      error: messageIds.length === 0 ? 'Failed to send message to all chat IDs' : undefined,
+      success: true,
+      messageId: responseData.result?.message_id,
     }
   } catch (error) {
-    logger.error('Failed to send Telegram message:', error)
+    logger.error(`Telegram sendMessage failed for chat ${chatId}:`, error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -75,80 +67,70 @@ export async function sendMessage(input: SendMessageInput): Promise<SendMessageR
 }
 
 /**
- * Generic function to send photos via Telegram Bot API
+ * Send a single Telegram photo to a single chat.
  */
-export async function sendPhoto(input: SendPhotoInput): Promise<SendPhotoResult> {
+export async function sendPhoto(
+  chatId: string,
+  photoUrl: string,
+  options: SendPhotoOptions = {},
+): Promise<ChatResult> {
+  const {
+    businessConnectionId,
+    messageThreadId,
+    directMessagesTopicId,
+    caption,
+    parseMode = 'MarkdownV2',
+    captionEntities,
+    showCaptionAboveMedia,
+    hasSpoiler,
+    silent = false,
+    protectContent,
+    allowPaidBroadcast,
+    messageEffectId,
+    suggestedPostParameters,
+    replyParameters,
+    replyMarkup,
+    replyToMessageId,
+  } = options
+
   try {
-    const { photo, options = {} } = input
-    const {
-      businessConnectionId,
-      messageThreadId,
-      directMessagesTopicId,
-      caption,
-      parseMode = 'HTML',
-      captionEntities,
-      showCaptionAboveMedia,
-      hasSpoiler,
-      silent = false,
-      protectContent,
-      allowPaidBroadcast,
-      messageEffectId,
-      suggestedPostParameters,
-      replyParameters,
-      replyMarkup,
-      chatIds = TELEGRAM_BOT_CHAT_IDS,
-      // Backward compatibility
-      replyToMessageId,
-    } = options
+    const responseData = await sendPhotoAPI({
+      body: {
+        business_connection_id: businessConnectionId,
+        chat_id: chatId.trim(),
+        message_thread_id: messageThreadId,
+        direct_messages_topic_id: directMessagesTopicId,
+        photo: photoUrl,
+        caption,
+        parse_mode: parseMode,
+        caption_entities: captionEntities,
+        show_caption_above_media: showCaptionAboveMedia,
+        has_spoiler: hasSpoiler,
+        disable_notification: silent,
+        protect_content: protectContent,
+        allow_paid_broadcast: allowPaidBroadcast,
+        message_effect_id: messageEffectId,
+        suggested_post_parameters: suggestedPostParameters,
+        reply_parameters: replyParameters,
+        reply_markup: replyMarkup,
+        reply_to_message_id: replyParameters ? undefined : replyToMessageId,
+      },
+    })
 
-    const messageIds: number[] = []
-
-    for (const chatId of chatIds) {
-      try {
-        const responseData = await sendPhotoAPI({
-          body: {
-            business_connection_id: businessConnectionId,
-            chat_id: chatId.trim(),
-            message_thread_id: messageThreadId,
-            direct_messages_topic_id: directMessagesTopicId,
-            photo,
-            caption,
-            parse_mode: parseMode,
-            caption_entities: captionEntities,
-            show_caption_above_media: showCaptionAboveMedia,
-            has_spoiler: hasSpoiler,
-            disable_notification: silent,
-            protect_content: protectContent,
-            allow_paid_broadcast: allowPaidBroadcast,
-            message_effect_id: messageEffectId,
-            suggested_post_parameters: suggestedPostParameters,
-            reply_parameters: replyParameters,
-            reply_markup: replyMarkup,
-            // Backward compatibility: use replyToMessageId if replyParameters is not provided
-            reply_to_message_id: replyParameters ? undefined : replyToMessageId,
-          },
-        })
-
-        if (!responseData.ok) {
-          logger.error(`Telegram API error for chat ${chatId}:`, responseData.description)
-          continue
-        }
-
-        const messageId = responseData.result?.message_id || 0
-        messageIds.push(messageId)
-      } catch (error) {
-        logger.error(`Telegram API error for chat ${chatId}:`, error)
-        // Continue to next chat on error
+    if (!responseData.ok) {
+      logger.error(`Telegram API error for chat ${chatId}:`, responseData.description)
+      return {
+        success: false,
+        error: responseData.description ?? 'Telegram API rejected the photo',
       }
     }
 
     return {
-      success: messageIds.length > 0,
-      messageIds: messageIds.length > 0 ? messageIds : undefined,
-      error: messageIds.length === 0 ? 'Failed to send photo to all chat IDs' : undefined,
+      success: true,
+      messageId: responseData.result?.message_id,
     }
   } catch (error) {
-    logger.error('Failed to send Telegram photo:', error)
+    logger.error(`Telegram sendPhoto failed for chat ${chatId}:`, error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

@@ -6,7 +6,15 @@
  * this module means we can swap in a structured logger (pino, etc.) later
  * without touching every caller.
  */
-export const logger = {
+export interface Logger {
+  log: (...args: unknown[]) => void
+  info: (...args: unknown[]) => void
+  warn: (...args: unknown[]) => void
+  error: (...args: unknown[]) => void
+  debug: (...args: unknown[]) => void
+}
+
+export const logger: Logger = {
   log: (...args: unknown[]) => console.log(...args),
   info: (...args: unknown[]) => console.info(...args),
   warn: (...args: unknown[]) => console.warn(...args),
