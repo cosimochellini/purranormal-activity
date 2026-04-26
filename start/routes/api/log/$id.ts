@@ -6,7 +6,7 @@ import { LogStatus } from '@/data/enum/logStatus'
 import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
-import { regenerateContents } from '@/services/content'
+import { imagePipeline } from '@/services/imagePipeline'
 import type { LogIdDeleteResponse, LogIdGetResponse, LogIdPutResponse } from '@/types/api/log-id'
 import { deleteFromR2 } from '@/utils/cloudflare'
 import { ok } from '@/utils/http'
@@ -119,10 +119,7 @@ export const Route = createFileRoute('/api/log/$id')({
               .values(categories.map((category) => ({ logId: id, categoryId: category })))
           }
 
-          await regenerateContents({
-            triggerImages: updated.status === LogStatus.Created,
-            triggerLogId: updated.id,
-          })
+          await imagePipeline.run(updated.id)
 
           return ok<LogIdPutResponse>(
             { success: true, data: updated },
@@ -162,7 +159,6 @@ export const Route = createFileRoute('/api/log/$id')({
 
           await db.delete(log).where(eq(log.id, id))
           await deleteFromR2(id)
-          await regenerateContents({ triggerImages: false })
 
           return ok<LogIdDeleteResponse>({ success: true }, { invalidate: ['logs', `log:${id}`] })
         } catch (error) {

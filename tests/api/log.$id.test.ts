@@ -11,8 +11,10 @@ vi.mock('@/env/secret', () => ({
   SECRET: 'test-secret',
 }))
 
-vi.mock('@/services/content', () => ({
-  regenerateContents: vi.fn(async () => ({ imageTriggered: false })),
+vi.mock('@/services/imagePipeline', () => ({
+  imagePipeline: {
+    run: vi.fn(async (id: number) => ({ kind: 'success', logId: id })),
+  },
 }))
 
 vi.mock('@/utils/cloudflare', () => ({
@@ -21,7 +23,7 @@ vi.mock('@/utils/cloudflare', () => ({
 }))
 
 import { SECRET } from '@/env/secret'
-import { regenerateContents } from '@/services/content'
+import { imagePipeline } from '@/services/imagePipeline'
 import { Route } from '@/start/routes/api/log/$id'
 import { deleteFromR2 } from '@/utils/cloudflare'
 
@@ -81,7 +83,7 @@ describe('GET /api/log/$id', () => {
 describe('PUT /api/log/$id', () => {
   beforeEach(() => {
     fakeDb.__reset()
-    vi.mocked(regenerateContents).mockClear()
+    vi.mocked(imagePipeline.run).mockClear()
   })
 
   it('rejects a non-numeric id with a field error', async () => {
@@ -161,10 +163,7 @@ describe('PUT /api/log/$id', () => {
     expect(fakeDb.update).toHaveBeenCalled()
     expect(fakeDb.delete).toHaveBeenCalled()
     expect(fakeDb.insert).toHaveBeenCalled()
-    expect(regenerateContents).toHaveBeenCalledWith({
-      triggerImages: true,
-      triggerLogId: 7,
-    })
+    expect(imagePipeline.run).toHaveBeenCalledWith(7)
   })
 
   it('returns the catch-all error response when the DB update throws', async () => {
