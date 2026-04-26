@@ -34,8 +34,10 @@ const matchInfraMessage = (message: string, m: FriendlyMessages) => {
  * separate from "do I have user-visible copy for it?".
  *
  * Token list is stack-specific (libsql/drizzle/turso/sqlite + the bare
- * `db` token with word boundaries) so it does NOT false-match harmless
- * narrative text like "User database of paranormal events".
+ * `db` token with word boundaries, plus the phrase
+ * `database <error|connection|unavailable|...>`) so it does NOT
+ * false-match harmless narrative text like "User database of
+ * paranormal events".
  */
 const looksLikeDbError = (message: string) => {
   const msg = lower(message)
@@ -63,10 +65,18 @@ const looksLikeAiError = (message: string) => {
 
 /**
  * Map a structured AIResult error to user-facing copy.
+ *
  * `parse` / `validation` → "AI returned an unexpected response".
- * `model` → first try matching the underlying message against
- *           timeout/network/fetch patterns, then fall back to the generic
- *           "AI temporarily unavailable" copy.
+ *
+ * `model` → the AIResult contract folds upstream-dependency failures
+ * (notably `categories.all()` rejecting inside `logDetails`) under the
+ * same kind, so we inspect the underlying message before falling back
+ * to the AI-unavailable copy. Order:
+ *   1. DB tokens (libsql/drizzle/turso/sqlite/...) → DB_UNAVAILABLE
+ *      (or the generic fallback when the caller has no DB copy).
+ *   2. Infra tokens (timeout/network/fetch) → CONNECTION_ISSUE /
+ *      REQUEST_TIMEOUT.
+ *   3. Generic AI_UNAVAILABLE fallback.
  */
 export const friendlyAiErrorText = (
   kind: AIError,
@@ -74,6 +84,7 @@ export const friendlyAiErrorText = (
   m: FriendlyMessages,
 ): string => {
   if (kind === 'parse' || kind === 'validation') return m.AI_UNEXPECTED_RESPONSE
+  if (looksLikeDbError(message)) return m.DB_UNAVAILABLE ?? m.GENERIC_FALLBACK
   return matchInfraMessage(message, m) ?? m.AI_UNAVAILABLE
 }
 

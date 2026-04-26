@@ -264,6 +264,24 @@ describe('POST /api/log/submit', () => {
       expect(fakeDb.insert).not.toHaveBeenCalled()
     })
 
+    it('maps model errors with libsql/turso messages to the DB-unavailable copy (categories fetch failed inside logDetails)', async () => {
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: false,
+        error: 'model',
+        message: 'libsql: connection refused',
+      })
+
+      const res = await callPost({
+        description: 'a description that is long enough',
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+      expect(body.errors.general?.[0]).toMatch(/save the event/i)
+      expect(fakeDb.insert).not.toHaveBeenCalled()
+    })
+
     it('maps model errors with network messages to the "connection issue" copy', async () => {
       vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
         ok: false,

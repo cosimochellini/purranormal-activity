@@ -12,7 +12,7 @@ interface CategorySelectorProps {
 }
 
 export function CategorySelector({ selected, onChange, styles, iconsOnly }: CategorySelectorProps) {
-  const categories = use(getCategories)
+  const categories = use(getCategories())
 
   const toggleCategory = (categoryId: number) => {
     const newCategories = selected.includes(categoryId)
