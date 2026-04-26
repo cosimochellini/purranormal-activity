@@ -27,16 +27,6 @@ export interface ChatResult {
   error?: string
 }
 
-/**
- * @deprecated Used only by the transitional `services/notification.ts` shim;
- * removed once the route is cut over to the Notifier.
- */
-export interface SendEventNotificationResult {
-  success: boolean
-  messageId?: number
-  error?: string
-}
-
 export interface SendMessageOptions {
   /**
    * Message parsing mode: HTML, MarkdownV2, or Markdown. Defaults to 'HTML'
