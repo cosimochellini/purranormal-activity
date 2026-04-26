@@ -7,14 +7,6 @@ vi.mock('@/utils/fetch', () => ({
   fetcher: () => fetcherImpl,
 }))
 
-const { refetchSpy } = vi.hoisted(() => ({ refetchSpy: vi.fn() }))
-vi.mock('@/components/timer/refetch', () => ({
-  Refetch: ({ shouldRefetch }: { shouldRefetch: boolean }) => {
-    refetchSpy(shouldRefetch)
-    return <div data-testid="refetch" data-should={shouldRefetch ? 'true' : 'false'} />
-  },
-}))
-
 import { TriggerImageGeneration } from '@/components/image/TriggerImageGeneration'
 import { logger } from '@/utils/logger'
 
@@ -32,41 +24,40 @@ const log = {
 
 beforeEach(() => {
   fetcherImpl.mockReset()
-  refetchSpy.mockReset()
+  vi.mocked(logger.error).mockReset()
 })
 
 afterEach(() => {
   cleanup()
 })
 
-describe('TriggerImageGeneration — Bug #4 regression', () => {
-  it('does NOT set shouldRefetch=true when trigger API rejects', async () => {
+describe('TriggerImageGeneration', () => {
+  it('renders nothing — relies on fetcher invalidation, not <Refetch>', async () => {
+    fetcherImpl.mockResolvedValueOnce({ success: true })
+
+    const { container } = render(<TriggerImageGeneration log={log as never} />)
+
+    await waitFor(() => {
+      expect(fetcherImpl).toHaveBeenCalledWith({ params: { id: 7 } })
+    })
+
+    // No DOM nodes — the polling component is gone.
+    expect(container.firstChild).toBeNull()
+  })
+
+  it('skips the trigger entirely for non-Created logs', () => {
+    render(<TriggerImageGeneration log={{ ...log, status: 'ImageGenerated' } as never} />)
+    expect(fetcherImpl).not.toHaveBeenCalled()
+  })
+
+  it('logs the failure when the trigger rejects (Bug #4 regression)', async () => {
     fetcherImpl.mockRejectedValueOnce(new Error('trigger failed'))
 
     render(<TriggerImageGeneration log={log as never} />)
 
     await waitFor(() => {
-      expect(fetcherImpl).toHaveBeenCalled()
-    })
-
-    // Allow promise micro-tasks to flush
-    await waitFor(() => {
       expect(vi.mocked(logger.error)).toHaveBeenCalled()
     })
-
-    // Refetch should never have been told true
-    const allCalls = refetchSpy.mock.calls.map((c) => c[0])
-    expect(allCalls).not.toContain(true)
-  })
-
-  it('sets shouldRefetch=true on resolve', async () => {
-    fetcherImpl.mockResolvedValueOnce({ success: true })
-
-    render(<TriggerImageGeneration log={log as never} />)
-
-    await waitFor(() => {
-      const calls = refetchSpy.mock.calls.map((c) => c[0])
-      expect(calls).toContain(true)
-    })
+    expect(vi.mocked(logger.error).mock.calls[0][0]).toMatch(/trigger image generation/i)
   })
 })
