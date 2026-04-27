@@ -16,7 +16,7 @@ export const Route = createFileRoute('/api/trigger/$id')({
           return ok({ success: false, error: 'Invalid log id' })
         }
 
-        const outcome = await imagePipeline.run(logId)
+        const outcome = await imagePipeline.generateImageFor(logId)
 
         switch (outcome.kind) {
           case 'success':

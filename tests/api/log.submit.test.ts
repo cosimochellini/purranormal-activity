@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { makeFakeDb } from '../helpers'
 
 // Lets a single test override `z.treeifyError` to exercise Bug #12.
 const treeifyOverride: { fn: ((error: unknown) => unknown) | null } = { fn: null }
@@ -15,11 +14,6 @@ vi.mock('zod', async () => {
       },
     }),
   }
-})
-
-vi.mock('@/drizzle', async () => {
-  const { makeFakeDb: make } = await import('../helpers')
-  return { db: make() }
 })
 
 vi.mock('@/env/secret', () => ({
@@ -39,7 +33,7 @@ vi.mock('@/services/storyForge', () => ({
 
 vi.mock('@/services/imagePipeline', () => ({
   imagePipeline: {
-    run: vi.fn(async (id: number) => ({ kind: 'success', logId: id })),
+    submit: vi.fn(async () => ({ id: 1, outcome: { kind: 'success', logId: 1 } })),
   },
   logPipelineOutcome: vi.fn(),
 }))
@@ -47,10 +41,6 @@ vi.mock('@/services/imagePipeline', () => ({
 import { imagePipeline } from '@/services/imagePipeline'
 import { storyForge } from '@/services/storyForge'
 import { Route } from '@/start/routes/api/log/submit'
-
-const { db: fakeDb } = (await import('@/drizzle')) as unknown as {
-  db: ReturnType<typeof makeFakeDb>
-}
 
 const POST = Route.options.server?.handlers?.POST as (ctx: {
   request: Request
@@ -67,11 +57,18 @@ const callPost = (body: unknown) =>
 
 describe('POST /api/log/submit', () => {
   beforeEach(() => {
-    fakeDb.__reset()
     vi.mocked(storyForge.logDetails).mockReset()
     vi.mocked(storyForge.categories).mockReset()
     vi.mocked(storyForge.categories).mockResolvedValue([])
-    vi.mocked(imagePipeline.run).mockClear()
+    vi.mocked(imagePipeline.submit).mockReset()
+    vi.mocked(imagePipeline.submit).mockImplementation(
+      async ({ draft }) =>
+        ({
+          id: 1,
+          outcome: { kind: 'success', logId: 1 },
+          draft,
+        }) as never,
+    )
   })
 
   describe('Bug #12 — defensive treeifyError handling', () => {
@@ -84,7 +81,7 @@ describe('POST /api/log/submit', () => {
       expect(body.errors.general).toBeUndefined()
       expect(typeof body.errors).toBe('object')
       expect(storyForge.logDetails).not.toHaveBeenCalled()
-      expect(fakeDb.insert).not.toHaveBeenCalled()
+      expect(imagePipeline.submit).not.toHaveBeenCalled()
     })
 
     it('does not crash when treeifyError returns a tree without a properties key', async () => {
@@ -114,7 +111,7 @@ describe('POST /api/log/submit', () => {
   })
 
   describe('Happy path', () => {
-    it('inserts the AI-enriched log and triggers regeneration', async () => {
+    it('hands a filtered categoryIds list to imagePipeline.submit and emits X-Invalidate on success', async () => {
       vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
         ok: true,
         value: {
@@ -132,7 +129,11 @@ describe('POST /api/log/submit', () => {
         { id: 1, name: 'Levitation' },
         { id: 2, name: 'Other' },
       ])
-      fakeDb.__queue('returning', [{ id: 123 }])
+
+      vi.mocked(imagePipeline.submit).mockResolvedValueOnce({
+        id: 123,
+        outcome: { kind: 'success', logId: 123 },
+      })
 
       const res = await callPost({
         description: 'A real description that is long enough.',
@@ -148,11 +149,18 @@ describe('POST /api/log/submit', () => {
         missingCategories: [],
       })
 
-      expect(fakeDb.values).toHaveBeenLastCalledWith([{ logId: 123, categoryId: 1 }])
-      expect(imagePipeline.run).toHaveBeenCalledWith(123)
+      expect(imagePipeline.submit).toHaveBeenCalledWith({
+        draft: {
+          title: 'Spectral Cat',
+          description: 'A description.',
+          imageDescription: 'A floating ghost cat.',
+        },
+        // Only the categoryId that survives the `allCategoryIds` filter.
+        categoryIds: [1],
+      })
     })
 
-    it('skips the category-junction insert when AI returns zero usable categories', async () => {
+    it('passes an empty categoryIds list when AI returns zero usable categories', async () => {
       vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
         ok: true,
         value: {
@@ -164,7 +172,10 @@ describe('POST /api/log/submit', () => {
       })
 
       vi.mocked(storyForge.categories).mockResolvedValueOnce([{ id: 1, name: 'Real' }])
-      fakeDb.__queue('returning', [{ id: 5 }])
+      vi.mocked(imagePipeline.submit).mockResolvedValueOnce({
+        id: 5,
+        outcome: { kind: 'success', logId: 5 },
+      })
 
       const res = await callPost({
         description: 'd'.repeat(20),
@@ -176,12 +187,15 @@ describe('POST /api/log/submit', () => {
       expect(body.success).toBe(true)
       expect(body.id).toBe(5)
       expect(res.headers.get('X-Invalidate')).toBe('logs,log:5')
-      expect(fakeDb.insert).toHaveBeenCalledOnce()
+      expect(imagePipeline.submit).toHaveBeenCalledWith({
+        draft: { title: 't', description: 'd', imageDescription: 'i' },
+        categoryIds: [],
+      })
     })
   })
 
   describe('AIResult error envelope (bug #7 fix)', () => {
-    it('returns success:false with general error and DOES NOT insert when storyForge.logDetails returns ok:false (model error)', async () => {
+    it('returns success:false with general error and DOES NOT call submit when storyForge.logDetails returns ok:false (model error)', async () => {
       vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
         ok: false,
         error: 'model',
@@ -198,11 +212,10 @@ describe('POST /api/log/submit', () => {
       expect(body.success).toBe(false)
       expect(body.errors.general?.[0]).toMatch(/AI assistant/i)
       expect(res.headers.get('X-Invalidate')).toBeNull()
-      // The bug fix: NO log row is inserted when AI fails.
-      expect(fakeDb.insert).not.toHaveBeenCalled()
+      expect(imagePipeline.submit).not.toHaveBeenCalled()
     })
 
-    it('returns success:false with general error and DOES NOT insert when storyForge.logDetails returns ok:false (parse error)', async () => {
+    it('returns success:false and does not submit when storyForge.logDetails returns ok:false (parse error)', async () => {
       vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
         ok: false,
         error: 'parse',
@@ -217,10 +230,9 @@ describe('POST /api/log/submit', () => {
 
       const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
       expect(body.success).toBe(false)
-      // Parse errors map to "unexpected response" copy, not "AI unavailable"
       expect(body.errors.general?.[0]).toMatch(/unexpected response/i)
       expect(res.headers.get('X-Invalidate')).toBeNull()
-      expect(fakeDb.insert).not.toHaveBeenCalled()
+      expect(imagePipeline.submit).not.toHaveBeenCalled()
     })
 
     it('maps validation errors to the "unexpected response" copy', async () => {
@@ -239,10 +251,10 @@ describe('POST /api/log/submit', () => {
       const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
       expect(body.success).toBe(false)
       expect(body.errors.general?.[0]).toMatch(/unexpected response/i)
-      expect(fakeDb.insert).not.toHaveBeenCalled()
+      expect(imagePipeline.submit).not.toHaveBeenCalled()
     })
 
-    it('returns DB-unavailable copy and DOES NOT insert when storyForge.categories() throws after a successful logDetails', async () => {
+    it('returns DB-unavailable copy and DOES NOT call submit when storyForge.categories() throws after a successful logDetails', async () => {
       vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
         ok: true,
         value: {
@@ -264,10 +276,10 @@ describe('POST /api/log/submit', () => {
       expect(body.success).toBe(false)
       expect(body.errors.general?.[0]).toMatch(/save the event|temporarily unavailable/i)
       expect(res.headers.get('X-Invalidate')).toBeNull()
-      expect(fakeDb.insert).not.toHaveBeenCalled()
+      expect(imagePipeline.submit).not.toHaveBeenCalled()
     })
 
-    it('maps model errors with libsql/turso messages to the DB-unavailable copy (categories fetch failed inside logDetails)', async () => {
+    it('maps model errors with libsql/turso messages to the DB-unavailable copy', async () => {
       vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
         ok: false,
         error: 'model',
@@ -282,7 +294,7 @@ describe('POST /api/log/submit', () => {
 
       const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
       expect(body.errors.general?.[0]).toMatch(/save the event/i)
-      expect(fakeDb.insert).not.toHaveBeenCalled()
+      expect(imagePipeline.submit).not.toHaveBeenCalled()
     })
 
     it('maps model errors with network messages to the "connection issue" copy', async () => {
@@ -300,10 +312,10 @@ describe('POST /api/log/submit', () => {
 
       const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
       expect(body.errors.general?.[0]).toMatch(/connection issue/i)
-      expect(fakeDb.insert).not.toHaveBeenCalled()
+      expect(imagePipeline.submit).not.toHaveBeenCalled()
     })
 
-    it('still returns success when imagePipeline.run resolves with a non-success outcome (does not poison the response)', async () => {
+    it('still returns success when imagePipeline.submit resolves with a non-success outcome (does not poison the response)', async () => {
       vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
         ok: true,
         value: {
@@ -314,11 +326,9 @@ describe('POST /api/log/submit', () => {
         },
       })
       vi.mocked(storyForge.categories).mockResolvedValueOnce([])
-      fakeDb.__queue('returning', [{ id: 9 }])
-      vi.mocked(imagePipeline.run).mockResolvedValueOnce({
-        kind: 'failed-recorded',
-        logId: 9,
-        cause: new Error('downstream'),
+      vi.mocked(imagePipeline.submit).mockResolvedValueOnce({
+        id: 9,
+        outcome: { kind: 'failed-recorded', logId: 9, cause: new Error('downstream') },
       })
 
       const res = await callPost({
@@ -327,8 +337,6 @@ describe('POST /api/log/submit', () => {
         secret: 'test-secret',
       })
 
-      // The pipeline's failure is observability-only here — the log row
-      // exists, so the route MUST still confirm success to the user.
       const body = (await res.json()) as { success: true; id: number }
       expect(body.success).toBe(true)
       expect(body.id).toBe(9)
@@ -351,9 +359,6 @@ describe('POST /api/log/submit', () => {
 
     it('attributes a thrown "fetch failed" (typical OpenAI undici surface) to the AI assistant, not the connection', async () => {
       vi.mocked(storyForge.logDetails).mockRejectedValueOnce(
-        // The catch path receives an Error whose message is just "fetch failed"
-        // when the OpenAI SDK fails to reach the upstream — without the AI
-        // matcher running first this would be misrouted to "Connection issue".
         Object.assign(new Error('fetch failed'), { name: 'OpenAIError' }),
       )
 
@@ -364,10 +369,8 @@ describe('POST /api/log/submit', () => {
       })
 
       const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
-      // OpenAIError name in the matcher input → "openai" tokens fire →
-      // the user sees the AI-assistant copy, not "Connection issue".
       expect(body.errors.general?.[0]).toMatch(/AI assistant/i)
-      expect(fakeDb.insert).not.toHaveBeenCalled()
+      expect(imagePipeline.submit).not.toHaveBeenCalled()
     })
   })
 })

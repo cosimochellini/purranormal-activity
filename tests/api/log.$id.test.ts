@@ -13,7 +13,7 @@ vi.mock('@/env/secret', () => ({
 
 vi.mock('@/services/imagePipeline', () => ({
   imagePipeline: {
-    run: vi.fn(async (id: number) => ({ kind: 'success', logId: id })),
+    generateImageFor: vi.fn(async (id: number) => ({ kind: 'success', logId: id })),
   },
   logPipelineOutcome: vi.fn(),
 }))
@@ -84,7 +84,7 @@ describe('GET /api/log/$id', () => {
 describe('PUT /api/log/$id', () => {
   beforeEach(() => {
     fakeDb.__reset()
-    vi.mocked(imagePipeline.run).mockClear()
+    vi.mocked(imagePipeline.generateImageFor).mockClear()
   })
 
   it('rejects a non-numeric id with a field error', async () => {
@@ -164,7 +164,7 @@ describe('PUT /api/log/$id', () => {
     expect(fakeDb.update).toHaveBeenCalled()
     expect(fakeDb.delete).toHaveBeenCalled()
     expect(fakeDb.insert).toHaveBeenCalled()
-    expect(imagePipeline.run).toHaveBeenCalledWith(7)
+    expect(imagePipeline.generateImageFor).toHaveBeenCalledWith(7)
   })
 
   it('returns the catch-all error response when the DB update throws', async () => {

@@ -1,9 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants'
-import { LogStatus } from '@/data/enum/logStatus'
-import { log, logCategory } from '@/db/schema'
-import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
 import { imagePipeline, logPipelineOutcome } from '@/services/imagePipeline'
 import { storyForge } from '@/services/storyForge'
@@ -106,32 +103,19 @@ export const Route = createFileRoute('/api/log/submit')({
             })
           }
 
-          const [newLog] = await db
-            .insert(log)
-            .values({
-              title,
-              description,
-              imageDescription,
-              createdAt: Date.now(),
-              updatedAt: Date.now(),
-              status: LogStatus.Created,
-            })
-            .returning({ id: log.id })
+          const categoryIds = categories
+            .map(({ id }) => id)
+            .filter((id) => allCategoryIds.includes(id))
 
-          const categoriesToInsert = categories
-            .map(({ id }) => ({ logId: newLog.id, categoryId: id }))
-            .filter(({ categoryId }) => allCategoryIds.includes(categoryId))
-
-          if (categoriesToInsert.length > 0) {
-            await db.insert(logCategory).values(categoriesToInsert)
-          }
-
-          const outcome = await imagePipeline.run(newLog.id)
-          logPipelineOutcome(outcome, 'POST /api/log/submit')
+          const submitResult = await imagePipeline.submit({
+            draft: { title, description, imageDescription },
+            categoryIds,
+          })
+          logPipelineOutcome(submitResult.outcome, 'POST /api/log/submit')
 
           return ok<LogSubmitResponse>(
-            { success: true, id: newLog.id, missingCategories: [] },
-            { invalidate: ['logs', `log:${newLog.id}`] },
+            { success: true, id: submitResult.id, missingCategories: [] },
+            { invalidate: ['logs', `log:${submitResult.id}`] },
           )
         } catch (error) {
           logger.error('Failed to submit log:', error)

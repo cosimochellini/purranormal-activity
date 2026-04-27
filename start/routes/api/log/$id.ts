@@ -119,7 +119,7 @@ export const Route = createFileRoute('/api/log/$id')({
               .values(categories.map((category) => ({ logId: id, categoryId: category })))
           }
 
-          const outcome = await imagePipeline.run(updated.id)
+          const outcome = await imagePipeline.generateImageFor(updated.id)
           logPipelineOutcome(outcome, 'PUT /api/log/$id')
 
           return ok<LogIdPutResponse>(
