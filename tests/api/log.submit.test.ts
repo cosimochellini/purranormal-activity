@@ -26,8 +26,15 @@ vi.mock('@/env/secret', () => ({
   SECRET: 'test-secret',
 }))
 
-vi.mock('@/services/ai', () => ({
-  generateLogDetails: vi.fn(),
+vi.mock('@/services/storyForge', () => ({
+  storyForge: {
+    questions: vi.fn(),
+    logDetails: vi.fn(),
+    imagePrompt: vi.fn(),
+    telegramMessage: vi.fn(),
+    categories: vi.fn(async () => []),
+    invalidateCategories: vi.fn(),
+  },
 }))
 
 vi.mock('@/services/imagePipeline', () => ({
@@ -37,8 +44,8 @@ vi.mock('@/services/imagePipeline', () => ({
   logPipelineOutcome: vi.fn(),
 }))
 
-import { generateLogDetails } from '@/services/ai'
 import { imagePipeline } from '@/services/imagePipeline'
+import { storyForge } from '@/services/storyForge'
 import { Route } from '@/start/routes/api/log/submit'
 
 const { db: fakeDb } = (await import('@/drizzle')) as unknown as {
@@ -61,32 +68,26 @@ const callPost = (body: unknown) =>
 describe('POST /api/log/submit', () => {
   beforeEach(() => {
     fakeDb.__reset()
-    vi.mocked(generateLogDetails).mockReset()
+    vi.mocked(storyForge.logDetails).mockReset()
+    vi.mocked(storyForge.categories).mockReset()
+    vi.mocked(storyForge.categories).mockResolvedValue([])
     vi.mocked(imagePipeline.run).mockClear()
   })
 
   describe('Bug #12 — defensive treeifyError handling', () => {
     it('returns 200 with success:false when validation fails (does not crash)', async () => {
-      // Empty body: every field is missing → guaranteed validation failure.
       const res = await callPost({})
 
       expect(res.status).toBe(200)
       const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
       expect(body.success).toBe(false)
-      // It must NOT have fallen into the catch block (which would set
-      // `general` instead of per-field errors).
       expect(body.errors.general).toBeUndefined()
       expect(typeof body.errors).toBe('object')
-      // Should not have called the AI / DB at all.
-      expect(generateLogDetails).not.toHaveBeenCalled()
+      expect(storyForge.logDetails).not.toHaveBeenCalled()
       expect(fakeDb.insert).not.toHaveBeenCalled()
     })
 
     it('does not crash when treeifyError returns a tree without a properties key', async () => {
-      // Force `z.treeifyError` (proxied at the top of this file) to return a
-      // tree whose `.properties` and `.errors` are both null. This is the
-      // regression case for Bug #12 — previously the handler accessed both
-      // directly without guarding for missing tree shape.
       treeifyOverride.fn = () => ({ errors: null, properties: null })
 
       try {
@@ -94,8 +95,6 @@ describe('POST /api/log/submit', () => {
         expect(res.status).toBe(200)
         const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
         expect(body.success).toBe(false)
-        // No fields → empty errors object, but it MUST be an object (not a
-        // 500-style crash, and not the catch-all `general` message).
         expect(body.errors).toEqual({})
       } finally {
         treeifyOverride.fn = null
@@ -116,20 +115,23 @@ describe('POST /api/log/submit', () => {
 
   describe('Happy path', () => {
     it('inserts the AI-enriched log and triggers regeneration', async () => {
-      vi.mocked(generateLogDetails).mockResolvedValueOnce({
-        title: 'Spectral Cat',
-        description: 'A description.',
-        imageDescription: 'A floating ghost cat.',
-        // categoryId 99 isn't in the DB → should be filtered out.
-        categories: [
-          { id: 1, name: 'Levitation' },
-          { id: 99, name: 'Bogus' },
-        ],
-      } as never)
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: true,
+        value: {
+          title: 'Spectral Cat',
+          description: 'A description.',
+          imageDescription: 'A floating ghost cat.',
+          categories: [
+            { id: 1, name: 'Levitation' },
+            { id: 99, name: 'Bogus' },
+          ],
+        },
+      })
 
-      // 1) `db.select({id: category.id}).from(category)` resolves to known ids.
-      vi.mocked(fakeDb.from).mockReturnValueOnce([{ id: 1 }, { id: 2 }] as never)
-      // 2) `db.insert(log).values(...).returning(...)` returns the new row id.
+      vi.mocked(storyForge.categories).mockResolvedValueOnce([
+        { id: 1, name: 'Levitation' },
+        { id: 2, name: 'Other' },
+      ])
       fakeDb.__queue('returning', [{ id: 123 }])
 
       const res = await callPost({
@@ -146,20 +148,22 @@ describe('POST /api/log/submit', () => {
         missingCategories: [],
       })
 
-      // categoryId 1 maps to allCategories=[1,2] → kept; 99 → filtered out.
       expect(fakeDb.values).toHaveBeenLastCalledWith([{ logId: 123, categoryId: 1 }])
       expect(imagePipeline.run).toHaveBeenCalledWith(123)
     })
 
     it('skips the category-junction insert when AI returns zero usable categories', async () => {
-      vi.mocked(generateLogDetails).mockResolvedValueOnce({
-        title: 't',
-        description: 'd',
-        imageDescription: 'i',
-        categories: [{ id: 99, name: 'Bogus' }],
-      } as never)
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: true,
+        value: {
+          title: 't',
+          description: 'd',
+          imageDescription: 'i',
+          categories: [{ id: 99, name: 'Bogus' }],
+        },
+      })
 
-      vi.mocked(fakeDb.from).mockReturnValueOnce([{ id: 1 }] as never)
+      vi.mocked(storyForge.categories).mockResolvedValueOnce([{ id: 1, name: 'Real' }])
       fakeDb.__queue('returning', [{ id: 5 }])
 
       const res = await callPost({
@@ -172,13 +176,166 @@ describe('POST /api/log/submit', () => {
       expect(body.success).toBe(true)
       expect(body.id).toBe(5)
       expect(res.headers.get('X-Invalidate')).toBe('logs,log:5')
-      // Only the log insert should have run; the category-junction insert is
-      // skipped when nothing survives the filter.
       expect(fakeDb.insert).toHaveBeenCalledOnce()
     })
+  })
 
-    it('maps AI errors to a friendly general message', async () => {
-      vi.mocked(generateLogDetails).mockRejectedValueOnce(new Error('OpenAI exploded'))
+  describe('AIResult error envelope (bug #7 fix)', () => {
+    it('returns success:false with general error and DOES NOT insert when storyForge.logDetails returns ok:false (model error)', async () => {
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: false,
+        error: 'model',
+        message: 'OpenAI exploded',
+      })
+
+      const res = await callPost({
+        description: 'a description that is long enough',
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+      expect(body.success).toBe(false)
+      expect(body.errors.general?.[0]).toMatch(/AI assistant/i)
+      expect(res.headers.get('X-Invalidate')).toBeNull()
+      // The bug fix: NO log row is inserted when AI fails.
+      expect(fakeDb.insert).not.toHaveBeenCalled()
+    })
+
+    it('returns success:false with general error and DOES NOT insert when storyForge.logDetails returns ok:false (parse error)', async () => {
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: false,
+        error: 'parse',
+        message: 'Unexpected token in JSON at position 0',
+      })
+
+      const res = await callPost({
+        description: 'a description that is long enough',
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+      expect(body.success).toBe(false)
+      // Parse errors map to "unexpected response" copy, not "AI unavailable"
+      expect(body.errors.general?.[0]).toMatch(/unexpected response/i)
+      expect(res.headers.get('X-Invalidate')).toBeNull()
+      expect(fakeDb.insert).not.toHaveBeenCalled()
+    })
+
+    it('maps validation errors to the "unexpected response" copy', async () => {
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: false,
+        error: 'validation',
+        message: 'Expected LogDetails shape',
+      })
+
+      const res = await callPost({
+        description: 'a description that is long enough',
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+      expect(body.success).toBe(false)
+      expect(body.errors.general?.[0]).toMatch(/unexpected response/i)
+      expect(fakeDb.insert).not.toHaveBeenCalled()
+    })
+
+    it('returns DB-unavailable copy and DOES NOT insert when storyForge.categories() throws after a successful logDetails', async () => {
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: true,
+        value: {
+          title: 't',
+          description: 'd',
+          imageDescription: 'i',
+          categories: [{ id: 1, name: 'magic' }],
+        },
+      })
+      vi.mocked(storyForge.categories).mockRejectedValueOnce(new Error('libsql connection lost'))
+
+      const res = await callPost({
+        description: 'a description that is long enough',
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+      expect(body.success).toBe(false)
+      expect(body.errors.general?.[0]).toMatch(/save the event|temporarily unavailable/i)
+      expect(res.headers.get('X-Invalidate')).toBeNull()
+      expect(fakeDb.insert).not.toHaveBeenCalled()
+    })
+
+    it('maps model errors with libsql/turso messages to the DB-unavailable copy (categories fetch failed inside logDetails)', async () => {
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: false,
+        error: 'model',
+        message: 'libsql: connection refused',
+      })
+
+      const res = await callPost({
+        description: 'a description that is long enough',
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+      expect(body.errors.general?.[0]).toMatch(/save the event/i)
+      expect(fakeDb.insert).not.toHaveBeenCalled()
+    })
+
+    it('maps model errors with network messages to the "connection issue" copy', async () => {
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: false,
+        error: 'model',
+        message: 'fetch failed: ECONNREFUSED',
+      })
+
+      const res = await callPost({
+        description: 'a description that is long enough',
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+      expect(body.errors.general?.[0]).toMatch(/connection issue/i)
+      expect(fakeDb.insert).not.toHaveBeenCalled()
+    })
+
+    it('still returns success when imagePipeline.run resolves with a non-success outcome (does not poison the response)', async () => {
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: true,
+        value: {
+          title: 't',
+          description: 'd',
+          imageDescription: 'i',
+          categories: [],
+        },
+      })
+      vi.mocked(storyForge.categories).mockResolvedValueOnce([])
+      fakeDb.__queue('returning', [{ id: 9 }])
+      vi.mocked(imagePipeline.run).mockResolvedValueOnce({
+        kind: 'failed-recorded',
+        logId: 9,
+        cause: new Error('downstream'),
+      })
+
+      const res = await callPost({
+        description: 'd'.repeat(20),
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      // The pipeline's failure is observability-only here — the log row
+      // exists, so the route MUST still confirm success to the user.
+      const body = (await res.json()) as { success: true; id: number }
+      expect(body.success).toBe(true)
+      expect(body.id).toBe(9)
+    })
+
+    it('still maps unexpected throws (non-AIResult) to a friendly general message', async () => {
+      vi.mocked(storyForge.logDetails).mockRejectedValueOnce(new Error('OpenAI exploded'))
 
       const res = await callPost({
         description: 'a description',
@@ -189,8 +346,28 @@ describe('POST /api/log/submit', () => {
       const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
       expect(body.success).toBe(false)
       expect(body.errors.general?.[0]).toMatch(/AI assistant/i)
-      // Failure path must NOT carry an invalidation tag.
       expect(res.headers.get('X-Invalidate')).toBeNull()
+    })
+
+    it('attributes a thrown "fetch failed" (typical OpenAI undici surface) to the AI assistant, not the connection', async () => {
+      vi.mocked(storyForge.logDetails).mockRejectedValueOnce(
+        // The catch path receives an Error whose message is just "fetch failed"
+        // when the OpenAI SDK fails to reach the upstream — without the AI
+        // matcher running first this would be misrouted to "Connection issue".
+        Object.assign(new Error('fetch failed'), { name: 'OpenAIError' }),
+      )
+
+      const res = await callPost({
+        description: 'a description',
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+      // OpenAIError name in the matcher input → "openai" tokens fire →
+      // the user sees the AI-assistant copy, not "Connection issue".
+      expect(body.errors.general?.[0]).toMatch(/AI assistant/i)
+      expect(fakeDb.insert).not.toHaveBeenCalled()
     })
   })
 })

@@ -7,22 +7,33 @@ vi.mock('@/drizzle', async () => {
   return { db: make() }
 })
 
-vi.mock('@/services/ai', () => ({
-  generateImagePrompt: vi.fn(),
+vi.mock('@/services/imageGen', () => ({
   generateImageBase64: vi.fn(),
+}))
+
+vi.mock('@/services/storyForge', () => ({
+  storyForge: {
+    questions: vi.fn(),
+    logDetails: vi.fn(),
+    imagePrompt: vi.fn(),
+    telegramMessage: vi.fn(),
+    categories: vi.fn(async () => []),
+    invalidateCategories: vi.fn(),
+  },
 }))
 
 vi.mock('@/utils/cloudflare', () => ({
   uploadToR2: vi.fn(async () => undefined),
 }))
 
-import { generateImageBase64, generateImagePrompt } from '@/services/ai'
+import { generateImageBase64 } from '@/services/imageGen'
 import {
   createDefaultImagePipeline,
   createImagePipeline,
   logPipelineOutcome,
   type PipelineDeps,
 } from '@/services/imagePipeline'
+import { storyForge } from '@/services/storyForge'
 import { uploadToR2 } from '@/utils/cloudflare'
 import { logger } from '@/utils/logger'
 
@@ -132,6 +143,48 @@ describe('createImagePipeline.run', () => {
     })
   })
 
+  it('returns failed-recorded when loadStatus throws and recordError succeeds', async () => {
+    const cause = new Error('libsql: connection refused')
+    const deps = makeDeps({
+      loadStatus: vi.fn(async () => {
+        throw cause
+      }),
+    })
+    const pipeline = createImagePipeline(deps)
+
+    const outcome = await pipeline.run(7)
+
+    expect(outcome).toEqual({ kind: 'failed-recorded', logId: 7, cause })
+    // generate/markGenerated MUST NOT run when we never resolved status.
+    expect(deps.generate).not.toHaveBeenCalled()
+    expect(deps.markGenerated).not.toHaveBeenCalled()
+    expect(deps.recordError).toHaveBeenCalledWith(7, cause)
+  })
+
+  it('returns failed-write-also-failed when loadStatus throws AND recordError throws', async () => {
+    const cause = new Error('libsql: connection refused')
+    const writeError = new Error('also broken')
+    const deps = makeDeps({
+      loadStatus: vi.fn(async () => {
+        throw cause
+      }),
+      recordError: vi.fn(async () => {
+        throw writeError
+      }),
+    })
+    const pipeline = createImagePipeline(deps)
+
+    const outcome = await pipeline.run(7)
+
+    expect(outcome).toEqual({
+      kind: 'failed-write-also-failed',
+      logId: 7,
+      cause,
+      writeError,
+    })
+    expect(deps.generate).not.toHaveBeenCalled()
+  })
+
   it('returns failed-write-also-failed when markGenerated throws AND recordError throws', async () => {
     const cause = new Error('mark write failed')
     const writeError = new Error('error write also failed')
@@ -176,6 +229,29 @@ describe('createDefaultImagePipeline default recordError', () => {
     expect(fakeDb.set).toHaveBeenCalledWith({
       status: LogStatus.Error,
       error: 'AI exploded',
+    })
+  })
+
+  it('unwraps `Error.cause` when the wrapper Error has a meaningful inner cause', async () => {
+    // `services/imageGen.ts` re-throws `new Error('Image generation failed', { cause: error })`.
+    // The DB should store the real underlying reason ("rate limit"),
+    // not the bland wrapper ("Image generation failed").
+    const inner = new Error('rate limit')
+    const wrapper = new Error('Image generation failed', { cause: inner })
+    const pipeline = createDefaultImagePipeline({
+      loadStatus: async () => ({ status: LogStatus.Created }),
+      generate: async () => {
+        throw wrapper
+      },
+      markGenerated: async () => undefined,
+    })
+
+    const outcome = await pipeline.run(7)
+
+    expect(outcome.kind).toBe('failed-recorded')
+    expect(fakeDb.set).toHaveBeenCalledWith({
+      status: LogStatus.Error,
+      error: 'rate limit',
     })
   })
 
@@ -227,7 +303,7 @@ describe('createDefaultImagePipeline default recordError', () => {
 describe('createDefaultImagePipeline default generate', () => {
   beforeEach(() => {
     fakeDb.__reset()
-    vi.mocked(generateImagePrompt).mockReset()
+    vi.mocked(storyForge.imagePrompt).mockReset()
     vi.mocked(generateImageBase64).mockReset()
     vi.mocked(uploadToR2).mockReset()
     vi.mocked(uploadToR2).mockImplementation(async () => undefined as never)
@@ -266,7 +342,7 @@ describe('createDefaultImagePipeline default generate', () => {
     const outcome = await pipeline.run(7)
 
     expect(outcome).toEqual({ kind: 'success', logId: 7 })
-    expect(generateImagePrompt).not.toHaveBeenCalled()
+    expect(storyForge.imagePrompt).not.toHaveBeenCalled()
     expect(generateImageBase64).toHaveBeenCalledWith('cached prompt')
     expect(uploadToR2).toHaveBeenCalledTimes(1)
     const [bufferArg, idArg] = vi.mocked(uploadToR2).mock.calls[0]
@@ -275,11 +351,11 @@ describe('createDefaultImagePipeline default generate', () => {
     expect((bufferArg as Buffer).toString('utf-8')).toBe('hello')
   })
 
-  it('falls back to generateImagePrompt when imageDescription is null', async () => {
+  it('falls back to storyForge.imagePrompt when imageDescription is null', async () => {
     vi.mocked(fakeDb.where).mockReturnValueOnce([
       { id: 7, description: 'a description', imageDescription: null, status: LogStatus.Created },
     ] as never)
-    vi.mocked(generateImagePrompt).mockResolvedValueOnce('fresh prompt')
+    vi.mocked(storyForge.imagePrompt).mockResolvedValueOnce({ ok: true, value: 'fresh prompt' })
     vi.mocked(generateImageBase64).mockResolvedValueOnce('data:image/png;base64,aGVsbG8=')
 
     const pipeline = createDefaultImagePipeline({
@@ -290,8 +366,34 @@ describe('createDefaultImagePipeline default generate', () => {
     const outcome = await pipeline.run(7)
 
     expect(outcome).toEqual({ kind: 'success', logId: 7 })
-    expect(generateImagePrompt).toHaveBeenCalledWith('a description')
+    expect(storyForge.imagePrompt).toHaveBeenCalledWith('a description')
     expect(generateImageBase64).toHaveBeenCalledWith('fresh prompt')
+  })
+
+  it('records the failure (failed-recorded) when storyForge.imagePrompt returns ok:false', async () => {
+    vi.mocked(fakeDb.where).mockReturnValueOnce([
+      { id: 7, description: 'a description', imageDescription: null, status: LogStatus.Created },
+    ] as never)
+    vi.mocked(storyForge.imagePrompt).mockResolvedValueOnce({
+      ok: false,
+      error: 'model',
+      message: 'rate limit',
+    })
+
+    const pipeline = createDefaultImagePipeline({
+      loadStatus: async () => ({ status: LogStatus.Created }),
+      markGenerated: async () => undefined,
+      recordError: async () => undefined,
+    })
+
+    const outcome = await pipeline.run(7)
+
+    expect(outcome.kind).toBe('failed-recorded')
+    if (outcome.kind === 'failed-recorded') {
+      expect((outcome.cause as Error).message).toBe('rate limit')
+    }
+    expect(generateImageBase64).not.toHaveBeenCalled()
+    expect(uploadToR2).not.toHaveBeenCalled()
   })
 })
 

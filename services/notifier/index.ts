@@ -1,6 +1,6 @@
 import type { LogWithCategories } from '@/db/schema'
 import { TELEGRAM_BOT_CHAT_IDS } from '@/env/telegram'
-import { generateTelegramMessage } from '@/services/ai'
+import { storyForge } from '@/services/storyForge'
 import {
   sendMessage as telegramSendMessage,
   sendPhoto as telegramSendPhoto,
@@ -8,6 +8,21 @@ import {
 import type { ChatResult } from '@/services/telegram/types'
 import { logger as defaultLogger, type Logger } from '@/utils/logger'
 import { publicImage } from '@/utils/public-image'
+
+const composeViaStoryForge = async (event: LogWithCategories): Promise<string> => {
+  const r = await storyForge.telegramMessage(event)
+  if (!r.ok) {
+    // Preserve the AIError discriminator on `cause` so a future retry
+    // policy in the notifier (or its caller) can distinguish a model
+    // outage (worth retrying) from a parse / validation failure (retry
+    // will not help) without re-running the AI generation just to
+    // re-derive the kind.
+    throw new Error(r.message || 'Telegram message generation failed', {
+      cause: { kind: r.error },
+    })
+  }
+  return r.value
+}
 
 export interface NotifyOutcome {
   /** True iff every configured chat received both the text and the photo. */
@@ -55,7 +70,7 @@ export const createNotifier = (overrides: Partial<NotifierDeps> = {}): Notifier 
     chatIds: overrides.chatIds ?? TELEGRAM_BOT_CHAT_IDS,
     sendMessage: overrides.sendMessage ?? ((chatId, body) => telegramSendMessage(chatId, body)),
     sendPhoto: overrides.sendPhoto ?? ((chatId, url) => telegramSendPhoto(chatId, url)),
-    composeMessage: overrides.composeMessage ?? generateTelegramMessage,
+    composeMessage: overrides.composeMessage ?? composeViaStoryForge,
     resolveImageUrl: overrides.resolveImageUrl ?? publicImage,
     logger: overrides.logger ?? defaultLogger,
   }

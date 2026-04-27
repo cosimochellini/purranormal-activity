@@ -1,7 +1,7 @@
 // cspell:disable
-import { ARRAY_LIMITS, CHARACTER_LIMITS } from '../constants'
-import type { ImageStyle } from '../data/enum/imageStyle'
-import type { LogWithCategories } from '../db/schema'
+import { ARRAY_LIMITS, CHARACTER_LIMITS } from '@/constants'
+import type { ImageStyle } from '@/data/enum/imageStyle'
+import type { LogWithCategories } from '@/db/schema'
 
 interface AnswerOutput {
   question: string

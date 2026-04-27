@@ -6,8 +6,15 @@ import { logger } from '@/utils/logger'
 
 // Boundary mocks so the default singleton's lazy deps never trigger
 // real module loads (which would pull drizzle/openai env reads).
-vi.mock('@/services/ai', () => ({
-  generateTelegramMessage: vi.fn(async () => 'default text'),
+vi.mock('@/services/storyForge', () => ({
+  storyForge: {
+    questions: vi.fn(),
+    logDetails: vi.fn(),
+    imagePrompt: vi.fn(),
+    telegramMessage: vi.fn(async () => ({ ok: true, value: 'default text' })),
+    categories: vi.fn(async () => []),
+    invalidateCategories: vi.fn(),
+  },
 }))
 vi.mock('@/services/telegram', () => ({
   sendMessage: vi.fn(async () => ({ success: true, messageId: 1 })),

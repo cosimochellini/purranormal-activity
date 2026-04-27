@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { ARRAY_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { category } from '@/db/schema'
 import { db } from '@/drizzle'
+import { storyForge } from '@/services/storyForge'
 import type { CategoriesGetResponse, CategoriesPostResponse } from '@/types/api/categories'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
@@ -53,6 +54,10 @@ export const Route = createFileRoute('/api/categories')({
               id: category.id,
               name: category.name,
             })
+
+          // Drop the StoryForge category cache so a subsequent /api/log/submit
+          // sees the new ids and does not silently filter them out as missing.
+          storyForge.invalidateCategories()
 
           return ok<CategoriesPostResponse>({ success: true, categories })
         } catch (error) {

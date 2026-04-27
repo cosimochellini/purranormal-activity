@@ -2,14 +2,15 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { LogStatus } from '@/data/enum/logStatus'
-import { category, log, logCategory } from '@/db/schema'
+import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
-import { generateLogDetails } from '@/services/ai'
 import { imagePipeline, logPipelineOutcome } from '@/services/imagePipeline'
+import { storyForge } from '@/services/storyForge'
 import type { LogSubmitResponse } from '@/types/api/log-submit'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
+import { type FriendlyMessages, friendlyAiErrorText, friendlyCatchText } from './_friendly'
 
 const answerSchema = z.object({
   question: z.string(),
@@ -30,6 +31,17 @@ const submitFormSchema = z.object({
     .refine((val) => val.toLowerCase() === SECRET, { message: VALIDATION_MESSAGES.SECRET_INVALID }),
 })
 
+const messages: FriendlyMessages = {
+  AI_UNAVAILABLE:
+    'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.',
+  AI_UNEXPECTED_RESPONSE:
+    'Our mystical AI assistant returned an unexpected response. Please try again.',
+  CONNECTION_ISSUE: 'Connection issue detected. Please check your internet and try again.',
+  REQUEST_TIMEOUT: 'The request took too long. Please try with a shorter description.',
+  GENERIC_FALLBACK: 'Unable to process your paranormal event. Please try again.',
+  DB_UNAVAILABLE: 'Unable to save the event at this time. Please try again shortly.',
+}
+
 export const Route = createFileRoute('/api/log/submit')({
   server: {
     handlers: {
@@ -49,14 +61,50 @@ export const Route = createFileRoute('/api/log/submit')({
             })
           }
 
-          const { title, description, categories, imageDescription } = await generateLogDetails(
+          const detailsResult = await storyForge.logDetails(
             result.data.description,
             result.data.answers,
           )
+          if (!detailsResult.ok) {
+            logger.error('storyForge.logDetails returned !ok', detailsResult)
+            return ok<LogSubmitResponse>({
+              success: false,
+              errors: {
+                general: [
+                  friendlyAiErrorText(detailsResult.error, detailsResult.message, messages),
+                ],
+              },
+            })
+          }
 
-          const allCategories = (await db.select({ id: category.id }).from(category)).map(
-            (category) => category.id,
-          )
+          const { title, description, categories, imageDescription } = detailsResult.value
+
+          let allCategoryIds: number[]
+          try {
+            allCategoryIds = (await storyForge.categories()).map((c) => c.id)
+          } catch (error) {
+            // This guard is rarely tripped in practice — `logDetails()`
+            // already populated the StoryForge cache with the same row
+            // set, so the public `categories()` accessor is normally a
+            // memoised read with no DB round-trip. The two paths where
+            // this catch CAN fire:
+            //   (a) `invalidateCategories()` ran between `logDetails()`
+            //       and this read (e.g. concurrent `POST /api/categories`
+            //       on the same Worker instance) and the re-fetch hit a
+            //       transient DB outage.
+            //   (b) the cache was empty during `logDetails()` (intentional
+            //       per spec — empty results are NOT memoised) and this
+            //       second fault read also fails.
+            // In both cases we surface DB_UNAVAILABLE rather than insert
+            // an under-categorised log row.
+            logger.error('storyForge.categories() failed during submit:', error)
+            return ok<LogSubmitResponse>({
+              success: false,
+              errors: {
+                general: [messages.DB_UNAVAILABLE ?? messages.GENERIC_FALLBACK],
+              },
+            })
+          }
 
           const [newLog] = await db
             .insert(log)
@@ -72,7 +120,7 @@ export const Route = createFileRoute('/api/log/submit')({
 
           const categoriesToInsert = categories
             .map(({ id }) => ({ logId: newLog.id, categoryId: id }))
-            .filter(({ categoryId }) => allCategories.includes(categoryId))
+            .filter(({ categoryId }) => allCategoryIds.includes(categoryId))
 
           if (categoriesToInsert.length > 0) {
             await db.insert(logCategory).values(categoriesToInsert)
@@ -88,22 +136,15 @@ export const Route = createFileRoute('/api/log/submit')({
         } catch (error) {
           logger.error('Failed to submit log:', error)
 
-          let errorMessage = 'Unable to process your paranormal event. Please try again.'
-          if (error instanceof Error) {
-            if (error.message.includes('AI') || error.message.includes('OpenAI')) {
-              errorMessage =
-                'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.'
-            } else if (error.message.includes('database') || error.message.includes('DB')) {
-              errorMessage = 'Unable to save the event at this time. Please try again shortly.'
-            } else if (error.message.includes('network') || error.message.includes('fetch')) {
-              errorMessage = 'Connection issue detected. Please check your internet and try again.'
-            }
-          }
-
+          // Include `error.name` in the matcher input so client-class
+          // errors (e.g. `OpenAIError`, `APIConnectionError`,
+          // `AbortError`) are correctly attributed even when their
+          // message is bland (e.g. just `"fetch failed"`).
+          const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
           return ok<LogSubmitResponse>({
             success: false,
             errors: {
-              general: [errorMessage],
+              general: [friendlyCatchText(message, messages)],
             },
           })
         }

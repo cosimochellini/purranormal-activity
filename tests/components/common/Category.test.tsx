@@ -5,10 +5,11 @@ import { Suspense } from 'react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../../../static/promise', () => ({
-  getCategories: Promise.resolve([
-    { id: 1, name: 'Spectral', icon: 'questionMark' },
-    { id: 2, name: 'Phantom', icon: 'questionMark' },
-  ]),
+  getCategories: () =>
+    Promise.resolve([
+      { id: 1, name: 'Spectral', icon: 'questionMark' },
+      { id: 2, name: 'Phantom', icon: 'questionMark' },
+    ]),
 }))
 
 import { Category } from '@/components/common/Category'

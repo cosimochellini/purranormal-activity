@@ -1,10 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/services/ai', () => ({
-  createQuestions: vi.fn(),
+vi.mock('@/services/storyForge', () => ({
+  storyForge: {
+    questions: vi.fn(),
+    logDetails: vi.fn(),
+    imagePrompt: vi.fn(),
+    telegramMessage: vi.fn(),
+    categories: vi.fn(async () => []),
+    invalidateCategories: vi.fn(),
+  },
 }))
 
-import { createQuestions } from '@/services/ai'
+import { storyForge } from '@/services/storyForge'
 import { Route } from '@/start/routes/api/log/refine'
 
 const POST = Route.options.server?.handlers?.POST as (ctx: {
@@ -22,17 +29,17 @@ const callPost = (body: unknown) =>
 
 describe('POST /api/log/refine', () => {
   beforeEach(() => {
-    vi.mocked(createQuestions).mockReset()
+    vi.mocked(storyForge.questions).mockReset()
   })
 
   it('returns the AI questions on success', async () => {
     const questions = [{ question: 'When?', availableAnswers: ['Now'] }]
-    vi.mocked(createQuestions).mockResolvedValueOnce(questions)
+    vi.mocked(storyForge.questions).mockResolvedValueOnce({ ok: true, value: questions })
 
     const res = await callPost({ description: 'A short description' })
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ success: true, content: questions })
-    expect(createQuestions).toHaveBeenCalledWith('A short description')
+    expect(storyForge.questions).toHaveBeenCalledWith('A short description')
   })
 
   it('returns success:false with field errors when description is empty', async () => {
@@ -40,7 +47,7 @@ describe('POST /api/log/refine', () => {
     const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
     expect(body.success).toBe(false)
     expect(body.errors.description?.length).toBeGreaterThan(0)
-    expect(createQuestions).not.toHaveBeenCalled()
+    expect(storyForge.questions).not.toHaveBeenCalled()
   })
 
   it('rejects descriptions over the 10k character cap', async () => {
@@ -49,23 +56,75 @@ describe('POST /api/log/refine', () => {
     const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
     expect(body.success).toBe(false)
     expect(body.errors.description?.length).toBeGreaterThan(0)
-    expect(createQuestions).not.toHaveBeenCalled()
+    expect(storyForge.questions).not.toHaveBeenCalled()
   })
 
   it('accepts a description exactly at the 10k character cap', async () => {
-    vi.mocked(createQuestions).mockResolvedValueOnce([])
+    vi.mocked(storyForge.questions).mockResolvedValueOnce({ ok: true, value: [] })
 
     const res = await callPost({ description: 'x'.repeat(10000) })
     expect((await res.json()) as { success: boolean }).toMatchObject({ success: true })
-    expect(createQuestions).toHaveBeenCalledOnce()
+    expect(storyForge.questions).toHaveBeenCalledOnce()
   })
 
-  it('maps AI failures to a friendly message', async () => {
-    vi.mocked(createQuestions).mockRejectedValueOnce(new Error('OpenAI rate limit'))
+  it('maps AIResult model errors to a friendly message', async () => {
+    vi.mocked(storyForge.questions).mockResolvedValueOnce({
+      ok: false,
+      error: 'model',
+      message: 'OpenAI rate limit',
+    })
 
     const res = await callPost({ description: 'something' })
     const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
     expect(body.success).toBe(false)
     expect(body.errors.description?.[0]).toMatch(/AI assistant/i)
+  })
+
+  it('still maps unexpected throws to a friendly message', async () => {
+    vi.mocked(storyForge.questions).mockRejectedValueOnce(new Error('OpenAI rate limit'))
+
+    const res = await callPost({ description: 'something' })
+    const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+    expect(body.success).toBe(false)
+    expect(body.errors.description?.[0]).toMatch(/AI assistant/i)
+  })
+
+  it('maps AIResult parse errors to the "unexpected response" copy', async () => {
+    vi.mocked(storyForge.questions).mockResolvedValueOnce({
+      ok: false,
+      error: 'parse',
+      message: 'Unexpected token in JSON at position 0',
+    })
+
+    const res = await callPost({ description: 'something' })
+    const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+    expect(body.success).toBe(false)
+    expect(body.errors.description?.[0]).toMatch(/unexpected response/i)
+  })
+
+  it('maps AIResult model errors with timeout messages to the "request took too long" copy', async () => {
+    vi.mocked(storyForge.questions).mockResolvedValueOnce({
+      ok: false,
+      error: 'model',
+      message: 'request timeout after 30s',
+    })
+
+    const res = await callPost({ description: 'something' })
+    const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+    expect(body.success).toBe(false)
+    expect(body.errors.description?.[0]).toMatch(/took too long/i)
+  })
+
+  it('maps AIResult model errors with network/fetch messages to the "connection issue" copy', async () => {
+    vi.mocked(storyForge.questions).mockResolvedValueOnce({
+      ok: false,
+      error: 'model',
+      message: 'fetch failed: ECONNREFUSED',
+    })
+
+    const res = await callPost({ description: 'something' })
+    const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+    expect(body.success).toBe(false)
+    expect(body.errors.description?.[0]).toMatch(/connection issue/i)
   })
 })

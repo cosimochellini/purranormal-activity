@@ -2,7 +2,8 @@ import { eq } from 'drizzle-orm'
 import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
-import { generateImageBase64, generateImagePrompt } from '@/services/ai'
+import { generateImageBase64 } from '@/services/imageGen'
+import { storyForge } from '@/services/storyForge'
 import { uploadToR2 } from '@/utils/cloudflare'
 import { logger } from '@/utils/logger'
 import { assertNever } from '@/utils/typed'
@@ -29,25 +30,48 @@ export interface ImagePipeline {
   run: (logId: number) => Promise<PipelineOutcome>
 }
 
+// Sentinel for "no error yet". Using a unique symbol (not `undefined`)
+// because a caller could legitimately `throw undefined` inside loadStatus
+// or generate, which would otherwise be indistinguishable from "no
+// failure" via a `cause === undefined` guard.
+const NO_FAILURE: unique symbol = Symbol('NO_FAILURE')
+
 export const createImagePipeline = (deps: PipelineDeps): ImagePipeline => ({
   async run(logId) {
-    const status = await deps.loadStatus(logId)
+    let cause: unknown = NO_FAILURE
 
-    if (!status) {
-      return { kind: 'skipped', logId, reason: 'not-found' }
-    }
-
-    if (status.status !== LogStatus.Created) {
-      return { kind: 'skipped', logId, reason: 'not-pending' }
-    }
-
-    let cause: unknown
+    let status: { status: LogStatus } | null = null
     try {
-      await deps.generate(logId)
-      await deps.markGenerated(logId)
-      return { kind: 'success', logId }
+      status = await deps.loadStatus(logId)
     } catch (error) {
+      // loadStatus throwing means we cannot determine whether the row
+      // exists or what state it's in. Caller (notably the
+      // POST /api/log/submit catch block) wraps `imagePipeline.run` in a
+      // try/catch — without this guard, an uncaught throw here would
+      // bubble out, the route would return success:false, but the log
+      // row was already inserted upstream → "ghost" row picked up later
+      // by the batch script. Best-effort: try to record the error on
+      // the assumed-existing row; fall back to failed-write-also-failed.
       cause = error
+    }
+
+    if (cause === NO_FAILURE) {
+      // loadStatus returned a value — apply normal status gating.
+      if (!status) {
+        return { kind: 'skipped', logId, reason: 'not-found' }
+      }
+
+      if (status.status !== LogStatus.Created) {
+        return { kind: 'skipped', logId, reason: 'not-pending' }
+      }
+
+      try {
+        await deps.generate(logId)
+        await deps.markGenerated(logId)
+        return { kind: 'success', logId }
+      } catch (error) {
+        cause = error
+      }
     }
 
     try {
@@ -72,7 +96,21 @@ const defaultGenerate: PipelineDeps['generate'] = async (logId) => {
     throw new Error('Log not found')
   }
 
-  const imagePrompt = logEntry.imageDescription ?? (await generateImagePrompt(logEntry.description))
+  let imagePrompt: string
+  if (logEntry.imageDescription) {
+    imagePrompt = logEntry.imageDescription
+  } else {
+    const r = await storyForge.imagePrompt(logEntry.description)
+    if (!r.ok) {
+      // Preserve the AIError discriminator on `cause` so the pipeline's
+      // recordError step can persist a meaningful classification.
+      throw new Error(r.message || 'Image prompt generation failed', {
+        cause: { kind: r.error },
+      })
+    }
+    imagePrompt = r.value
+  }
+
   const imageData = await generateImageBase64(imagePrompt)
   const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '')
   const buffer = Buffer.from(base64Data, 'base64')
@@ -84,12 +122,28 @@ const defaultMarkGenerated: PipelineDeps['markGenerated'] = async (id) => {
   await db.update(log).set({ status: LogStatus.ImageGenerated }).where(eq(log.id, id))
 }
 
+/**
+ * Resolve the human-readable error string we persist to `log.error`.
+ * When the caller wraps an inner Error (the pattern used by
+ * `services/imageGen.ts` and the storyForge.imagePrompt unwrap path
+ * here), prefer the inner cause message so the DB shows the real
+ * reason (`"rate limit"`, `"content policy"`, ...) rather than the
+ * outer wrapper (`"Image generation failed"`).
+ */
+const causeToErrorString = (cause: unknown): string => {
+  if (cause instanceof Error) {
+    if (cause.cause instanceof Error && cause.cause.message) return cause.cause.message
+    return cause.message
+  }
+  return JSON.stringify(cause)
+}
+
 const defaultRecordError: PipelineDeps['recordError'] = async (id, cause) => {
   await db
     .update(log)
     .set({
       status: LogStatus.Error,
-      error: cause instanceof Error ? cause.message : JSON.stringify(cause),
+      error: causeToErrorString(cause),
     })
     .where(eq(log.id, id))
 }
