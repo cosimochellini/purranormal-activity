@@ -30,9 +30,15 @@ export interface ImagePipeline {
   run: (logId: number) => Promise<PipelineOutcome>
 }
 
+// Sentinel for "no error yet". Using a unique symbol (not `undefined`)
+// because a caller could legitimately `throw undefined` inside loadStatus
+// or generate, which would otherwise be indistinguishable from "no
+// failure" via a `cause === undefined` guard.
+const NO_FAILURE: unique symbol = Symbol('NO_FAILURE')
+
 export const createImagePipeline = (deps: PipelineDeps): ImagePipeline => ({
   async run(logId) {
-    let cause: unknown
+    let cause: unknown = NO_FAILURE
 
     let status: { status: LogStatus } | null = null
     try {
@@ -49,7 +55,7 @@ export const createImagePipeline = (deps: PipelineDeps): ImagePipeline => ({
       cause = error
     }
 
-    if (cause === undefined) {
+    if (cause === NO_FAILURE) {
       // loadStatus returned a value — apply normal status gating.
       if (!status) {
         return { kind: 'skipped', logId, reason: 'not-found' }
@@ -116,12 +122,28 @@ const defaultMarkGenerated: PipelineDeps['markGenerated'] = async (id) => {
   await db.update(log).set({ status: LogStatus.ImageGenerated }).where(eq(log.id, id))
 }
 
+/**
+ * Resolve the human-readable error string we persist to `log.error`.
+ * When the caller wraps an inner Error (the pattern used by
+ * `services/imageGen.ts` and the storyForge.imagePrompt unwrap path
+ * here), prefer the inner cause message so the DB shows the real
+ * reason (`"rate limit"`, `"content policy"`, ...) rather than the
+ * outer wrapper (`"Image generation failed"`).
+ */
+const causeToErrorString = (cause: unknown): string => {
+  if (cause instanceof Error) {
+    if (cause.cause instanceof Error && cause.cause.message) return cause.cause.message
+    return cause.message
+  }
+  return JSON.stringify(cause)
+}
+
 const defaultRecordError: PipelineDeps['recordError'] = async (id, cause) => {
   await db
     .update(log)
     .set({
       status: LogStatus.Error,
-      error: cause instanceof Error ? cause.message : JSON.stringify(cause),
+      error: causeToErrorString(cause),
     })
     .where(eq(log.id, id))
 }

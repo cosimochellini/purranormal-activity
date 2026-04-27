@@ -232,6 +232,29 @@ describe('createDefaultImagePipeline default recordError', () => {
     })
   })
 
+  it('unwraps `Error.cause` when the wrapper Error has a meaningful inner cause', async () => {
+    // `services/imageGen.ts` re-throws `new Error('Image generation failed', { cause: error })`.
+    // The DB should store the real underlying reason ("rate limit"),
+    // not the bland wrapper ("Image generation failed").
+    const inner = new Error('rate limit')
+    const wrapper = new Error('Image generation failed', { cause: inner })
+    const pipeline = createDefaultImagePipeline({
+      loadStatus: async () => ({ status: LogStatus.Created }),
+      generate: async () => {
+        throw wrapper
+      },
+      markGenerated: async () => undefined,
+    })
+
+    const outcome = await pipeline.run(7)
+
+    expect(outcome.kind).toBe('failed-recorded')
+    expect(fakeDb.set).toHaveBeenCalledWith({
+      status: LogStatus.Error,
+      error: 'rate limit',
+    })
+  })
+
   it('serializes non-Error causes via JSON.stringify', async () => {
     const cause = { code: 'X', detail: 'plain' }
     const pipeline = createDefaultImagePipeline({
