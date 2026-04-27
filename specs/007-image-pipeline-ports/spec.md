@@ -5,6 +5,16 @@
 **Status**: Draft
 **Input**: User description: "RFC #6: Deepen image-generation pipeline behind ports & adapters. Refactor the AI image-generation pipeline so the deep module owns the Created → ImageGenerated|Error state machine and routes never import OpenAI, R2, or Drizzle directly."
 
+## Clarifications
+
+### Session 2026-04-27
+
+- Q: How should `submit` behave when `insertDraft` succeeds but `linkCategories` throws? → A: Treat the link failure as the same kind of generation failure — leave the row inserted (no rollback, matching current behaviour where SQLite-on-Turso has no transaction wrapping these two writes anyway), record the throw via `recordError` (status `Error`), and return `{ id, outcome: failed-recorded | failed-write-also-failed }`. The route's `logPipelineOutcome` surfaces the issue.
+- Q: How does `drainOnePending` order pending rows? → A: By `id` ascending (FIFO insertion order). Matches the implicit ordering of the existing batch query (`SELECT id FROM log WHERE status = 'Created'` with no `ORDER BY` clause; SQLite returns rowid order = id order in practice).
+- Q: What `contentType` does the storage adapter receive from the pipeline? → A: `'image/png'` (constant). DALL-E 3 / `gpt-image-1.x` always returns PNG; preserved from current `uploadToR2` behaviour. The pipeline core does not detect or vary content type.
+- Q: `drainOnePending` finds row N, but between that read and `loadStatus(N)` another caller marks it `ImageGenerated`. What does it return? → A: `{ kind: 'skipped', reason: 'not-pending', logId: N }` (not `null`). The script counts the iteration toward `processed` (preserving the current contract where `processed` = rows pulled off the queue, not just successes).
+- Q: Where does `tests/fakes/imagePipeline.ts` live with respect to Vitest's include patterns? → A: Under the existing `tests/` directory (already covered by `vitest.config.ts` include). It's a test helper module; not a test file itself (no `describe`/`it`). Imported only from `services/imagePipeline/index.test.ts`.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — Submit a paranormal event and have its image generated end-to-end (Priority: P1)
@@ -112,7 +122,11 @@ A developer reads `services/imagePipeline/index.test.ts` and sees no `vi.mock` c
 - **FR-006**: `generateImageFor(logId)` MUST preserve the `NO_FAILURE` sentinel ordering: a throw from `loadStatus` MUST still attempt `recordError` on the assumed-existing row.
 - **FR-007**: `generateImageFor(logId)` MUST short-circuit to `{ kind: 'skipped', reason: 'not-pending' }` for any status other than `Created`. It MUST short-circuit to `{ kind: 'skipped', reason: 'not-found' }` when the row is absent.
 - **FR-008**: `generateImageFor(logId)` MUST use `imageDescription` when non-empty; otherwise MUST call the AI text port and propagate `{ ok: false }` results into the same failure path with the AIError discriminator preserved on `cause.kind`.
-- **FR-009**: `drainOnePending()` MUST return `PipelineOutcome | null`. `null` MUST be returned only when no `Created` row exists.
+- **FR-009**: `drainOnePending()` MUST return `PipelineOutcome | null`. `null` MUST be returned only when `findFirstPending` returns no row. If a row is found but a concurrent caller has already advanced its status by the time `loadStatus` runs, the outcome is `{ kind: 'skipped', reason: 'not-pending' }` (non-null), and the script counts the iteration toward loop progress.
+- **FR-009a**: `findFirstPending` MUST return rows in `id` ascending order (FIFO insertion order).
+- **FR-005a**: When `submit` calls `linkCategories` and it throws after `insertDraft` already returned an id, the pipeline MUST treat the throw as a generation-arc failure — record it via `recordError` and return `{ id, outcome: 'failed-recorded' | 'failed-write-also-failed' }`. The row is not rolled back (no transactional wrapper available on Turso for cross-table writes).
+- **FR-005b**: The image storage port MUST be invoked with `contentType: 'image/png'`. Image-format detection is out of scope.
+- **FR-005c**: `services/script.ts::runImageGenerationScript` MUST count every non-null outcome from `drainOnePending` toward its `processed` field (preserving the current contract where `processed` equals the number of rows the script pulled off the queue, regardless of per-row outcome). The loop terminates on the first `null`.
 - **FR-010**: `services/script.ts::runImageGenerationScript` MUST call `drainOnePending()` in a sequential `while` loop. The 5-at-a-time `Promise.all` batch MUST be removed; `BATCH_SIZE` and `DELAY_MS` constants MUST be deleted.
 - **FR-011**: `services/script.ts` MUST continue to fire a Telegram alert (HTML-escaped) on `failed-write-also-failed` outcomes and MUST NOT alert on any other outcome kind.
 - **FR-012**: The four affected route files (`start/routes/api/log/submit.ts`, `start/routes/api/log/$id.ts`, `start/routes/api/trigger/$id.ts`, and `services/script.ts`) MUST not import `@/services/imageGen` or `@/utils/cloudflare`. `submit.ts` MUST not call `db.insert(log)` or `db.insert(logCategory)` directly.
