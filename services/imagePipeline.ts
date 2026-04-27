@@ -32,23 +32,40 @@ export interface ImagePipeline {
 
 export const createImagePipeline = (deps: PipelineDeps): ImagePipeline => ({
   async run(logId) {
-    const status = await deps.loadStatus(logId)
-
-    if (!status) {
-      return { kind: 'skipped', logId, reason: 'not-found' }
-    }
-
-    if (status.status !== LogStatus.Created) {
-      return { kind: 'skipped', logId, reason: 'not-pending' }
-    }
-
     let cause: unknown
+
+    let status: { status: LogStatus } | null = null
     try {
-      await deps.generate(logId)
-      await deps.markGenerated(logId)
-      return { kind: 'success', logId }
+      status = await deps.loadStatus(logId)
     } catch (error) {
+      // loadStatus throwing means we cannot determine whether the row
+      // exists or what state it's in. Caller (notably the
+      // POST /api/log/submit catch block) wraps `imagePipeline.run` in a
+      // try/catch — without this guard, an uncaught throw here would
+      // bubble out, the route would return success:false, but the log
+      // row was already inserted upstream → "ghost" row picked up later
+      // by the batch script. Best-effort: try to record the error on
+      // the assumed-existing row; fall back to failed-write-also-failed.
       cause = error
+    }
+
+    if (cause === undefined) {
+      // loadStatus returned a value — apply normal status gating.
+      if (!status) {
+        return { kind: 'skipped', logId, reason: 'not-found' }
+      }
+
+      if (status.status !== LogStatus.Created) {
+        return { kind: 'skipped', logId, reason: 'not-pending' }
+      }
+
+      try {
+        await deps.generate(logId)
+        await deps.markGenerated(logId)
+        return { kind: 'success', logId }
+      } catch (error) {
+        cause = error
+      }
     }
 
     try {

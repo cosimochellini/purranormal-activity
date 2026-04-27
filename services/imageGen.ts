@@ -18,6 +18,10 @@ export async function generateImageBase64(imagePrompt: string) {
     return imageData
   } catch (error) {
     logger.error('Error generating image:', error)
-    throw new Error('Image generation failed')
+    // Preserve the original cause so `defaultRecordError` in
+    // `services/imagePipeline.ts` can persist the underlying message
+    // (rate limit, content policy, network) instead of every failure
+    // landing in the DB as the bland literal "Image generation failed".
+    throw new Error('Image generation failed', { cause: error })
   }
 }

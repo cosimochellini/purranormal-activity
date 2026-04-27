@@ -303,6 +303,37 @@ describe('POST /api/log/submit', () => {
       expect(fakeDb.insert).not.toHaveBeenCalled()
     })
 
+    it('still returns success when imagePipeline.run resolves with a non-success outcome (does not poison the response)', async () => {
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: true,
+        value: {
+          title: 't',
+          description: 'd',
+          imageDescription: 'i',
+          categories: [],
+        },
+      })
+      vi.mocked(storyForge.categories).mockResolvedValueOnce([])
+      fakeDb.__queue('returning', [{ id: 9 }])
+      vi.mocked(imagePipeline.run).mockResolvedValueOnce({
+        kind: 'failed-recorded',
+        logId: 9,
+        cause: new Error('downstream'),
+      })
+
+      const res = await callPost({
+        description: 'd'.repeat(20),
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      // The pipeline's failure is observability-only here — the log row
+      // exists, so the route MUST still confirm success to the user.
+      const body = (await res.json()) as { success: true; id: number }
+      expect(body.success).toBe(true)
+      expect(body.id).toBe(9)
+    })
+
     it('still maps unexpected throws (non-AIResult) to a friendly general message', async () => {
       vi.mocked(storyForge.logDetails).mockRejectedValueOnce(new Error('OpenAI exploded'))
 

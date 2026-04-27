@@ -143,6 +143,48 @@ describe('createImagePipeline.run', () => {
     })
   })
 
+  it('returns failed-recorded when loadStatus throws and recordError succeeds', async () => {
+    const cause = new Error('libsql: connection refused')
+    const deps = makeDeps({
+      loadStatus: vi.fn(async () => {
+        throw cause
+      }),
+    })
+    const pipeline = createImagePipeline(deps)
+
+    const outcome = await pipeline.run(7)
+
+    expect(outcome).toEqual({ kind: 'failed-recorded', logId: 7, cause })
+    // generate/markGenerated MUST NOT run when we never resolved status.
+    expect(deps.generate).not.toHaveBeenCalled()
+    expect(deps.markGenerated).not.toHaveBeenCalled()
+    expect(deps.recordError).toHaveBeenCalledWith(7, cause)
+  })
+
+  it('returns failed-write-also-failed when loadStatus throws AND recordError throws', async () => {
+    const cause = new Error('libsql: connection refused')
+    const writeError = new Error('also broken')
+    const deps = makeDeps({
+      loadStatus: vi.fn(async () => {
+        throw cause
+      }),
+      recordError: vi.fn(async () => {
+        throw writeError
+      }),
+    })
+    const pipeline = createImagePipeline(deps)
+
+    const outcome = await pipeline.run(7)
+
+    expect(outcome).toEqual({
+      kind: 'failed-write-also-failed',
+      logId: 7,
+      cause,
+      writeError,
+    })
+    expect(deps.generate).not.toHaveBeenCalled()
+  })
+
   it('returns failed-write-also-failed when markGenerated throws AND recordError throws', async () => {
     const cause = new Error('mark write failed')
     const writeError = new Error('error write also failed')
