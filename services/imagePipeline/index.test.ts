@@ -178,6 +178,22 @@ describe('pipeline.generateImageFor', () => {
     expect(store.snapshot().size).toBe(0)
   })
 
+  it('falls back to AiTextPort when imageDescription is an empty string (truthiness gate, not null-check)', async () => {
+    // FR-008 says "use imageDescription when non-empty". Truthiness gate
+    // catches both `null` and `""`. A regression to `!== null` would feed
+    // an empty prompt into the image model.
+    const { pipeline, repo, aiText } = createTestPipeline()
+    repo.preload([
+      { id: 7, description: 'haunted teapot', imageDescription: '', status: LogStatus.Created },
+    ])
+
+    const outcome = await pipeline.generateImageFor(7)
+
+    expect(outcome).toEqual({ kind: 'success', logId: 7 })
+    expect(aiText.calls).toHaveLength(1)
+    expect(aiText.calls[0].description).toBe('haunted teapot')
+  })
+
   it.each([
     LogStatus.ImageGenerated,
     LogStatus.Error,
@@ -306,6 +322,24 @@ describe('pipeline.drainOnePending', () => {
     const outcome = await pipeline.drainOnePending()
 
     expect(outcome).toEqual({ kind: 'failed-recorded', logId: 11, cause })
+  })
+
+  it('returns skipped:not-pending (non-null) when the row is racingly advanced between findFirstPending and loadStatus', async () => {
+    // Models the FR-009 / spec clarification race: another caller marked
+    // the row ImageGenerated after findFirstPending picked it up but
+    // before loadStatus ran. drainOnePending MUST return non-null so the
+    // script's processed counter ticks toward queue exhaustion.
+    const { repo } = createTestPipeline()
+    repo.preload([{ id: 4, status: LogStatus.Created, imageDescription: 'p' }])
+    const racingRepo = {
+      ...repo,
+      loadStatus: async () => ({ status: LogStatus.ImageGenerated }),
+    }
+    const { pipeline } = createTestPipeline({ repo: racingRepo })
+
+    const outcome = await pipeline.drainOnePending()
+
+    expect(outcome).toEqual({ kind: 'skipped', logId: 4, reason: 'not-pending' })
   })
 })
 

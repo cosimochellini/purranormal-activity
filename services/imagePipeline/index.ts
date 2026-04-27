@@ -33,4 +33,16 @@ export const createDefaultImagePipeline = (overrides: Partial<PipelineDeps> = {}
     repo: overrides.repo ?? defaultLogRepository,
   })
 
-export const imagePipeline: ImagePipeline = createDefaultImagePipeline()
+// Lazy singleton: defers `createDefaultImagePipeline()` (which transitively
+// constructs the S3 client and reads cloudflare/Turso env vars) from import
+// time to the first method call. Module-load remains side-effect-free so
+// tests / route handlers that only need types or `logPipelineOutcome` from
+// this module do not pay for production-adapter initialisation.
+let _impl: ImagePipeline | undefined
+const lazy = (): ImagePipeline => (_impl ??= createDefaultImagePipeline())
+
+export const imagePipeline: ImagePipeline = {
+  submit: (input) => lazy().submit(input),
+  generateImageFor: (logId) => lazy().generateImageFor(logId),
+  drainOnePending: () => lazy().drainOnePending(),
+}

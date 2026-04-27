@@ -5,6 +5,7 @@ vi.mock('@/services/imagePipeline', () => ({
   imagePipeline: {
     generateImageFor: vi.fn(),
   },
+  logPipelineOutcome: vi.fn(),
 }))
 
 import { imagePipeline } from '@/services/imagePipeline'

@@ -55,14 +55,15 @@ interface ImageStorePort {
   /**
    * Persists generated image bytes for a given log id.
    * Production: uploads to R2 via `utils/cloudflare.ts::uploadToR2`.
-   * The adapter MUST strip the optional `data:image/...;base64,` prefix and
-   * convert base64 to bytes — the pipeline core never sees `Buffer` or base64.
+   * The pipeline core converts the AI base64 payload to `Uint8Array`
+   * before invoking the port; the adapter receives bytes only and
+   * picks its own content type to match the existing R2 key/MIME
+   * convention (FR-005b — currently `image/webp`).
    *
    * @param logId  Identifies the row whose image is being stored.
    * @param bytes  Raw image bytes.
-   * @param contentType  Always `'image/png'` from the pipeline (FR-005b).
    */
-  put(logId: number, bytes: Uint8Array, contentType: string): Promise<void>
+  put(logId: number, bytes: Uint8Array): Promise<void>
 
   /**
    * Removes the stored image for a given log id. Wraps `deleteFromR2`.
