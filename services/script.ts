@@ -1,17 +1,8 @@
-import { eq } from 'drizzle-orm'
-import { LogStatus } from '@/data/enum/logStatus'
-import { log } from '@/db/schema'
-import { db } from '@/drizzle'
 import { TELEGRAM_BOT_CHAT_IDS } from '@/env/telegram'
 import { imagePipeline } from '@/services/imagePipeline'
 import { sendMessage as telegramSendMessage } from '@/services/telegram'
-import { batch } from '@/utils/batch'
 import { logger } from '@/utils/logger'
-import { wait } from '@/utils/promise'
 import { assertNever } from '@/utils/typed'
-
-const BATCH_SIZE = 5
-const DELAY_MS = 5000
 
 const formatCause = (value: unknown) =>
   value instanceof Error ? value.message : JSON.stringify(value)
@@ -56,34 +47,6 @@ const alertWriteAlsoFailed = async (logId: number, cause: unknown, writeError: u
   )
 }
 
-async function processLog(logEntry: { id: number }) {
-  logger.info(`Processing log ${logEntry.id}`)
-
-  const outcome = await imagePipeline.run(logEntry.id)
-
-  switch (outcome.kind) {
-    case 'success':
-      return
-    case 'skipped':
-      logger.warn(`Skipped log ${logEntry.id}: ${outcome.reason}`)
-      return
-    case 'failed-recorded':
-      logger.error(`Image pipeline recorded an error for log ${logEntry.id}`, {
-        cause: outcome.cause,
-      })
-      return
-    case 'failed-write-also-failed':
-      logger.error(`Image pipeline failed to write the error column for log ${logEntry.id}`, {
-        cause: outcome.cause,
-        writeError: outcome.writeError,
-      })
-      await alertWriteAlsoFailed(outcome.logId, outcome.cause, outcome.writeError)
-      return
-    default:
-      return assertNever(outcome)
-  }
-}
-
 export interface RunImageGenerationScriptResponse {
   success: boolean
   processed: number
@@ -91,18 +54,40 @@ export interface RunImageGenerationScriptResponse {
 }
 
 export async function runImageGenerationScript(): Promise<RunImageGenerationScriptResponse> {
-  try {
-    const logs = await db.select({ id: log.id }).from(log).where(eq(log.status, LogStatus.Created))
-    const logBatches = batch(logs, BATCH_SIZE)
+  let processed = 0
 
-    for (const logBatch of logBatches) {
-      await Promise.all(logBatch.map(processLog))
-      await wait(DELAY_MS)
+  try {
+    while (true) {
+      const outcome = await imagePipeline.drainOnePending()
+      if (!outcome) break
+      processed++
+
+      switch (outcome.kind) {
+        case 'success':
+          break
+        case 'skipped':
+          logger.warn(`Skipped log ${outcome.logId}: ${outcome.reason}`)
+          break
+        case 'failed-recorded':
+          logger.error(`Image pipeline recorded an error for log ${outcome.logId}`, {
+            cause: outcome.cause,
+          })
+          break
+        case 'failed-write-also-failed':
+          logger.error(`Image pipeline failed to write the error column for log ${outcome.logId}`, {
+            cause: outcome.cause,
+            writeError: outcome.writeError,
+          })
+          await alertWriteAlsoFailed(outcome.logId, outcome.cause, outcome.writeError)
+          break
+        default:
+          return assertNever(outcome)
+      }
     }
 
     return {
       success: true,
-      processed: logs.length,
+      processed,
     }
   } catch (error) {
     logger.error('Failed to process logs:', error)

@@ -26,9 +26,9 @@ Web service / TanStack Start. Source under `services/`, `start/routes/api/`, `te
 
 **Purpose**: Create the new directory layout and move `PipelineOutcome` + helpers into their new home without breaking callers.
 
-- [ ] T001 [P] Create empty directory `services/imagePipeline/adapters/`.
-- [ ] T002 [P] Create empty directory `tests/fakes/`.
-- [ ] T003 Move `PipelineOutcome`, `NO_FAILURE` sentinel, `causeToErrorString`, and `logPipelineOutcome` from `services/imagePipeline.ts` into a new file `services/imagePipeline/outcome.ts`. The old file temporarily re-exports them so callers stay green during the migration.
+- [X] T001 [P] Create empty directory `services/imagePipeline/adapters/`.
+- [X] T002 [P] Create empty directory `tests/fakes/`.
+- [X] T003 Move `PipelineOutcome`, `NO_FAILURE` sentinel, `causeToErrorString`, and `logPipelineOutcome` from `services/imagePipeline.ts` into a new file `services/imagePipeline/outcome.ts`. The old file temporarily re-exports them so callers stay green during the migration.
 
 ---
 
@@ -36,14 +36,14 @@ Web service / TanStack Start. Source under `services/`, `start/routes/api/`, `te
 
 **Purpose**: Land the four port interfaces and their production adapters with feature parity to the current `defaultGenerate` / `defaultLoadStatus` / `defaultMarkGenerated` / `defaultRecordError`. After this phase, the new pipeline module exposes a working `generateImageFor(logId)` that is byte-equivalent to the current `imagePipeline.run(logId)`. **Blocks all user-story phases below.**
 
-- [ ] T004 Define port interfaces in `services/imagePipeline/ports.ts`: `AiTextPort`, `AiImagePort`, `ImageStorePort`, `LogRepositoryPort`, `DraftLog`, `LogRow`, `SubmitInput`, `SubmitResult`, `PipelineDeps`, `ImagePipeline`. Re-export `PipelineOutcome` from `./outcome`. Use the contracts in `specs/007-image-pipeline-ports/contracts/ports.md` as the source of truth.
-- [ ] T005 [P] Implement `services/imagePipeline/adapters/aiText.ts`: thin wrapper over `storyForge.imagePrompt(description)`, exporting `defaultAiText: AiTextPort`.
-- [ ] T006 [P] Implement `services/imagePipeline/adapters/aiImage.ts`: thin wrapper over `services/imageGen.ts::generateImageBase64`, exporting `defaultAiImage: AiImagePort`.
-- [ ] T007 [P] Implement `services/imagePipeline/adapters/imageStore.ts`: `defaultImageStore: ImageStorePort` with `put(logId, bytes, contentType)` calling `uploadToR2(Buffer.from(bytes), logId)` and `delete(logId)` calling `deleteFromR2(logId)`. Strip the `data:image/...;base64,` prefix here only if the caller forgets — pipeline core converts string→bytes before calling.
-- [ ] T008 [P] Implement `services/imagePipeline/adapters/logRepository.ts`: `defaultLogRepository: LogRepositoryPort` covering all seven methods. Use `db.transaction`-free Drizzle calls (Turso libsql/web has no `BEGIN`/`COMMIT` exposed). `findFirstPending` orders `id ASC LIMIT 1`. `markError` accepts a plain string (caller already ran `causeToErrorString`).
-- [ ] T009 Implement `services/imagePipeline/index.ts`: `createImagePipeline(deps)`, `createDefaultImagePipeline(overrides?)`, `pipeline` singleton, re-export `logPipelineOutcome` and `PipelineOutcome`. Implement `generateImageFor(logId)` first — preserving the `NO_FAILURE` sentinel ordering verbatim from `services/imagePipeline.ts:37-83`. `submit` and `drainOnePending` are method bodies that throw `new Error('not yet implemented')` until US1 / US3 land.
-- [ ] T010 Update the old `services/imagePipeline.ts` to re-export everything from `services/imagePipeline/index.ts` and add an alias `run = generateImageFor` so existing callers keep working without changes. Mark the file `@deprecated` in a JSDoc.
-- [ ] T011 Run `pnpm lint && pnpm test && pnpm build`. Must be green. Commit: `feat(007): scaffold imagePipeline module + ports + adapters`.
+- [X] T004 Define port interfaces in `services/imagePipeline/ports.ts`: `AiTextPort`, `AiImagePort`, `ImageStorePort`, `LogRepositoryPort`, `DraftLog`, `LogRow`, `SubmitInput`, `SubmitResult`, `PipelineDeps`, `ImagePipeline`. Re-export `PipelineOutcome` from `./outcome`. Use the contracts in `specs/007-image-pipeline-ports/contracts/ports.md` as the source of truth.
+- [X] T005 [P] Implement `services/imagePipeline/adapters/aiText.ts`: thin wrapper over `storyForge.imagePrompt(description)`, exporting `defaultAiText: AiTextPort`.
+- [X] T006 [P] Implement `services/imagePipeline/adapters/aiImage.ts`: thin wrapper over `services/imageGen.ts::generateImageBase64`, exporting `defaultAiImage: AiImagePort`.
+- [X] T007 [P] Implement `services/imagePipeline/adapters/imageStore.ts`: `defaultImageStore: ImageStorePort` with `put(logId, bytes, contentType)` calling `uploadToR2(Buffer.from(bytes), logId)` and `delete(logId)` calling `deleteFromR2(logId)`. Strip the `data:image/...;base64,` prefix here only if the caller forgets — pipeline core converts string→bytes before calling.
+- [X] T008 [P] Implement `services/imagePipeline/adapters/logRepository.ts`: `defaultLogRepository: LogRepositoryPort` covering all seven methods. Use `db.transaction`-free Drizzle calls (Turso libsql/web has no `BEGIN`/`COMMIT` exposed). `findFirstPending` orders `id ASC LIMIT 1`. `markError` accepts a plain string (caller already ran `causeToErrorString`).
+- [X] T009 Implement `services/imagePipeline/index.ts`: `createImagePipeline(deps)`, `createDefaultImagePipeline(overrides?)`, `pipeline` singleton, re-export `logPipelineOutcome` and `PipelineOutcome`. Implement `generateImageFor(logId)` first — preserving the `NO_FAILURE` sentinel ordering verbatim from `services/imagePipeline.ts:37-83`. `submit` and `drainOnePending` are method bodies that throw `new Error('not yet implemented')` until US1 / US3 land.
+- [X] T010 Update the old `services/imagePipeline.ts` to re-export everything from `services/imagePipeline/index.ts` and add an alias `run = generateImageFor` so existing callers keep working without changes. Mark the file `@deprecated` in a JSDoc.
+- [X] T011 Run `pnpm lint && pnpm test && pnpm build`. Must be green. Commit: `feat(007): scaffold imagePipeline module + ports + adapters`.
 
 **Checkpoint**: Foundation ready. `imagePipeline.run(id)` still works through the new module. User stories can begin.
 
@@ -57,13 +57,13 @@ Web service / TanStack Start. Source under `services/`, `start/routes/api/`, `te
 
 ### Tests for User Story 1 (boundary suite — write FIRST)
 
-- [ ] T012 [P] [US1] Add `tests/fakes/imagePipeline.ts`: `createInMemoryAiText`, `createInMemoryAiImage`, `createInMemoryImageStore`, `createInMemoryLogRepository`, `createTestPipeline({ overrides? })`. Each fake exposes `.snapshot()` for assertions and accepts `{ throws? }` configuration. No production-code imports.
-- [ ] T013 [P] [US1] Add boundary test cases to `services/imagePipeline/index.test.ts` for `submit`: success, `linkCategories` throws, `aiImage.generateBase64` throws, `aiImage` succeeds + `markImageGenerated` throws, double-failure (gen throws AND `markError` throws → `failed-write-also-failed`). NO `vi.mock('@/drizzle')`, `vi.mock('@/services/imageGen')`, `vi.mock('@/services/storyForge')`, `vi.mock('@/utils/cloudflare')`. Logger / env stubs only. Tests should fail until T014 lands.
+- [X] T012 [P] [US1] Add `tests/fakes/imagePipeline.ts`: `createInMemoryAiText`, `createInMemoryAiImage`, `createInMemoryImageStore`, `createInMemoryLogRepository`, `createTestPipeline({ overrides? })`. Each fake exposes `.snapshot()` for assertions and accepts `{ throws? }` configuration. No production-code imports.
+- [X] T013 [P] [US1] Add boundary test cases to `services/imagePipeline/index.test.ts` for `submit`: success, `linkCategories` throws, `aiImage.generateBase64` throws, `aiImage` succeeds + `markImageGenerated` throws, double-failure (gen throws AND `markError` throws → `failed-write-also-failed`). NO `vi.mock('@/drizzle')`, `vi.mock('@/services/imageGen')`, `vi.mock('@/services/storyForge')`, `vi.mock('@/utils/cloudflare')`. Logger / env stubs only. Tests should fail until T014 lands.
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] Implement `submit(input)` in `services/imagePipeline/index.ts`. Sequence: `repo.insertDraft(input.draft)` → `repo.linkCategories(id, input.categoryIds)` → run the same generate-and-mark arc as `generateImageFor(id)`. Wrap the link + arc in the existing failure handler so any throw goes through `recordError` → returns `failed-recorded` or `failed-write-also-failed`. `insertDraft` failure rejects to caller (no row to record against).
-- [ ] T015 [US1] Update `start/routes/api/log/submit.ts`: remove direct `db.insert(log)` + `db.insert(logCategory)` + `imagePipeline.run(newLog.id)`; replace with `pipeline.submit({ draft: { title, description, imageDescription }, categoryIds: filteredIds })`. Keep Zod validation, friendly-error mapping, and the `storyForge.logDetails` + `storyForge.categories` calls in the route. Use `logPipelineOutcome` on the result.
+- [X] T014 [US1] Implement `submit(input)` in `services/imagePipeline/index.ts`. Sequence: `repo.insertDraft(input.draft)` → `repo.linkCategories(id, input.categoryIds)` → run the same generate-and-mark arc as `generateImageFor(id)`. Wrap the link + arc in the existing failure handler so any throw goes through `recordError` → returns `failed-recorded` or `failed-write-also-failed`. `insertDraft` failure rejects to caller (no row to record against).
+- [X] T015 [US1] Update `start/routes/api/log/submit.ts`: remove direct `db.insert(log)` + `db.insert(logCategory)` + `imagePipeline.run(newLog.id)`; replace with `pipeline.submit({ draft: { title, description, imageDescription }, categoryIds: filteredIds })`. Keep Zod validation, friendly-error mapping, and the `storyForge.logDetails` + `storyForge.categories` calls in the route. Use `logPipelineOutcome` on the result.
 
 **Checkpoint**: US1 complete. `pnpm lint && pnpm test && pnpm build` green. The submit route no longer touches `db.insert`. Commit: `feat(007): pipeline.submit replaces submit-route db writes (US1)`.
 
@@ -77,13 +77,13 @@ Web service / TanStack Start. Source under `services/`, `start/routes/api/`, `te
 
 ### Tests for User Story 2
 
-- [ ] T016 [P] [US2] Extend `services/imagePipeline/index.test.ts` with `generateImageFor` boundary cases: success, status=ImageGenerated → `skipped/not-pending`, missing row → `skipped/not-found`, `loadStatus` throws → best-effort `markError` → `failed-recorded`, `markError` also throws → `failed-write-also-failed`. Confirm `aiText.imagePrompt` is NOT called when `imageDescription` is non-empty.
+- [X] T016 [P] [US2] Extend `services/imagePipeline/index.test.ts` with `generateImageFor` boundary cases: success, status=ImageGenerated → `skipped/not-pending`, missing row → `skipped/not-found`, `loadStatus` throws → best-effort `markError` → `failed-recorded`, `markError` also throws → `failed-write-also-failed`. Confirm `aiText.imagePrompt` is NOT called when `imageDescription` is non-empty.
 
 ### Implementation for User Story 2
 
-- [ ] T017 [US2] Update `start/routes/api/log/$id.ts` PUT branch: replace `imagePipeline.run(id)` with `pipeline.generateImageFor(id)`. Keep `logPipelineOutcome(outcome, 'PUT /api/log/$id')`.
-- [ ] T018 [US2] Update `start/routes/api/trigger/$id.ts`: replace `imagePipeline.run(logId)` with `pipeline.generateImageFor(logId)`. Keep the exhaustive switch on `outcome.kind` for the response.
-- [ ] T019 [US2] Run `pnpm lint && pnpm test && pnpm build`. Commit: `feat(007): trigger + edit routes call pipeline.generateImageFor (US2)`.
+- [X] T017 [US2] Update `start/routes/api/log/$id.ts` PUT branch: replace `imagePipeline.run(id)` with `pipeline.generateImageFor(id)`. Keep `logPipelineOutcome(outcome, 'PUT /api/log/$id')`.
+- [X] T018 [US2] Update `start/routes/api/trigger/$id.ts`: replace `imagePipeline.run(logId)` with `pipeline.generateImageFor(logId)`. Keep the exhaustive switch on `outcome.kind` for the response.
+- [X] T019 [US2] Run `pnpm lint && pnpm test && pnpm build`. Commit: `feat(007): trigger + edit routes call pipeline.generateImageFor (US2)`.
 
 **Checkpoint**: US2 complete. The `run()` alias from T010 is now unused.
 
@@ -97,14 +97,14 @@ Web service / TanStack Start. Source under `services/`, `start/routes/api/`, `te
 
 ### Tests for User Story 3
 
-- [ ] T020 [P] [US3] Extend `services/imagePipeline/index.test.ts` with `drainOnePending` cases: empty queue → `null`; single Created row → wrapped success outcome; row pre-loaded as ImageGenerated → still picked up only if status==Created (otherwise findFirstPending wouldn't return it; cover both branches by injecting a fake repo where `findFirstPending` returns a stale id).
-- [ ] T021 [P] [US3] Rewrite `services/script.test.ts` to drive the new drain loop. Use a fake pipeline (object literal with `drainOnePending` queueing outcomes via `vi.fn`). Cover: N=0/1/3 rows, `failed-write-also-failed` triggers exactly one Telegram alert per chat id, `TELEGRAM_BOT_CHAT_IDS=[]` skips the alert, `drainOnePending` throws → outer catch returns `{ success: false, processed: 0, error: 'Failed to process logs' }`.
+- [X] T020 [P] [US3] Extend `services/imagePipeline/index.test.ts` with `drainOnePending` cases: empty queue → `null`; single Created row → wrapped success outcome; row pre-loaded as ImageGenerated → still picked up only if status==Created (otherwise findFirstPending wouldn't return it; cover both branches by injecting a fake repo where `findFirstPending` returns a stale id).
+- [X] T021 [P] [US3] Rewrite `services/script.test.ts` to drive the new drain loop. Use a fake pipeline (object literal with `drainOnePending` queueing outcomes via `vi.fn`). Cover: N=0/1/3 rows, `failed-write-also-failed` triggers exactly one Telegram alert per chat id, `TELEGRAM_BOT_CHAT_IDS=[]` skips the alert, `drainOnePending` throws → outer catch returns `{ success: false, processed: 0, error: 'Failed to process logs' }`.
 
 ### Implementation for User Story 3
 
-- [ ] T022 [US3] Implement `drainOnePending()` in `services/imagePipeline/index.ts`: `const row = await deps.repo.findFirstPending(); if (!row) return null; return await this.generateImageFor(row.id);`.
-- [ ] T023 [US3] Rewrite `services/script.ts::runImageGenerationScript`. Sequential loop: `let processed = 0; while (true) { const outcome = await pipeline.drainOnePending(); if (!outcome) break; processed++; handle(outcome); } return { success: true, processed }`. Preserve `alertWriteAlsoFailed` (HTML-escape, per-chat-id, swallow individual errors). Drop `BATCH_SIZE`, `DELAY_MS`, `batch`, and `wait` imports.
-- [ ] T024 [US3] Run `pnpm lint && pnpm test && pnpm build`. Commit: `feat(007): drainOnePending replaces parallel batch in script.ts (US3)`.
+- [X] T022 [US3] Implement `drainOnePending()` in `services/imagePipeline/index.ts`: `const row = await deps.repo.findFirstPending(); if (!row) return null; return await this.generateImageFor(row.id);`.
+- [X] T023 [US3] Rewrite `services/script.ts::runImageGenerationScript`. Sequential loop: `let processed = 0; while (true) { const outcome = await pipeline.drainOnePending(); if (!outcome) break; processed++; handle(outcome); } return { success: true, processed }`. Preserve `alertWriteAlsoFailed` (HTML-escape, per-chat-id, swallow individual errors). Drop `BATCH_SIZE`, `DELAY_MS`, `batch`, and `wait` imports.
+- [X] T024 [US3] Run `pnpm lint && pnpm test && pnpm build`. Commit: `feat(007): drainOnePending replaces parallel batch in script.ts (US3)`.
 
 **Checkpoint**: US3 complete. All three pipeline methods land. The old `run()` alias can be removed (Phase 6 cleanup).
 
@@ -116,10 +116,10 @@ Web service / TanStack Start. Source under `services/`, `start/routes/api/`, `te
 
 ### Implementation for User Story 4
 
-- [ ] T025 [US4] Delete `services/imagePipeline.ts` (the old single-file shim). Update any remaining imports of `'@/services/imagePipeline'` to point at `'@/services/imagePipeline'` (directory index — same import path).
-- [ ] T026 [US4] Remove the `run` alias added in T010 from `services/imagePipeline/index.ts`. Confirm no callers reference `pipeline.run`.
-- [ ] T027 [US4] Run a grep contract test (manual): `grep -nE "from '@/services/imageGen'|from '@/utils/cloudflare'|db\\.insert\\(log\\)|db\\.update\\(log\\)" start/routes/api/log/submit.ts start/routes/api/log/\\$id.ts start/routes/api/trigger/\\$id.ts services/script.ts` MUST return zero matches. (`start/routes/api/log/$id.ts` DELETE branch may still call `deleteFromR2` directly — accepted; not pipeline-state related.)
-- [ ] T028 [US4] Run `pnpm lint && pnpm test && pnpm build`. Commit: `chore(007): drop legacy imagePipeline.ts + run() alias (US4)`.
+- [X] T025 [US4] Delete `services/imagePipeline.ts` (the old single-file shim). Update any remaining imports of `'@/services/imagePipeline'` to point at `'@/services/imagePipeline'` (directory index — same import path).
+- [X] T026 [US4] Remove the `run` alias added in T010 from `services/imagePipeline/index.ts`. Confirm no callers reference `pipeline.run`.
+- [X] T027 [US4] Run a grep contract test (manual): `grep -nE "from '@/services/imageGen'|from '@/utils/cloudflare'|db\\.insert\\(log\\)|db\\.update\\(log\\)" start/routes/api/log/submit.ts start/routes/api/log/\\$id.ts start/routes/api/trigger/\\$id.ts services/script.ts` MUST return zero matches. (`start/routes/api/log/$id.ts` DELETE branch may still call `deleteFromR2` directly — accepted; not pipeline-state related.)
+- [X] T028 [US4] Run `pnpm lint && pnpm test && pnpm build`. Commit: `chore(007): drop legacy imagePipeline.ts + run() alias (US4)`.
 
 **Checkpoint**: US4 complete. Routes are clean.
 
@@ -131,10 +131,10 @@ Web service / TanStack Start. Source under `services/`, `start/routes/api/`, `te
 
 ### Implementation for User Story 5
 
-- [ ] T029 [US5] Audit `services/imagePipeline.test.ts`. For each test case, confirm an equivalent exists in `services/imagePipeline/index.test.ts` (T013/T016/T020). Migrate any missing edge case (e.g., specific `causeToErrorString` AIError-discriminator persistence test).
-- [ ] T030 [US5] Delete `services/imagePipeline.test.ts` once parity is confirmed.
-- [ ] T031 [US5] Confirm the boundary suite passes the no-mock fingerprint (FR-014): grep for the four forbidden `vi.mock` strings inside `services/imagePipeline/index.test.ts`; expect zero matches.
-- [ ] T032 [US5] Run `pnpm lint && pnpm test:coverage && pnpm build`. Coverage threshold (50% lines + branches) must hold. Commit: `test(007): replace per-seam mocks with boundary suite (US5)`.
+- [X] T029 [US5] Audit `services/imagePipeline.test.ts`. For each test case, confirm an equivalent exists in `services/imagePipeline/index.test.ts` (T013/T016/T020). Migrate any missing edge case (e.g., specific `causeToErrorString` AIError-discriminator persistence test).
+- [X] T030 [US5] Delete `services/imagePipeline.test.ts` once parity is confirmed.
+- [X] T031 [US5] Confirm the boundary suite passes the no-mock fingerprint (FR-014): grep for the four forbidden `vi.mock` strings inside `services/imagePipeline/index.test.ts`; expect zero matches.
+- [X] T032 [US5] Run `pnpm lint && pnpm test:coverage && pnpm build`. Coverage threshold (50% lines + branches) must hold. Commit: `test(007): replace per-seam mocks with boundary suite (US5)`.
 
 **Checkpoint**: US5 complete.
 
@@ -142,20 +142,20 @@ Web service / TanStack Start. Source under `services/`, `start/routes/api/`, `te
 
 ## Phase 8: Polish & verification
 
-- [ ] T033 [P] Update `services/imagePipeline/outcome.ts` JSDoc on `causeToErrorString` to call out FR-017 (unwrap rule). Touch nothing else.
-- [ ] T034 [P] Run the quickstart fingerprint checks from `specs/007-image-pipeline-ports/quickstart.md` sections 2 + 3. Capture output in the PR description.
-- [ ] T035 Run `pnpm cf-typegen`; confirm zero diff to `worker-configuration.d.ts` (Constitution gate 4).
-- [ ] T036 Final check: `pnpm lint && pnpm test:coverage && pnpm build` all green on the last commit.
-- [ ] T037 Open PR `gh pr create --base main --title "feat(007): image pipeline behind ports & adapters" …` (body links issue #6, lists ports + methods, checks SC-001..SC-006).
-- [ ] T038 Run `/gh-pr-no-checkout-review <PR-URL>` from a fresh sub-agent. Iterate (Phase 9 below) until zero P0/P1/P2 findings.
+- [X] T033 [P] Update `services/imagePipeline/outcome.ts` JSDoc on `causeToErrorString` to call out FR-017 (unwrap rule). Touch nothing else.
+- [X] T034 [P] Run the quickstart fingerprint checks from `specs/007-image-pipeline-ports/quickstart.md` sections 2 + 3. Capture output in the PR description.
+- [X] T035 Run `pnpm cf-typegen`; confirm zero diff to `worker-configuration.d.ts` (Constitution gate 4).
+- [X] T036 Final check: `pnpm lint && pnpm test:coverage && pnpm build` all green on the last commit.
+- [X] T037 Open PR `gh pr create --base main --title "feat(007): image pipeline behind ports & adapters" …` (body links issue #6, lists ports + methods, checks SC-001..SC-006).
+- [X] T038 Run `/gh-pr-no-checkout-review <PR-URL>` from a fresh sub-agent. Iterate (Phase 9 below) until zero P0/P1/P2 findings.
 
 ---
 
 ## Phase 9: Review iteration loop (out-of-band)
 
-- [ ] T039 For each P0/P1/P2 finding from `/gh-pr-no-checkout-review`, dispatch a fresh Opus sub-agent (separate from the reviewer) to apply the patch + re-run `pnpm lint && pnpm test && pnpm build` + push.
-- [ ] T040 Re-run `/gh-pr-no-checkout-review` from a fresh reviewer sub-agent. Repeat T039–T040 (cap 5 iterations). If still failing after 5, flag to the user.
-- [ ] T041 Once SC-006 is met, `gh pr merge --squash --delete-branch`. Verify `main` builds locally.
+- [X] T039 For each P0/P1/P2 finding from `/gh-pr-no-checkout-review`, dispatch a fresh Opus sub-agent (separate from the reviewer) to apply the patch + re-run `pnpm lint && pnpm test && pnpm build` + push.
+- [X] T040 Re-run `/gh-pr-no-checkout-review` from a fresh reviewer sub-agent. Repeat T039–T040 (cap 5 iterations). If still failing after 5, flag to the user.
+- [X] T041 Once SC-006 is met, `gh pr merge --squash --delete-branch`. Verify `main` builds locally.
 
 ---
 
