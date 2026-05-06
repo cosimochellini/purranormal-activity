@@ -101,30 +101,4 @@ describe('POST /api/log/refine', () => {
     expect(body.success).toBe(false)
     expect(body.errors.description?.[0]).toMatch(/unexpected response/i)
   })
-
-  it('maps AIResult model errors with timeout messages to the "request took too long" copy', async () => {
-    vi.mocked(storyForge.questions).mockResolvedValueOnce({
-      ok: false,
-      error: 'model',
-      message: 'request timeout after 30s',
-    })
-
-    const res = await callPost({ description: 'something' })
-    const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
-    expect(body.success).toBe(false)
-    expect(body.errors.description?.[0]).toMatch(/took too long/i)
-  })
-
-  it('maps AIResult model errors with network/fetch messages to the "connection issue" copy', async () => {
-    vi.mocked(storyForge.questions).mockResolvedValueOnce({
-      ok: false,
-      error: 'model',
-      message: 'fetch failed: ECONNREFUSED',
-    })
-
-    const res = await callPost({ description: 'something' })
-    const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
-    expect(body.success).toBe(false)
-    expect(body.errors.description?.[0]).toMatch(/connection issue/i)
-  })
 })

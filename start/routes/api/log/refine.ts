@@ -5,7 +5,7 @@ import { storyForge } from '@/services/storyForge'
 import type { LogRefineResponse } from '@/types/api/log-refine'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { type FriendlyMessages, friendlyAiErrorText, friendlyCatchText } from './_friendly'
+import { createFriendly, type FriendlyMessages } from './_friendly'
 
 const schema = z.object({
   description: z
@@ -24,11 +24,17 @@ const messages: FriendlyMessages = {
   GENERIC_FALLBACK: 'Unable to generate questions for your event. Please try again.',
 }
 
+const friendly = createFriendly<Response>({
+  messages,
+  build: (text) => ok<LogRefineResponse>({ success: false, errors: { description: [text] } }),
+  onError: (error) => logger.error('Failed to generate follow-up questions:', error),
+})
+
 export const Route = createFileRoute('/api/log/refine')({
   server: {
     handlers: {
-      POST: async ({ request }) => {
-        try {
+      POST: ({ request }) =>
+        friendly.guard(async () => {
           const data = await request.json()
           const result = await schema.safeParseAsync(data)
 
@@ -37,32 +43,11 @@ export const Route = createFileRoute('/api/log/refine')({
             return ok<LogRefineResponse>({ success: false, errors })
           }
 
-          const { description } = result.data
-          const r = await storyForge.questions(description)
-          if (!r.ok) {
-            logger.error('storyForge.questions returned !ok', r)
-            return ok<LogRefineResponse>({
-              success: false,
-              errors: { description: [friendlyAiErrorText(r.error, r.message, messages)] },
-            })
-          }
-          return ok<LogRefineResponse>({ success: true, content: r.value })
-        } catch (error) {
-          logger.error('Failed to generate follow-up questions:', error)
+          const r = friendly.fromAi(await storyForge.questions(result.data.description))
+          if (!r.ok) return r.response
 
-          // Include `error.name` in the matcher input so client-class
-          // errors (e.g. `OpenAIError`, `APIConnectionError`,
-          // `AbortError`) are correctly attributed even when their
-          // message is bland (e.g. just `"fetch failed"`).
-          const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
-          return ok<LogRefineResponse>({
-            success: false,
-            errors: {
-              description: [friendlyCatchText(message, messages)],
-            },
-          })
-        }
-      },
+          return ok<LogRefineResponse>({ success: true, content: r.value })
+        }),
     },
   },
 })

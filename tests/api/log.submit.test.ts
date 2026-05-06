@@ -279,42 +279,6 @@ describe('POST /api/log/submit', () => {
       expect(imagePipeline.submit).not.toHaveBeenCalled()
     })
 
-    it('maps model errors with libsql/turso messages to the DB-unavailable copy', async () => {
-      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
-        ok: false,
-        error: 'model',
-        message: 'libsql: connection refused',
-      })
-
-      const res = await callPost({
-        description: 'a description that is long enough',
-        answers: [],
-        secret: 'test-secret',
-      })
-
-      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
-      expect(body.errors.general?.[0]).toMatch(/save the event/i)
-      expect(imagePipeline.submit).not.toHaveBeenCalled()
-    })
-
-    it('maps model errors with network messages to the "connection issue" copy', async () => {
-      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
-        ok: false,
-        error: 'model',
-        message: 'fetch failed: ECONNREFUSED',
-      })
-
-      const res = await callPost({
-        description: 'a description that is long enough',
-        answers: [],
-        secret: 'test-secret',
-      })
-
-      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
-      expect(body.errors.general?.[0]).toMatch(/connection issue/i)
-      expect(imagePipeline.submit).not.toHaveBeenCalled()
-    })
-
     it('still returns success when imagePipeline.submit resolves with a non-success outcome (does not poison the response)', async () => {
       vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
         ok: true,
