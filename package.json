@@ -31,27 +31,27 @@
     ]
   },
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.53",
-    "@aws-sdk/client-s3": "3.1037.0",
+    "@ai-sdk/openai": "^3.0.61",
+    "@aws-sdk/client-s3": "3.1043.0",
     "@libsql/client": "^0.17.3",
-    "@tabler/icons-react": "^3.41.1",
-    "ai": "^6.0.168",
+    "@tabler/icons-react": "^3.42.0",
+    "ai": "^6.0.175",
     "classnames": "^2.5.1",
     "drizzle-orm": "^0.45.2",
     "nuqs": "^2.8.9",
-    "openai": "^6.34.0",
+    "openai": "^6.36.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-intersection-observer": "^10.0.3",
     "sort-es": "^1.7.18",
-    "zod": "^4.3.6"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.13",
-    "@cloudflare/vite-plugin": "1.33.2",
+    "@cloudflare/vite-plugin": "1.36.0",
     "@tailwindcss/postcss": "^4.2.4",
-    "@tanstack/react-router": "1.168.24",
-    "@tanstack/react-start": "1.167.49",
+    "@tanstack/react-router": "1.169.2",
+    "@tanstack/react-start": "1.167.64",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^25.6.0",
@@ -62,13 +62,13 @@
     "drizzle-kit": "^0.31.10",
     "happy-dom": "^20.9.0",
     "husky": "^9.1.7",
-    "lint-staged": "^16.4.0",
-    "postcss": "^8.5.10",
+    "lint-staged": "^17.0.2",
+    "postcss": "^8.5.14",
     "tailwindcss": "^4.2.4",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
     "vite": "8.0.10",
     "vitest": "^4.1.5",
-    "wrangler": "4.85.0"
+    "wrangler": "4.88.0"
   }
 }
