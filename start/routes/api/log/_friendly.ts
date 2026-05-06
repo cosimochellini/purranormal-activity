@@ -1,12 +1,21 @@
-import type { AIError } from '@/services/storyForge'
+import type { AIError, AIResult } from '@/services/storyForge'
 
 /**
- * Shared friendly-text helpers for /api/log/refine and /api/log/submit.
- * Two routes both turn AIResult error envelopes (and unexpected catch
- * exceptions) into user-visible copy. Keeping the mapping in one place
- * prevents drift — each route only declares the concrete strings it
- * uses (the imperatives differ slightly: refine = "questions for your
- * event"; submit = "your paranormal event").
+ * Per-route error reporter for /api/log/* handlers.
+ *
+ * Two responsibilities, two layers:
+ *
+ *   1. `friendlyCopy(messages)` — pure classification: turns either an
+ *      `AIResult` error envelope or an arbitrary thrown value into a
+ *      user-visible string from the supplied `FriendlyMessages` map.
+ *   2. `createFriendly<TResponse>(config)` — route-side ergonomics:
+ *      wraps a handler body, catches throws, runs `error.name`
+ *      enrichment, slots the friendly text into the route's
+ *      response shape, and invokes the optional `onError` hook.
+ *
+ * The asymmetric matcher ordering (DB-first for `AIResult.model`,
+ * AI-first for thrown values) is encoded once inside `friendlyCopy`
+ * and never picked by a caller.
  */
 
 export interface FriendlyMessages {
@@ -15,7 +24,7 @@ export interface FriendlyMessages {
   CONNECTION_ISSUE: string
   REQUEST_TIMEOUT: string
   GENERIC_FALLBACK: string
-  /** Optional — refine has no DB write path so it omits this. */
+  /** Optional — omit on routes with no DB write path (e.g. refine). */
   DB_UNAVAILABLE?: string
 }
 
@@ -29,15 +38,10 @@ const matchInfraMessage = (message: string, m: FriendlyMessages) => {
 }
 
 /**
- * True iff the message looks like a database error. Decoupled from the
- * message map so the matcher's "is this a DB error?" decision stays
- * separate from "do I have user-visible copy for it?".
- *
  * Token list is stack-specific (libsql/drizzle/turso/sqlite + the bare
- * `db` token with word boundaries, plus the phrase
- * `database <error|connection|unavailable|...>`) so it does NOT
- * false-match harmless narrative text like "User database of
- * paranormal events".
+ * `db` token with word boundaries, plus the phrase `database <verb>`)
+ * so it does NOT false-match harmless narrative text like "User
+ * database of paranormal events".
  */
 const looksLikeDbError = (message: string) => {
   const msg = lower(message)
@@ -51,72 +55,164 @@ const looksLikeDbError = (message: string) => {
   )
 }
 
-/**
- * True iff the message looks like an AI-provider failure. Run BEFORE the
- * infra (timeout/network/fetch) matcher so a thrown OpenAI error whose
- * message contains the literal token `fetch failed` (the most common
- * undici surface) is attributed to the AI service, not to the user's
- * connection.
- */
 const looksLikeAiError = (message: string) => {
   const msg = lower(message)
   return msg.includes('openai') || msg.includes('rate limit') || /\bgpt-/.test(msg)
 }
 
 /**
- * Map a structured AIResult error to user-facing copy.
- *
- * `parse` / `validation` → "AI returned an unexpected response".
- *
- * `model` → the AIResult contract folds upstream-dependency failures
- * (notably `categories.all()` rejecting inside `logDetails`) under the
- * same kind, so we inspect the underlying message before falling back
- * to the AI-unavailable copy. Order:
- *   1. DB tokens (libsql/drizzle/turso/sqlite/...) → DB_UNAVAILABLE
- *      (or the generic fallback when the caller has no DB copy).
- *   2. Infra tokens (timeout/network/fetch) → CONNECTION_ISSUE /
- *      REQUEST_TIMEOUT.
- *   3. Generic AI_UNAVAILABLE fallback.
- *
- * NOTE the ordering is intentionally **DB-first** here, in contrast to
- * `friendlyCatchText` below which is **AI-first**. The reason: the
- * AIResult `model` envelope ALREADY tells us the failure originated in
- * a domain method whose only AI-adjacent dependencies are
- * `categories.all()` and the LLM itself, so a DB-shaped message is
- * almost certainly the categories port, not the LLM. By contrast, the
- * catch path receives raw exceptions including OpenAI client errors
- * that mention `fetch failed` — there an AI-first ordering correctly
- * attributes the failure to the LLM provider before infra heuristics.
+ * `error.name`-prefix enrichment for bland undici surfaces. Without
+ * this, a thrown `OpenAIError` whose message is just `"fetch failed"`
+ * would be mis-attributed to the user's connection by the infra
+ * matcher rather than to the LLM provider.
  */
-export const friendlyAiErrorText = (
-  kind: AIError,
-  message: string,
-  m: FriendlyMessages,
-): string => {
-  if (kind === 'parse' || kind === 'validation') return m.AI_UNEXPECTED_RESPONSE
-  if (looksLikeDbError(message)) return m.DB_UNAVAILABLE ?? m.GENERIC_FALLBACK
-  return matchInfraMessage(message, m) ?? m.AI_UNAVAILABLE
+const enrichErrorMessage = (error: unknown): string =>
+  error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+
+export interface FriendlyCopy {
+  /**
+   * Map a structured AIResult error envelope to user-facing copy.
+   *
+   * Order for `kind === 'model'`:
+   *   1. DB tokens → DB_UNAVAILABLE (or GENERIC_FALLBACK when omitted).
+   *   2. Infra tokens (timeout/network/fetch) → REQUEST_TIMEOUT / CONNECTION_ISSUE.
+   *   3. Generic AI_UNAVAILABLE fallback.
+   *
+   * `parse` / `validation` always map to AI_UNEXPECTED_RESPONSE.
+   *
+   * The DB-first ordering is intentional: domain methods returning
+   * `AIResult` fold their `categories.all()` (DB) failures under the
+   * same `model` envelope, so a DB-shaped message is almost certainly
+   * the categories port, not the LLM.
+   */
+  fromAiResult: (kind: AIError, message: string) => string
+
+  /**
+   * Map an arbitrary thrown value to user-facing copy.
+   *
+   * Order:
+   *   1. AI tokens (openai / rate limit / gpt-) — first, because
+   *      `OpenAIError: fetch failed` would otherwise be mis-routed to
+   *      the connection-issue copy by the infra matcher.
+   *   2. DB tokens.
+   *   3. Infra tokens.
+   *   4. Generic fallback.
+   *
+   * Accepts non-Error values without crashing — `null`, `undefined`,
+   * and arbitrary primitives all coerce safely to strings before
+   * matching.
+   */
+  fromThrown: (error: unknown) => string
 }
 
+export const friendlyCopy = (m: FriendlyMessages): FriendlyCopy => ({
+  fromAiResult: (kind, message) => {
+    if (kind === 'parse' || kind === 'validation') return m.AI_UNEXPECTED_RESPONSE
+    if (looksLikeDbError(message)) return m.DB_UNAVAILABLE ?? m.GENERIC_FALLBACK
+    return matchInfraMessage(message, m) ?? m.AI_UNAVAILABLE
+  },
+  fromThrown: (error) => {
+    const message = enrichErrorMessage(error)
+    if (looksLikeAiError(message)) return m.AI_UNAVAILABLE
+    if (looksLikeDbError(message)) return m.DB_UNAVAILABLE ?? m.GENERIC_FALLBACK
+    return matchInfraMessage(message, m) ?? m.GENERIC_FALLBACK
+  },
+})
+
+export interface FriendlyConfig<TResponse> {
+  messages: FriendlyMessages
+  /** Slot the friendly string into the route's response shape. Bound once per route. */
+  build: (text: string) => TResponse
+  /**
+   * Optional hook invoked exactly once whenever the reporter produces an
+   * error response — both on caught throws (from `guard`) and on
+   * AIResult `!ok` envelopes (from `fromAi`). Defaults to no-op.
+   *
+   * The first argument is the **original** input — either the thrown
+   * value or the full `AIResult` envelope `{ ok: false, error, message }`.
+   * Callers that want distinct log contexts can discriminate on the
+   * envelope shape (`isAiResultError(error)`) before logging.
+   */
+  onError?: (error: unknown, friendly: string) => void
+}
+
+const AI_ERROR_KINDS: ReadonlySet<AIError> = new Set(['parse', 'model', 'validation'])
+
 /**
- * Map an unexpected thrown exception's message to user-facing copy.
+ * Predicate for `onError` discriminators: returns true iff the value
+ * is an `AIResult` `!ok` envelope (passed to `onError` by `fromAi`),
+ * false for thrown values (passed by `guard`).
  *
- * Order:
- *   1. AI-provider tokens (OpenAI / rate limit / gpt-) — first, because
- *      `Error: fetch failed` is the most common OpenAI surface from the
- *      undici client and would otherwise be mis-routed to "Connection
- *      issue" copy.
- *   2. DB tokens (libsql/drizzle/turso/sqlite/`db`/`database <error>`).
- *   3. Generic infra tokens (timeout/network/fetch).
- *   4. Generic fallback.
- *
- * The bare `AI` substring is intentionally NOT used here — it
- * false-matches common words like `FAILED`, `AVAILABLE`, `MAIN`.
+ * Validates `error` is one of the canonical `AIError` literals so that
+ * a thrown user-land object that happens to share the shape (e.g.
+ * `{ ok: false, error: 'foo', message: 'x' }`) does NOT get
+ * misclassified as an AIResult envelope.
  */
-export const friendlyCatchText = (message: string, m: FriendlyMessages): string => {
-  if (looksLikeAiError(message)) return m.AI_UNAVAILABLE
-  if (looksLikeDbError(message)) return m.DB_UNAVAILABLE ?? m.GENERIC_FALLBACK
-  const infra = matchInfraMessage(message, m)
-  if (infra) return infra
-  return m.GENERIC_FALLBACK
+export const isAiResultError = (
+  error: unknown,
+): error is { ok: false; error: AIError; message: string } => {
+  if (typeof error !== 'object' || error === null) return false
+  const e = error as { ok?: unknown; error?: unknown; message?: unknown }
+  return (
+    e.ok === false &&
+    typeof e.message === 'string' &&
+    typeof e.error === 'string' &&
+    AI_ERROR_KINDS.has(e.error as AIError)
+  )
+}
+
+export interface FriendlyReporter<TResponse> {
+  /**
+   * Wraps a handler body. Returns the body's resolved value on success.
+   * On a throw: catches the error, classifies its message via
+   * `friendlyCopy.fromThrown`, calls `onError`, and returns
+   * `build(friendlyText)`.
+   *
+   * NOTE: This silently converts thrown errors into a `200` response
+   * with `{ success: false, errors: ... }`. Every uncaught throw inside
+   * `run` — including programmer errors — is funnelled through the
+   * matcher to user-visible copy. Callers that need a 5xx for a given
+   * subset of errors must `try/catch` that subset themselves before
+   * `guard` sees it.
+   */
+  guard: (run: () => Promise<TResponse>) => Promise<TResponse>
+
+  /**
+   * Branches on an AIResult. On `ok: true`, returns the unwrapped value.
+   * On `ok: false`, returns a built error response and invokes
+   * `onError` once with the full envelope. Throws are NOT caught here —
+   * wrap with `guard`.
+   *
+   * NOTE on the return type: the `{ ok, value | response }` shape
+   * deliberately mirrors `AIResult`'s discriminator so callers can
+   * pattern-match in the same idiom. `value` is the unwrapped success
+   * payload; `response` is the **already-built** route response (typed
+   * as `TResponse`, not `AIError | string`). The fields are
+   * non-overlapping so there is no narrowing ambiguity.
+   */
+  fromAi: <T>(result: AIResult<T>) => { ok: true; value: T } | { ok: false; response: TResponse }
+}
+
+export const createFriendly = <TResponse>(
+  cfg: FriendlyConfig<TResponse>,
+): FriendlyReporter<TResponse> => {
+  const copy = friendlyCopy(cfg.messages)
+
+  return {
+    guard: async (run) => {
+      try {
+        return await run()
+      } catch (error) {
+        const text = copy.fromThrown(error)
+        cfg.onError?.(error, text)
+        return cfg.build(text)
+      }
+    },
+    fromAi: (result) => {
+      if (result.ok) return { ok: true, value: result.value }
+      const text = copy.fromAiResult(result.error, result.message)
+      cfg.onError?.(result, text)
+      return { ok: false, response: cfg.build(text) }
+    },
+  }
 }

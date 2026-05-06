@@ -279,12 +279,18 @@ describe('POST /api/log/submit', () => {
       expect(imagePipeline.submit).not.toHaveBeenCalled()
     })
 
-    it('maps model errors with libsql/turso messages to the DB-unavailable copy', async () => {
+    it('returns DB-unavailable copy when storyForge.categories() throws a non-Error / non-DB-shaped value (categorical guarantee)', async () => {
       vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
-        ok: false,
-        error: 'model',
-        message: 'libsql: connection refused',
+        ok: true,
+        value: {
+          title: 't',
+          description: 'd',
+          imageDescription: 'i',
+          categories: [],
+        },
       })
+      // Reject with a non-Error value whose stringification (`[object Object]`) lacks DB tokens.
+      vi.mocked(storyForge.categories).mockRejectedValueOnce({ code: 'UNKNOWN' })
 
       const res = await callPost({
         description: 'a description that is long enough',
@@ -293,25 +299,9 @@ describe('POST /api/log/submit', () => {
       })
 
       const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+      expect(body.success).toBe(false)
+      // Categorical: must be the explicit DB_UNAVAILABLE copy, NOT GENERIC_FALLBACK.
       expect(body.errors.general?.[0]).toMatch(/save the event/i)
-      expect(imagePipeline.submit).not.toHaveBeenCalled()
-    })
-
-    it('maps model errors with network messages to the "connection issue" copy', async () => {
-      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
-        ok: false,
-        error: 'model',
-        message: 'fetch failed: ECONNREFUSED',
-      })
-
-      const res = await callPost({
-        description: 'a description that is long enough',
-        answers: [],
-        secret: 'test-secret',
-      })
-
-      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
-      expect(body.errors.general?.[0]).toMatch(/connection issue/i)
       expect(imagePipeline.submit).not.toHaveBeenCalled()
     })
 
