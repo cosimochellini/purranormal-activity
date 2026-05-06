@@ -202,32 +202,34 @@ describe('createFriendly(cfg)', () => {
       response: { success: false, text: 'AI_UNEXPECTED_RESPONSE' },
     })
   })
-
-  it('report builds an error response with explicit copy and bypasses the matcher', () => {
-    const onError = vi.fn()
-    const friendly = createFriendly({
-      messages: baseMessages,
-      build: buildResponse,
-      onError,
-    })
-
-    const error = new Error('this would normally classify as CONNECTION_ISSUE')
-    const result = friendly.report(error, baseMessages.DB_UNAVAILABLE ?? '')
-
-    expect(result).toEqual({ success: false, text: 'DB_UNAVAILABLE' })
-    expect(onError).toHaveBeenCalledTimes(1)
-    expect(onError).toHaveBeenCalledWith(error, 'DB_UNAVAILABLE')
-  })
 })
 
 describe('isAiResultError', () => {
-  it('returns true for AIResult !ok envelopes', () => {
+  it('returns true for AIResult !ok envelopes with each canonical kind', () => {
     expect(isAiResultError({ ok: false, error: 'parse', message: 'bad' })).toBe(true)
     expect(isAiResultError({ ok: false, error: 'model', message: 'libsql down' })).toBe(true)
+    expect(isAiResultError({ ok: false, error: 'validation', message: 'bad shape' })).toBe(true)
+  })
+
+  it('returns false for envelopes with non-canonical `error` strings (defends against userland shape collisions)', () => {
+    expect(isAiResultError({ ok: false, error: 'foo', message: 'x' })).toBe(false)
+    expect(isAiResultError({ ok: false, error: 'PARSE', message: 'x' })).toBe(false)
+    expect(isAiResultError({ ok: false, error: '', message: 'x' })).toBe(false)
+  })
+
+  it('returns false for envelopes with non-string `message`', () => {
+    expect(isAiResultError({ ok: false, error: 'parse', message: 42 })).toBe(false)
+    expect(isAiResultError({ ok: false, error: 'parse', message: null })).toBe(false)
+  })
+
+  it('returns false for envelopes with `error` not a string', () => {
+    expect(isAiResultError({ ok: false, error: { kind: 'parse' }, message: 'x' })).toBe(false)
   })
 
   it('returns false for thrown Errors', () => {
     expect(isAiResultError(new Error('boom'))).toBe(false)
+    const enriched = Object.assign(new Error('fetch failed'), { name: 'OpenAIError' })
+    expect(isAiResultError(enriched)).toBe(false)
   })
 
   it('returns false for AIResult ok envelopes (no `error` field)', () => {
@@ -239,5 +241,6 @@ describe('isAiResultError', () => {
     expect(isAiResultError(undefined)).toBe(false)
     expect(isAiResultError('string')).toBe(false)
     expect(isAiResultError(42)).toBe(false)
+    expect(isAiResultError([])).toBe(false)
   })
 })

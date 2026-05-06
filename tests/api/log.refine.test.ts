@@ -101,4 +101,16 @@ describe('POST /api/log/refine', () => {
     expect(body.success).toBe(false)
     expect(body.errors.description?.[0]).toMatch(/unexpected response/i)
   })
+
+  it('end-to-end wiring: model error with timeout token surfaces the REQUEST_TIMEOUT copy on the description field', async () => {
+    vi.mocked(storyForge.questions).mockResolvedValueOnce({
+      ok: false,
+      error: 'model',
+      message: 'request timeout after 30s',
+    })
+
+    const res = await callPost({ description: 'something' })
+    const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+    expect(body.errors.description?.[0]).toMatch(/took too long/i)
+  })
 })

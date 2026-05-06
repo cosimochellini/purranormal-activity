@@ -136,20 +136,30 @@ export interface FriendlyConfig<TResponse> {
   onError?: (error: unknown, friendly: string) => void
 }
 
+const AI_ERROR_KINDS: ReadonlySet<AIError> = new Set(['parse', 'model', 'validation'])
+
 /**
  * Predicate for `onError` discriminators: returns true iff the value
  * is an `AIResult` `!ok` envelope (passed to `onError` by `fromAi`),
  * false for thrown values (passed by `guard`).
+ *
+ * Validates `error` is one of the canonical `AIError` literals so that
+ * a thrown user-land object that happens to share the shape (e.g.
+ * `{ ok: false, error: 'foo', message: 'x' }`) does NOT get
+ * misclassified as an AIResult envelope.
  */
 export const isAiResultError = (
   error: unknown,
-): error is { ok: false; error: AIError; message: string } =>
-  typeof error === 'object' &&
-  error !== null &&
-  'ok' in error &&
-  (error as { ok: unknown }).ok === false &&
-  'error' in error &&
-  'message' in error
+): error is { ok: false; error: AIError; message: string } => {
+  if (typeof error !== 'object' || error === null) return false
+  const e = error as { ok?: unknown; error?: unknown; message?: unknown }
+  return (
+    e.ok === false &&
+    typeof e.message === 'string' &&
+    typeof e.error === 'string' &&
+    AI_ERROR_KINDS.has(e.error as AIError)
+  )
+}
 
 export interface FriendlyReporter<TResponse> {
   /**
@@ -181,16 +191,6 @@ export interface FriendlyReporter<TResponse> {
    * non-overlapping so there is no narrowing ambiguity.
    */
   fromAi: <T>(result: AIResult<T>) => { ok: true; value: T } | { ok: false; response: TResponse }
-
-  /**
-   * Build an error response with **explicit** copy, bypassing the
-   * matchers. Use when the caller already knows which `FriendlyMessages`
-   * key applies (e.g. an inline `try/catch` around a known-DB-port
-   * call wants `DB_UNAVAILABLE` regardless of the thrown error's
-   * message). Calls `onError` with the original error and the rendered
-   * text exactly like the matcher paths.
-   */
-  report: (error: unknown, text: string) => TResponse
 }
 
 export const createFriendly = <TResponse>(
@@ -198,24 +198,21 @@ export const createFriendly = <TResponse>(
 ): FriendlyReporter<TResponse> => {
   const copy = friendlyCopy(cfg.messages)
 
-  const report = (error: unknown, text: string): TResponse => {
-    cfg.onError?.(error, text)
-    return cfg.build(text)
-  }
-
   return {
     guard: async (run) => {
       try {
         return await run()
       } catch (error) {
-        return report(error, copy.fromThrown(error))
+        const text = copy.fromThrown(error)
+        cfg.onError?.(error, text)
+        return cfg.build(text)
       }
     },
     fromAi: (result) => {
       if (result.ok) return { ok: true, value: result.value }
       const text = copy.fromAiResult(result.error, result.message)
-      return { ok: false, response: report(result, text) }
+      cfg.onError?.(result, text)
+      return { ok: false, response: cfg.build(text) }
     },
-    report,
   }
 }

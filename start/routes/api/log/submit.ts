@@ -39,9 +39,12 @@ const messages: FriendlyMessages = {
   DB_UNAVAILABLE: 'Unable to save the event at this time. Please try again shortly.',
 }
 
+const buildErrorResponse = (text: string) =>
+  ok<LogSubmitResponse>({ success: false, errors: { general: [text] } })
+
 const friendly = createFriendly<Response>({
   messages,
-  build: (text) => ok<LogSubmitResponse>({ success: false, errors: { general: [text] } }),
+  build: buildErrorResponse,
   onError: (error) =>
     isAiResultError(error)
       ? logger.error('storyForge.logDetails returned !ok', error)
@@ -85,7 +88,8 @@ export const Route = createFileRoute('/api/log/submit')({
           try {
             allCategoryIds = (await storyForge.categories()).map((c) => c.id)
           } catch (error) {
-            return friendly.report(error, messages.DB_UNAVAILABLE ?? messages.GENERIC_FALLBACK)
+            logger.error('storyForge.categories() failed during submit:', error)
+            return buildErrorResponse(messages.DB_UNAVAILABLE ?? messages.GENERIC_FALLBACK)
           }
 
           const categoryIds = categories
