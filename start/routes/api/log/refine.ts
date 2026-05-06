@@ -5,7 +5,7 @@ import { storyForge } from '@/services/storyForge'
 import type { LogRefineResponse } from '@/types/api/log-refine'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { createFriendly, type FriendlyMessages } from './_friendly'
+import { createFriendly, type FriendlyMessages, isAiResultError } from './_friendly'
 
 const schema = z.object({
   description: z
@@ -27,7 +27,10 @@ const messages: FriendlyMessages = {
 const friendly = createFriendly<Response>({
   messages,
   build: (text) => ok<LogRefineResponse>({ success: false, errors: { description: [text] } }),
-  onError: (error) => logger.error('Failed to generate follow-up questions:', error),
+  onError: (error) =>
+    isAiResultError(error)
+      ? logger.error('storyForge.questions returned !ok', error)
+      : logger.error('Failed to generate follow-up questions:', error),
 })
 
 export const Route = createFileRoute('/api/log/refine')({

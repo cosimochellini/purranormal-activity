@@ -279,6 +279,32 @@ describe('POST /api/log/submit', () => {
       expect(imagePipeline.submit).not.toHaveBeenCalled()
     })
 
+    it('returns DB-unavailable copy when storyForge.categories() throws a non-Error / non-DB-shaped value (categorical guarantee)', async () => {
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: true,
+        value: {
+          title: 't',
+          description: 'd',
+          imageDescription: 'i',
+          categories: [],
+        },
+      })
+      // Reject with a non-Error value whose stringification (`[object Object]`) lacks DB tokens.
+      vi.mocked(storyForge.categories).mockRejectedValueOnce({ code: 'UNKNOWN' })
+
+      const res = await callPost({
+        description: 'a description that is long enough',
+        answers: [],
+        secret: 'test-secret',
+      })
+
+      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+      expect(body.success).toBe(false)
+      // Categorical: must be the explicit DB_UNAVAILABLE copy, NOT GENERIC_FALLBACK.
+      expect(body.errors.general?.[0]).toMatch(/save the event/i)
+      expect(imagePipeline.submit).not.toHaveBeenCalled()
+    })
+
     it('still returns success when imagePipeline.submit resolves with a non-success outcome (does not poison the response)', async () => {
       vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
         ok: true,

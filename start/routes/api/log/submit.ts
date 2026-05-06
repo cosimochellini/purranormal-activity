@@ -7,7 +7,7 @@ import { storyForge } from '@/services/storyForge'
 import type { LogSubmitResponse } from '@/types/api/log-submit'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { createFriendly, type FriendlyMessages } from './_friendly'
+import { createFriendly, type FriendlyMessages, isAiResultError } from './_friendly'
 
 const answerSchema = z.object({
   question: z.string(),
@@ -42,7 +42,10 @@ const messages: FriendlyMessages = {
 const friendly = createFriendly<Response>({
   messages,
   build: (text) => ok<LogSubmitResponse>({ success: false, errors: { general: [text] } }),
-  onError: (error) => logger.error('Failed to submit log:', error),
+  onError: (error) =>
+    isAiResultError(error)
+      ? logger.error('storyForge.logDetails returned !ok', error)
+      : logger.error('Failed to submit log:', error),
 })
 
 export const Route = createFileRoute('/api/log/submit')({
@@ -71,7 +74,19 @@ export const Route = createFileRoute('/api/log/submit')({
 
           const { title, description, categories, imageDescription } = details.value
 
-          const allCategoryIds = (await storyForge.categories()).map((c) => c.id)
+          // Inline guard: every realistic failure of `storyForge.categories()`
+          // is a DB-port failure (cache miss → libsql query). Classifying via
+          // `fromThrown`'s matchers would let a future error-wrapper that
+          // injected an AI-shaped token mis-attribute the failure to the LLM,
+          // and would also drop `DB_UNAVAILABLE` for non-Error rejections
+          // whose stringification lacks DB tokens. Keep the categorical
+          // `DB_UNAVAILABLE` guarantee that the pre-refactor code had.
+          let allCategoryIds: number[]
+          try {
+            allCategoryIds = (await storyForge.categories()).map((c) => c.id)
+          } catch (error) {
+            return friendly.report(error, messages.DB_UNAVAILABLE ?? messages.GENERIC_FALLBACK)
+          }
 
           const categoryIds = categories
             .map(({ id }) => id)

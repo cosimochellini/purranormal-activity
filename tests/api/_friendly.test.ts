@@ -3,6 +3,7 @@ import {
   createFriendly,
   type FriendlyMessages,
   friendlyCopy,
+  isAiResultError,
 } from '@/start/routes/api/log/_friendly'
 
 const baseMessages: FriendlyMessages = {
@@ -202,7 +203,7 @@ describe('createFriendly(cfg)', () => {
     })
   })
 
-  it('fromThrow synchronously classifies and calls onError', () => {
+  it('report builds an error response with explicit copy and bypasses the matcher', () => {
     const onError = vi.fn()
     const friendly = createFriendly({
       messages: baseMessages,
@@ -210,8 +211,33 @@ describe('createFriendly(cfg)', () => {
       onError,
     })
 
-    const result = friendly.fromThrow(new Error('rate limit hit'))
-    expect(result).toEqual({ success: false, text: 'AI_UNAVAILABLE' })
+    const error = new Error('this would normally classify as CONNECTION_ISSUE')
+    const result = friendly.report(error, baseMessages.DB_UNAVAILABLE ?? '')
+
+    expect(result).toEqual({ success: false, text: 'DB_UNAVAILABLE' })
     expect(onError).toHaveBeenCalledTimes(1)
+    expect(onError).toHaveBeenCalledWith(error, 'DB_UNAVAILABLE')
+  })
+})
+
+describe('isAiResultError', () => {
+  it('returns true for AIResult !ok envelopes', () => {
+    expect(isAiResultError({ ok: false, error: 'parse', message: 'bad' })).toBe(true)
+    expect(isAiResultError({ ok: false, error: 'model', message: 'libsql down' })).toBe(true)
+  })
+
+  it('returns false for thrown Errors', () => {
+    expect(isAiResultError(new Error('boom'))).toBe(false)
+  })
+
+  it('returns false for AIResult ok envelopes (no `error` field)', () => {
+    expect(isAiResultError({ ok: true, value: 42 })).toBe(false)
+  })
+
+  it('returns false for null / undefined / primitives', () => {
+    expect(isAiResultError(null)).toBe(false)
+    expect(isAiResultError(undefined)).toBe(false)
+    expect(isAiResultError('string')).toBe(false)
+    expect(isAiResultError(42)).toBe(false)
   })
 })

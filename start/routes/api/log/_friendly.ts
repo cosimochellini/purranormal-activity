@@ -127,10 +127,29 @@ export interface FriendlyConfig<TResponse> {
    * Optional hook invoked exactly once whenever the reporter produces an
    * error response — both on caught throws (from `guard`) and on
    * AIResult `!ok` envelopes (from `fromAi`). Defaults to no-op.
-   * Receives the original error/envelope and the rendered friendly text.
+   *
+   * The first argument is the **original** input — either the thrown
+   * value or the full `AIResult` envelope `{ ok: false, error, message }`.
+   * Callers that want distinct log contexts can discriminate on the
+   * envelope shape (`isAiResultError(error)`) before logging.
    */
   onError?: (error: unknown, friendly: string) => void
 }
+
+/**
+ * Predicate for `onError` discriminators: returns true iff the value
+ * is an `AIResult` `!ok` envelope (passed to `onError` by `fromAi`),
+ * false for thrown values (passed by `guard`).
+ */
+export const isAiResultError = (
+  error: unknown,
+): error is { ok: false; error: AIError; message: string } =>
+  typeof error === 'object' &&
+  error !== null &&
+  'ok' in error &&
+  (error as { ok: unknown }).ok === false &&
+  'error' in error &&
+  'message' in error
 
 export interface FriendlyReporter<TResponse> {
   /**
@@ -139,25 +158,39 @@ export interface FriendlyReporter<TResponse> {
    * `friendlyCopy.fromThrown`, calls `onError`, and returns
    * `build(friendlyText)`.
    *
-   * NOTE: This silently converts thrown errors into a "successful"
-   * `200 + { success: false, errors: ... }` envelope. Callers that
-   * need a 5xx must opt out by handling the throw themselves.
+   * NOTE: This silently converts thrown errors into a `200` response
+   * with `{ success: false, errors: ... }`. Every uncaught throw inside
+   * `run` — including programmer errors — is funnelled through the
+   * matcher to user-visible copy. Callers that need a 5xx for a given
+   * subset of errors must `try/catch` that subset themselves before
+   * `guard` sees it.
    */
   guard: (run: () => Promise<TResponse>) => Promise<TResponse>
 
   /**
    * Branches on an AIResult. On `ok: true`, returns the unwrapped value.
    * On `ok: false`, returns a built error response and invokes
-   * `onError`. Throws are NOT caught here — wrap with `guard`.
+   * `onError` once with the full envelope. Throws are NOT caught here —
+   * wrap with `guard`.
+   *
+   * NOTE on the return type: the `{ ok, value | response }` shape
+   * deliberately mirrors `AIResult`'s discriminator so callers can
+   * pattern-match in the same idiom. `value` is the unwrapped success
+   * payload; `response` is the **already-built** route response (typed
+   * as `TResponse`, not `AIError | string`). The fields are
+   * non-overlapping so there is no narrowing ambiguity.
    */
   fromAi: <T>(result: AIResult<T>) => { ok: true; value: T } | { ok: false; response: TResponse }
 
   /**
-   * Synchronous escape hatch for routes that don't want `guard`'s
-   * promise-based catch behaviour. Same classification + `onError` as
-   * the catch path of `guard`.
+   * Build an error response with **explicit** copy, bypassing the
+   * matchers. Use when the caller already knows which `FriendlyMessages`
+   * key applies (e.g. an inline `try/catch` around a known-DB-port
+   * call wants `DB_UNAVAILABLE` regardless of the thrown error's
+   * message). Calls `onError` with the original error and the rendered
+   * text exactly like the matcher paths.
    */
-  fromThrow: (error: unknown) => TResponse
+  report: (error: unknown, text: string) => TResponse
 }
 
 export const createFriendly = <TResponse>(
@@ -165,8 +198,7 @@ export const createFriendly = <TResponse>(
 ): FriendlyReporter<TResponse> => {
   const copy = friendlyCopy(cfg.messages)
 
-  const handleThrow = (error: unknown): TResponse => {
-    const text = copy.fromThrown(error)
+  const report = (error: unknown, text: string): TResponse => {
     cfg.onError?.(error, text)
     return cfg.build(text)
   }
@@ -176,15 +208,14 @@ export const createFriendly = <TResponse>(
       try {
         return await run()
       } catch (error) {
-        return handleThrow(error)
+        return report(error, copy.fromThrown(error))
       }
     },
     fromAi: (result) => {
       if (result.ok) return { ok: true, value: result.value }
       const text = copy.fromAiResult(result.error, result.message)
-      cfg.onError?.(result, text)
-      return { ok: false, response: cfg.build(text) }
+      return { ok: false, response: report(result, text) }
     },
-    fromThrow: handleThrow,
+    report,
   }
 }
