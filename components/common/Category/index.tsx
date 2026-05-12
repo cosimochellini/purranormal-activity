@@ -11,14 +11,18 @@ interface CategoryProps {
 
 const categoryIconsPromise = import('./Icons').then((module) => module.categoryIcons)
 
-// Module-level Promise.all is constructed once when this component module
-// is first imported — keeping React's `use()` referentially stable across
-// renders. `getCategories()` is itself memoised in `static/promise.ts`,
-// so this still pays nothing if the route never renders a Category.
-const promises = Promise.all([categoryIconsPromise, getCategories()])
+let cachedPromises:
+  | ReturnType<typeof Promise.all<[typeof categoryIconsPromise, ReturnType<typeof getCategories>]>>
+  | undefined
+const getPromises = () => {
+  if (!cachedPromises) {
+    cachedPromises = Promise.all([categoryIconsPromise, getCategories()])
+  }
+  return cachedPromises
+}
 
 export function Category({ category, iconOnly = false, selected, onClick }: CategoryProps) {
-  const [categoryIcons, categories] = use(promises)
+  const [categoryIcons, categories] = use(getPromises())
 
   const currentCategory = categories.find((c) => c.id === category)
   const Icon =
