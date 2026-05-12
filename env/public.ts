@@ -16,18 +16,28 @@ function readPublicEnv(key: PublicEnvKey) {
   return undefined
 }
 
+let warnedMissingAppUrl = false
+
 const resolveAppUrl = () => {
-  const appUrl = readPublicEnv('VITE_APP_URL') || readPublicEnv('VITE_CLOUDFLARE_PUBLIC_URL')
+  const baked = readPublicEnv('VITE_APP_URL')
+  if (baked) return normalizeUrl(baked)
 
-  if (appUrl) {
-    return normalizeUrl(appUrl)
+  const r2Host = readPublicEnv('VITE_CLOUDFLARE_PUBLIC_URL')
+  if (r2Host) return normalizeUrl(`https://${r2Host}`)
+
+  if (typeof globalThis !== 'undefined' && globalThis.location?.origin) {
+    return normalizeUrl(globalThis.location.origin)
   }
 
-  if (import.meta.env?.DEV) {
-    return DEFAULT_DEV_URL
-  }
+  if (import.meta.env?.DEV) return DEFAULT_DEV_URL
 
-  throw new Error('Missing VITE_APP_URL or VITE_CLOUDFLARE_PUBLIC_URL for production runtime')
+  if (!warnedMissingAppUrl) {
+    warnedMissingAppUrl = true
+    console.warn(
+      '[env/public] VITE_APP_URL and VITE_CLOUDFLARE_PUBLIC_URL are unset; falling back to relative URLs',
+    )
+  }
+  return ''
 }
 
 export const VITE_APP_URL = resolveAppUrl()
