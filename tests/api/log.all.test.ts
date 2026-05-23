@@ -64,10 +64,11 @@ describe('GET /api/log/all', () => {
 
   it('returns success:false when the query schema cannot parse', async () => {
     const res = await callGet('?sortBy=not-a-sort')
-    const body = (await res.json()) as { success: false; error: string }
+    // Post-envelope: query validation failures emit `errors: { <field>: [<msg>] }`
+    // instead of the route's hand-built `error: <msg>` shape.
+    const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
     expect(body.success).toBe(false)
-    expect(typeof body.error).toBe('string')
-    expect(body.error.length).toBeGreaterThan(0)
+    expect(body.errors.sortBy?.length).toBeGreaterThan(0)
     expect(getLogs).not.toHaveBeenCalled()
   })
 

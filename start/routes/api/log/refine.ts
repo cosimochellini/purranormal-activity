@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants'
+import { defineHandlers, method } from '@/services/route/defineHandlers'
 import { storyForge } from '@/services/storyForge'
 import type { LogRefineResponse } from '@/types/api/log-refine'
 import { ok } from '@/utils/http'
@@ -24,7 +25,7 @@ const messages: FriendlyMessages = {
   GENERIC_FALLBACK: 'Unable to generate questions for your event. Please try again.',
 }
 
-const friendly = createFriendly<Response>({
+const reporter = createFriendly<Response>({
   messages,
   build: (text) => ok<LogRefineResponse>({ success: false, errors: { description: [text] } }),
   onError: (error) =>
@@ -35,22 +36,21 @@ const friendly = createFriendly<Response>({
 
 export const Route = createFileRoute('/api/log/refine')({
   server: {
-    handlers: {
-      POST: ({ request }) =>
-        friendly.guard(async () => {
-          const data = await request.json()
-          const result = await schema.safeParseAsync(data)
+    handlers: defineHandlers(
+      {
+        POST: method({
+          body: schema,
+          reporter,
+          handler: async ({ body }) => {
+            const result = await storyForge.questions(body.description)
+            if (!result.ok) return result
 
-          if (!result.success) {
-            const errors = result.error.flatten().fieldErrors
-            return ok<LogRefineResponse>({ success: false, errors })
-          }
-
-          const r = friendly.fromAi(await storyForge.questions(result.data.description))
-          if (!r.ok) return r.response
-
-          return ok<LogRefineResponse>({ success: true, content: r.value })
+            const data: LogRefineResponse = { success: true, content: result.value }
+            return { data }
+          },
         }),
-    },
+      },
+      { route: '/api/log/refine' },
+    ),
   },
 })

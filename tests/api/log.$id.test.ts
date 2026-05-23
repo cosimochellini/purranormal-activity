@@ -87,9 +87,15 @@ describe('PUT /api/log/$id', () => {
     vi.mocked(imagePipeline.generateImageFor).mockClear()
   })
 
-  it('rejects a non-numeric id with a field error', async () => {
+  it('rejects a non-numeric id with a title field error (after body passes validation)', async () => {
     const res = await PUT({
-      request: jsonRequest('PUT', { title: 't' }),
+      request: jsonRequest('PUT', {
+        title: 'Valid title',
+        description: 'Valid description content',
+        categories: [1],
+        imageDescription: null,
+        secret: SECRET,
+      }),
       params: { id: 'nope' },
     })
     const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
@@ -193,12 +199,17 @@ describe('DELETE /api/log/$id', () => {
     vi.mocked(deleteFromR2).mockClear()
   })
 
-  it('rejects when the secret is wrong', async () => {
+  it('rejects when the secret is wrong (validation failure routed through the envelope)', async () => {
     const res = await DELETE({
       request: jsonRequest('DELETE', { secret: 'nope' }),
       params: { id: '7' },
     })
-    expect(await res.json()).toEqual({ success: false, error: 'Invalid secret' })
+    // Post-envelope: validation errors emit `errors: { <field>: [<msg>] }`
+    // rather than the route's hand-built `error: <msg>` shape — the
+    // `LogIdDeleteResponse` type already permitted both branches.
+    const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+    expect(body.success).toBe(false)
+    expect(body.errors.secret).toEqual(['Invalid secret'])
     expect(res.headers.get('X-Invalidate')).toBeNull()
   })
 

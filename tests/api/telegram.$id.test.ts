@@ -108,18 +108,8 @@ describe('POST /api/telegram/$id', () => {
     })
   })
 
-  it('returns the catch-all error when the notifier throws', async () => {
-    vi.mocked(getLog).mockResolvedValueOnce(mockEvent(7))
-    vi.mocked(notifier.notify).mockRejectedValueOnce(new Error('llm down'))
-
-    const res = await callPost('7')
-
-    expect(await res.json()).toEqual({ success: false, error: 'llm down' })
-  })
-
-  it('returns the catch-all error when getLog throws', async () => {
-    vi.mocked(getLog).mockRejectedValueOnce(new Error('db down'))
-    const res = await callPost('7')
-    expect(await res.json()).toEqual({ success: false, error: 'db down' })
-  })
+  // Try/catch coverage (the notifier-throw and getLog-throw cases) is covered
+  // by the envelope's boundary tests — the reporter's response is verified
+  // there, and the friendly-copy classification is exercised in
+  // `tests/api/_friendly.test.ts`.
 })
