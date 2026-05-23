@@ -12,7 +12,7 @@ vi.mock('@/utils/fetch', () => ({
   fetcher: () => fetcherImpl,
 }))
 
-// useExploreData mock returns a controllable filters tuple.
+// useExploreFilters mock returns a controllable filters object.
 const { exploreState } = vi.hoisted(() => ({
   exploreState: {
     page: 1,
@@ -23,8 +23,8 @@ const { exploreState } = vi.hoisted(() => ({
     timeRange: 'all',
   },
 }))
-vi.mock('@/hooks/useExploreData', () => ({
-  useExploreData: () => [exploreState, {}],
+vi.mock('@/hooks/useExploreFilters', () => ({
+  useExploreFilters: () => ({ filters: exploreState, setFilters: () => {}, reset: () => {} }),
 }))
 
 // EventCard stub
