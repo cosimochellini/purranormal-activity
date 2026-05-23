@@ -4,7 +4,7 @@ import type { LogAllQuery, LogAllResponse } from '@/types/api/log-all'
 
 import { fetcher } from '@/utils/fetch'
 import { logger } from '@/utils/logger'
-import { useExploreData } from '../../hooks/useExploreData'
+import { useExploreFilters } from '../../hooks/useExploreFilters'
 import { Loading } from '../common/Loading'
 import { EventCard } from '../events/EventCard'
 import { NoLogsFound } from './NoLogsFound'
@@ -12,7 +12,8 @@ import { NoLogsFound } from './NoLogsFound'
 const searchLogs = fetcher<LogAllResponse, LogAllQuery>('/api/log/all')
 
 export function ExploreResults() {
-  const [{ page, limit, search, categories, sortBy, timeRange }] = useExploreData()
+  const { filters } = useExploreFilters()
+  const { page, limit, search, categories, sortBy, timeRange } = filters
   const [logs, setLogs] = useState<LogWithCategories[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
