@@ -87,14 +87,37 @@ describe('PUT /api/log/$id', () => {
     vi.mocked(imagePipeline.generateImageFor).mockClear()
   })
 
-  it('rejects a non-numeric id with a field error', async () => {
+  it('rejects a non-numeric id with a title field error (id-guard fires before body validation)', async () => {
     const res = await PUT({
-      request: jsonRequest('PUT', { title: 't' }),
+      request: jsonRequest('PUT', {
+        title: 'Valid title',
+        description: 'Valid description content',
+        categories: [1],
+        imageDescription: null,
+        secret: SECRET,
+      }),
       params: { id: 'nope' },
     })
     const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
     expect(body.success).toBe(false)
     expect(body.errors.title).toEqual(['Invalid log id'])
+  })
+
+  it('id-guard wins over body validation when both fail (pre-refactor ordering)', async () => {
+    const res = await PUT({
+      request: jsonRequest('PUT', {
+        title: '',
+        description: '',
+        categories: [],
+        imageDescription: null,
+        secret: 'wrong',
+      }),
+      params: { id: 'nope' },
+    })
+    const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+    expect(body.success).toBe(false)
+    // Only the id-guard's single message — body-level field errors never run.
+    expect(body.errors).toEqual({ title: ['Invalid log id'] })
   })
 
   it('returns flattened field errors when validation fails', async () => {
@@ -193,11 +216,14 @@ describe('DELETE /api/log/$id', () => {
     vi.mocked(deleteFromR2).mockClear()
   })
 
-  it('rejects when the secret is wrong', async () => {
+  it('rejects when the secret is wrong with the pre-refactor `error: Invalid secret` shape', async () => {
     const res = await DELETE({
       request: jsonRequest('DELETE', { secret: 'nope' }),
       params: { id: '7' },
     })
+    // Pre-refactor contract: bad secret → `{ success: false, error: 'Invalid secret' }`.
+    // The envelope's body-schema would have emitted `errors: { secret: [...] }`
+    // instead, so the DELETE handler parses the body itself.
     expect(await res.json()).toEqual({ success: false, error: 'Invalid secret' })
     expect(res.headers.get('X-Invalidate')).toBeNull()
   })

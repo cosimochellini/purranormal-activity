@@ -24,10 +24,17 @@ const { db: fakeDb } = (await import('@/drizzle')) as unknown as {
   db: ReturnType<typeof makeFakeDb>
 }
 
-const GET = Route.options.server?.handlers?.GET as () => Promise<Response>
+const GET = Route.options.server?.handlers?.GET as (ctx: {
+  request: Request
+  params: Record<string, string>
+}) => Promise<Response>
 const POST = Route.options.server?.handlers?.POST as (ctx: {
   request: Request
+  params: Record<string, string>
 }) => Promise<Response>
+
+const callGet = () =>
+  GET({ request: new Request('http://test/api/categories', { method: 'GET' }), params: {} })
 
 const callPost = (body: unknown) =>
   POST({
@@ -36,6 +43,7 @@ const callPost = (body: unknown) =>
       body: JSON.stringify(body),
       headers: { 'content-type': 'application/json' },
     }),
+    params: {},
   })
 
 describe('GET /api/categories', () => {
@@ -47,7 +55,7 @@ describe('GET /api/categories', () => {
     const rows = [{ id: 1, name: 'Levitation', icon: 'questionMark' }]
     vi.mocked(fakeDb.from).mockReturnValueOnce(rows as never)
 
-    const res = await GET()
+    const res = await callGet()
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual(rows)
   })
@@ -56,7 +64,7 @@ describe('GET /api/categories', () => {
     vi.mocked(fakeDb.from).mockImplementationOnce(() => {
       throw new Error('db down')
     })
-    const res = await GET()
+    const res = await callGet()
     expect(await res.json()).toEqual([])
   })
 })

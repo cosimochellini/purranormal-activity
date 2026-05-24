@@ -7,12 +7,14 @@ import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
 import { imagePipeline, logPipelineOutcome } from '@/services/imagePipeline'
+import { defineHandlers, method } from '@/services/route/defineHandlers'
 import type { LogIdDeleteResponse, LogIdGetResponse, LogIdPutResponse } from '@/types/api/log-id'
 import { deleteFromR2 } from '@/utils/cloudflare'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
+import { createFriendly, type FriendlyMessages } from './_friendly'
 
-const schema = z.object({
+const putSchema = z.object({
   title: z
     .string()
     .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.TITLE_REQUIRED)
@@ -32,145 +34,163 @@ const deleteSchema = z.object({
   secret: z.string().refine((val) => val === SECRET, { message: 'Invalid secret' }),
 })
 
+// Routes without an AI dependency still need a reporter (envelope-mandated)
+// to funnel thrown errors into the route's failure shape. The friendly text
+// is classified by `createFriendly` but the slot/key is route-local.
+const sharedMessages: FriendlyMessages = {
+  AI_UNAVAILABLE:
+    'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.',
+  AI_UNEXPECTED_RESPONSE:
+    'Our mystical AI assistant returned an unexpected response. Please try again.',
+  CONNECTION_ISSUE: 'Connection issue detected. Please check your internet and try again.',
+  REQUEST_TIMEOUT: 'The request took too long. Please try again.',
+  GENERIC_FALLBACK: 'Failed to update log',
+  DB_UNAVAILABLE: 'Failed to update log',
+}
+
+const getReporter = createFriendly<Response>({
+  messages: sharedMessages,
+  // GET's public failure shape is just `{ success: false }` — no message slot.
+  build: () => ok<LogIdGetResponse>({ success: false }),
+  onError: (error) => logger.error('Failed to fetch log entry:', error),
+})
+
+const putReporter = createFriendly<Response>({
+  messages: sharedMessages,
+  build: (text) => ok<LogIdPutResponse>({ success: false, errors: { title: [text] } }),
+  onError: (error) => logger.error('Failed to update log:', error),
+})
+
+const deleteReporter = createFriendly<Response>({
+  messages: { ...sharedMessages, GENERIC_FALLBACK: 'Failed to delete log' },
+  build: (text) => ok<LogIdDeleteResponse>({ success: false, error: text }),
+  onError: (error) => logger.error('Failed to delete log:', error),
+})
+
 const getLog = async (id: number) => (await db.select().from(log).where(eq(log.id, id)))[0]
+
+const readJson = async (request: Request): Promise<unknown> => {
+  try {
+    return await request.json()
+  } catch {
+    return {}
+  }
+}
 
 export const Route = createFileRoute('/api/log/$id')({
   server: {
-    handlers: {
-      GET: async ({ params }) => {
-        const id = Number(params.id)
+    handlers: defineHandlers(
+      {
+        GET: method<undefined, undefined, undefined, LogIdGetResponse>({
+          reporter: getReporter,
+          handler: async (_input, { params }) => {
+            const id = Number(params.id)
+            if (Number.isNaN(id)) {
+              return { data: { success: false } as LogIdGetResponse }
+            }
 
-        if (Number.isNaN(id)) {
-          return ok<LogIdGetResponse>({
-            success: false,
-          })
-        }
+            const entry = await getLog(id)
+            const data: LogIdGetResponse = entry
+              ? { success: true, data: entry }
+              : { success: false }
+            return { data }
+          },
+        }),
+        // PUT does its own body validation INSIDE the handler so the id-guard
+        // can fire first (pre-refactor: bad-id + bad-body → `{ title: ['Invalid log id'] }`).
+        // Envelope owns the catch path + scoped logger only.
+        PUT: method<undefined, undefined, undefined, LogIdPutResponse>({
+          reporter: putReporter,
+          handler: async (_input, { request, params }) => {
+            const id = Number(params.id)
+            if (Number.isNaN(id)) {
+              const data: LogIdPutResponse = {
+                success: false,
+                errors: { title: ['Invalid log id'] },
+              }
+              return { data }
+            }
 
-        try {
-          const entry = await getLog(id)
+            const raw = await readJson(request)
+            const result = await putSchema.safeParseAsync(raw)
+            if (!result.success) {
+              const data: LogIdPutResponse = {
+                success: false,
+                errors: result.error.flatten().fieldErrors,
+              }
+              return { data }
+            }
 
-          if (!entry) {
-            return ok<LogIdGetResponse>({
-              success: false,
-            })
-          }
+            const currentLog = await getLog(id)
+            if (!currentLog) {
+              const data: LogIdPutResponse = {
+                success: false,
+                errors: { title: ['Log not found'] },
+              }
+              return { data }
+            }
 
-          return ok<LogIdGetResponse>({ success: true, data: entry })
-        } catch (error) {
-          logger.error('Failed to fetch log entry:', error)
+            const { title, description, categories, imageDescription } = result.data
 
-          return ok<LogIdGetResponse>({
-            success: false,
-          })
-        }
+            const [updated] = await db
+              .update(log)
+              .set({
+                title,
+                description,
+                imageDescription,
+                updatedAt: Date.now(),
+                // Regenerate image only when the prompt changes.
+                status:
+                  imageDescription !== currentLog.imageDescription
+                    ? LogStatus.Created
+                    : currentLog.status,
+              })
+              .where(eq(log.id, id))
+              .returning()
+
+            await db.delete(logCategory).where(eq(logCategory.logId, id))
+
+            if (categories.length > 0) {
+              await db
+                .insert(logCategory)
+                .values(categories.map((category) => ({ logId: id, categoryId: category })))
+            }
+
+            const outcome = await imagePipeline.generateImageFor(updated.id)
+            logPipelineOutcome(outcome, 'PUT /api/log/$id')
+
+            const data: LogIdPutResponse = { success: true, data: updated }
+            return { data, invalidate: ['logs', `log:${id}`] }
+          },
+        }),
+        // DELETE: body validation lives in the handler so a wrong secret emits
+        // the legacy `{ success: false, error: 'Invalid secret' }` shape rather
+        // than the envelope's `{ errors: { secret: [...] } }` shape.
+        DELETE: method<undefined, undefined, undefined, LogIdDeleteResponse>({
+          reporter: deleteReporter,
+          handler: async (_input, { request, params }) => {
+            const raw = await readJson(request)
+            const parsed = deleteSchema.safeParse(raw)
+            if (!parsed.success) {
+              const data: LogIdDeleteResponse = { success: false, error: 'Invalid secret' }
+              return { data }
+            }
+
+            const id = Number(params.id)
+            if (Number.isNaN(id)) {
+              const data: LogIdDeleteResponse = { success: false, error: 'Invalid log id' }
+              return { data }
+            }
+
+            await db.delete(log).where(eq(log.id, id))
+            await deleteFromR2(id)
+
+            const data: LogIdDeleteResponse = { success: true }
+            return { data, invalidate: ['logs', `log:${id}`] }
+          },
+        }),
       },
-      PUT: async ({ request, params }) => {
-        try {
-          const id = Number(params.id)
-
-          if (Number.isNaN(id)) {
-            return ok<LogIdPutResponse>({
-              success: false,
-              errors: { title: ['Invalid log id'] },
-            })
-          }
-
-          const data = await request.json()
-          const result = await schema.safeParseAsync(data)
-
-          if (!result.success) {
-            return ok<LogIdPutResponse>({
-              success: false,
-              errors: result.error.flatten().fieldErrors,
-            })
-          }
-
-          const currentLog = await getLog(id)
-          if (!currentLog) {
-            return ok<LogIdPutResponse>({
-              success: false,
-              errors: { title: ['Log not found'] },
-            })
-          }
-
-          const { title, description, categories, imageDescription } = result.data
-
-          const [updated] = await db
-            .update(log)
-            .set({
-              title,
-              description,
-              imageDescription,
-              updatedAt: Date.now(),
-              // Regenerate image only when the prompt changes.
-              status:
-                imageDescription !== currentLog.imageDescription
-                  ? LogStatus.Created
-                  : currentLog.status,
-            })
-            .where(eq(log.id, id))
-            .returning()
-
-          await db.delete(logCategory).where(eq(logCategory.logId, id))
-
-          if (categories.length > 0) {
-            await db
-              .insert(logCategory)
-              .values(categories.map((category) => ({ logId: id, categoryId: category })))
-          }
-
-          const outcome = await imagePipeline.generateImageFor(updated.id)
-          logPipelineOutcome(outcome, 'PUT /api/log/$id')
-
-          return ok<LogIdPutResponse>(
-            { success: true, data: updated },
-            { invalidate: ['logs', `log:${id}`] },
-          )
-        } catch (error) {
-          logger.error('Failed to update log:', error)
-
-          return ok<LogIdPutResponse>({
-            success: false,
-            errors: {
-              title: ['Failed to update log'],
-            },
-          })
-        }
-      },
-      DELETE: async ({ request, params }) => {
-        try {
-          const data = await request.json()
-          const parsed = deleteSchema.safeParse(data)
-
-          if (!parsed.success) {
-            return ok<LogIdDeleteResponse>({
-              success: false,
-              error: 'Invalid secret',
-            })
-          }
-
-          const id = Number(params.id)
-
-          if (Number.isNaN(id)) {
-            return ok<LogIdDeleteResponse>({
-              success: false,
-              error: 'Invalid log id',
-            })
-          }
-
-          await db.delete(log).where(eq(log.id, id))
-          await deleteFromR2(id)
-
-          return ok<LogIdDeleteResponse>({ success: true }, { invalidate: ['logs', `log:${id}`] })
-        } catch (error) {
-          logger.error('Failed to delete log:', error)
-
-          return ok<LogIdDeleteResponse>({
-            success: false,
-            error: 'Failed to delete log',
-          })
-        }
-      },
-    },
+      { route: '/api/log/$id' },
+    ),
   },
 })

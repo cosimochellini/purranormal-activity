@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { SECRET } from '@/env/secret'
 import { imagePipeline, logPipelineOutcome } from '@/services/imagePipeline'
+import { defineHandlers, method } from '@/services/route/defineHandlers'
 import { storyForge } from '@/services/storyForge'
 import type { LogSubmitResponse } from '@/types/api/log-submit'
 import { ok } from '@/utils/http'
@@ -42,7 +43,7 @@ const messages: FriendlyMessages = {
 const buildErrorResponse = (text: string) =>
   ok<LogSubmitResponse>({ success: false, errors: { general: [text] } })
 
-const friendly = createFriendly<Response>({
+const reporter = createFriendly<Response>({
   messages,
   build: buildErrorResponse,
   onError: (error) =>
@@ -53,60 +54,65 @@ const friendly = createFriendly<Response>({
 
 export const Route = createFileRoute('/api/log/submit')({
   server: {
-    handlers: {
-      POST: ({ request }) =>
-        friendly.guard(async () => {
-          const data = await request.json()
-          const result = await submitFormSchema.safeParseAsync(data)
+    handlers: defineHandlers(
+      {
+        POST: method<
+          {
+            description: string
+            answers: { question: string; answer: string }[]
+            secret: string
+          },
+          undefined,
+          undefined,
+          LogSubmitResponse
+        >({
+          body: submitFormSchema,
+          reporter,
+          handler: async ({ body }) => {
+            const details = await storyForge.logDetails(body.description, body.answers)
+            // `AIResult.err` is passed through bare — the envelope routes it
+            // via the reporter's `fromAi`. `AIResult.ok` we inspect locally.
+            if (!details.ok) return details
 
-          if (!result.success) {
-            const tree = z.treeifyError(result.error)
-            const properties = tree?.properties ?? {}
-            return ok<LogSubmitResponse>({
-              success: false,
-              errors: Object.fromEntries(
-                Object.entries(properties).map(([key, value]) => [key, value?.errors ?? []]),
-              ),
+            const { title, description, categories, imageDescription } = details.value
+
+            // Inline guard: every realistic failure of `storyForge.categories()`
+            // is a DB-port failure (cache miss → libsql query). Keep the
+            // categorical `DB_UNAVAILABLE` guarantee that the pre-refactor code
+            // had — the reporter's thrown-error matchers would drop the
+            // explicit copy for non-Error rejections whose stringification
+            // lacks DB tokens.
+            let allCategoryIds: number[]
+            try {
+              allCategoryIds = (await storyForge.categories()).map((c) => c.id)
+            } catch (error) {
+              logger.error('storyForge.categories() failed during submit:', error)
+              return {
+                data: {
+                  success: false,
+                  errors: { general: [messages.DB_UNAVAILABLE ?? messages.GENERIC_FALLBACK] },
+                },
+              }
+            }
+
+            const categoryIds = categories
+              .map(({ id }) => id)
+              .filter((id) => allCategoryIds.includes(id))
+
+            const submitResult = await imagePipeline.submit({
+              draft: { title, description, imageDescription },
+              categoryIds,
             })
-          }
+            logPipelineOutcome(submitResult.outcome, 'POST /api/log/submit')
 
-          const details = friendly.fromAi(
-            await storyForge.logDetails(result.data.description, result.data.answers),
-          )
-          if (!details.ok) return details.response
-
-          const { title, description, categories, imageDescription } = details.value
-
-          // Inline guard: every realistic failure of `storyForge.categories()`
-          // is a DB-port failure (cache miss → libsql query). Classifying via
-          // `fromThrown`'s matchers would let a future error-wrapper that
-          // injected an AI-shaped token mis-attribute the failure to the LLM,
-          // and would also drop `DB_UNAVAILABLE` for non-Error rejections
-          // whose stringification lacks DB tokens. Keep the categorical
-          // `DB_UNAVAILABLE` guarantee that the pre-refactor code had.
-          let allCategoryIds: number[]
-          try {
-            allCategoryIds = (await storyForge.categories()).map((c) => c.id)
-          } catch (error) {
-            logger.error('storyForge.categories() failed during submit:', error)
-            return buildErrorResponse(messages.DB_UNAVAILABLE ?? messages.GENERIC_FALLBACK)
-          }
-
-          const categoryIds = categories
-            .map(({ id }) => id)
-            .filter((id) => allCategoryIds.includes(id))
-
-          const submitResult = await imagePipeline.submit({
-            draft: { title, description, imageDescription },
-            categoryIds,
-          })
-          logPipelineOutcome(submitResult.outcome, 'POST /api/log/submit')
-
-          return ok<LogSubmitResponse>(
-            { success: true, id: submitResult.id, missingCategories: [] },
-            { invalidate: ['logs', `log:${submitResult.id}`] },
-          )
+            return {
+              data: { success: true, id: submitResult.id, missingCategories: [] },
+              invalidate: ['logs', `log:${submitResult.id}`],
+            }
+          },
         }),
-    },
+      },
+      { route: '/api/log/submit' },
+    ),
   },
 })

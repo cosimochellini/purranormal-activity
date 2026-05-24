@@ -108,18 +108,25 @@ describe('POST /api/telegram/$id', () => {
     })
   })
 
-  it('returns the catch-all error when the notifier throws', async () => {
-    vi.mocked(getLog).mockResolvedValueOnce(mockEvent(7))
-    vi.mocked(notifier.notify).mockRejectedValueOnce(new Error('llm down'))
+  it('forwards a thrown Error.message verbatim (no friendly-copy rewrite)', async () => {
+    // The friendly classifier would normally rewrite libsql tokens into a
+    // static "Telegram dispatch failed" string. This route opts out so the
+    // raw cause survives — the contract pre-refactor.
+    vi.mocked(getLog).mockRejectedValueOnce(new Error('libsql: connection lost'))
 
     const res = await callPost('7')
 
-    expect(await res.json()).toEqual({ success: false, error: 'llm down' })
+    expect(await res.json()).toEqual({
+      success: false,
+      error: 'libsql: connection lost',
+    })
   })
 
-  it('returns the catch-all error when getLog throws', async () => {
-    vi.mocked(getLog).mockRejectedValueOnce(new Error('db down'))
+  it('falls back to `Unknown error` when a non-Error value is thrown', async () => {
+    vi.mocked(getLog).mockRejectedValueOnce('explosion' as never)
+
     const res = await callPost('7')
-    expect(await res.json()).toEqual({ success: false, error: 'db down' })
+
+    expect(await res.json()).toEqual({ success: false, error: 'Unknown error' })
   })
 })

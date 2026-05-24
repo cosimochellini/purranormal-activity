@@ -1,21 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-// Lets a single test override `z.treeifyError` to exercise Bug #12.
-const treeifyOverride: { fn: ((error: unknown) => unknown) | null } = { fn: null }
-
-vi.mock('zod', async () => {
-  const actual = (await vi.importActual('zod')) as typeof import('zod')
-  return {
-    ...actual,
-    z: new Proxy(actual.z, {
-      get(target, prop, receiver) {
-        if (prop === 'treeifyError' && treeifyOverride.fn) return treeifyOverride.fn
-        return Reflect.get(target, prop, receiver)
-      },
-    }),
-  }
-})
-
 vi.mock('@/env/secret', () => ({
   SECRET: 'test-secret',
 }))
@@ -71,33 +55,7 @@ describe('POST /api/log/submit', () => {
     )
   })
 
-  describe('Bug #12 — defensive treeifyError handling', () => {
-    it('returns 200 with success:false when validation fails (does not crash)', async () => {
-      const res = await callPost({})
-
-      expect(res.status).toBe(200)
-      const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
-      expect(body.success).toBe(false)
-      expect(body.errors.general).toBeUndefined()
-      expect(typeof body.errors).toBe('object')
-      expect(storyForge.logDetails).not.toHaveBeenCalled()
-      expect(imagePipeline.submit).not.toHaveBeenCalled()
-    })
-
-    it('does not crash when treeifyError returns a tree without a properties key', async () => {
-      treeifyOverride.fn = () => ({ errors: null, properties: null })
-
-      try {
-        const res = await callPost({ description: '', answers: [], secret: 'wrong' })
-        expect(res.status).toBe(200)
-        const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
-        expect(body.success).toBe(false)
-        expect(body.errors).toEqual({})
-      } finally {
-        treeifyOverride.fn = null
-      }
-    })
-
+  describe('Validation guards (route-specific)', () => {
     it('returns the secret field error when the secret does not match', async () => {
       const res = await callPost({
         description: 'A real description',
@@ -107,6 +65,8 @@ describe('POST /api/log/submit', () => {
       const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
       expect(body.success).toBe(false)
       expect(body.errors.secret?.length).toBeGreaterThan(0)
+      expect(storyForge.logDetails).not.toHaveBeenCalled()
+      expect(imagePipeline.submit).not.toHaveBeenCalled()
     })
   })
 

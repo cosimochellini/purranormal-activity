@@ -3,7 +3,17 @@ import { getLog } from '@/services/log'
 import { notifier } from '@/services/notifier'
 import type { TelegramIdResponse } from '@/types/api/telegram-id'
 import { ok } from '@/utils/http'
+import { logger } from '@/utils/logger'
 
+// This route is intentionally OFF the `defineHandlers` envelope's
+// reporter-guard catch path. The pre-refactor contract was: forward the
+// thrown error's `message` verbatim — the friendly-copy classifier in
+// `_friendly.ts` would otherwise rewrite libsql / fetch / OpenAI surfaces
+// into static user-facing copy, breaking the byte-for-byte response shape.
+//
+// Telegram dispatch is a backend-driven, programmatic endpoint where the
+// raw cause string is the useful debugging surface. We catch in-handler,
+// forward `error.message`, and skip the envelope entirely.
 export const Route = createFileRoute('/api/telegram/$id')({
   server: {
     handlers: {
@@ -46,6 +56,7 @@ export const Route = createFileRoute('/api/telegram/$id')({
             },
           })
         } catch (error) {
+          logger.error('Telegram dispatch failed:', error)
           return ok<TelegramIdResponse>({
             success: false,
             error: error instanceof Error ? error.message : 'Unknown error',

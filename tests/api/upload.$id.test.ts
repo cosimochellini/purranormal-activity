@@ -23,18 +23,20 @@ describe('POST /api/upload/$id', () => {
     vi.mocked(uploadToR2).mockReset()
   })
 
-  it('returns 400 when the file part is missing', async () => {
+  it('returns 400 with `File is required` when the file part is missing', async () => {
     const res = await POST({ request: buildRequest('7', new FormData()), params: { id: '7' } })
     expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'File is required' })
     expect(uploadToR2).not.toHaveBeenCalled()
   })
 
-  it('returns 400 when the id is not numeric', async () => {
+  it('returns 400 with `Invalid log ID` when the id is not numeric', async () => {
     const formData = new FormData()
     formData.append('file', new File(['payload'], 'cover.webp', { type: 'image/webp' }))
 
     const res = await POST({ request: buildRequest('abc', formData), params: { id: 'abc' } })
     expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'Invalid log ID' })
     expect(uploadToR2).not.toHaveBeenCalled()
   })
 
@@ -57,7 +59,7 @@ describe('POST /api/upload/$id', () => {
     expect(uploadToR2).toHaveBeenCalledWith(expect.any(Buffer), 7)
   })
 
-  it('returns 400 with an error message when uploadToR2 throws', async () => {
+  it('returns 400 with the verbatim cause string when uploadToR2 throws', async () => {
     vi.mocked(uploadToR2).mockRejectedValueOnce(new Error('boom'))
 
     const formData = new FormData()
@@ -66,6 +68,8 @@ describe('POST /api/upload/$id', () => {
     const res = await POST({ request: buildRequest('7', formData), params: { id: '7' } })
     expect(res.status).toBe(400)
     const body = (await res.json()) as { error: string }
-    expect(body.error).toMatch(/Failed to upload file/i)
+    // Pre-refactor: `Failed to upload file ${error}` — embeds the cause's
+    // `.toString()` (an Error stringifies to `Error: boom`).
+    expect(body.error).toBe('Failed to upload file Error: boom')
   })
 })

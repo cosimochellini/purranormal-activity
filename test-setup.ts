@@ -20,15 +20,35 @@ stubEnv('SECRET', 'test-secret')
 // Default boundary mocks. Individual tests can override per-case via
 // `vi.mocked(fetch).mockResolvedValueOnce(...)` etc.
 
-vi.mock('@/utils/logger', () => ({
-  logger: {
+vi.mock('@/utils/logger', () => {
+  const noop = vi.fn()
+  const stubLogger = {
     error: vi.fn(),
     warn: vi.fn(),
     log: vi.fn(),
     info: vi.fn(),
     debug: vi.fn(),
-  },
-}))
+  }
+  return {
+    logger: stubLogger,
+    // The route envelope binds a request-scoped logger; default to the same
+    // silent spies so route tests don't spam stdout. Individual envelope
+    // tests pass an explicit `loggerSink` to inspect calls.
+    createScopedLogger: (_meta: unknown, sink?: unknown) => {
+      if (typeof sink === 'function') {
+        return {
+          log: (...args: unknown[]) => (sink as (...a: unknown[]) => void)('log', _meta, args),
+          info: (...args: unknown[]) => (sink as (...a: unknown[]) => void)('info', _meta, args),
+          warn: (...args: unknown[]) => (sink as (...a: unknown[]) => void)('warn', _meta, args),
+          error: (...args: unknown[]) => (sink as (...a: unknown[]) => void)('error', _meta, args),
+          debug: (...args: unknown[]) => (sink as (...a: unknown[]) => void)('debug', _meta, args),
+        }
+      }
+      return stubLogger
+    },
+    noopLoggerSink: noop,
+  }
+})
 
 vi.mock('nuqs/adapters/tanstack-router', () => ({
   NuqsAdapter: ({ children }: { children: unknown }) => children,

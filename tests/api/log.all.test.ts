@@ -62,12 +62,16 @@ describe('GET /api/log/all', () => {
     })
   })
 
-  it('returns success:false when the query schema cannot parse', async () => {
+  it('returns the pre-refactor `error: <zod message>` shape when the query schema cannot parse', async () => {
     const res = await callGet('?sortBy=not-a-sort')
     const body = (await res.json()) as { success: false; error: string }
     expect(body.success).toBe(false)
+    // The handler forwards `result.error.message` verbatim — its content is
+    // not pinned (it changes with zod), but its presence + the missing
+    // `errors` key are the contract.
     expect(typeof body.error).toBe('string')
     expect(body.error.length).toBeGreaterThan(0)
+    expect((body as { errors?: unknown }).errors).toBeUndefined()
     expect(getLogs).not.toHaveBeenCalled()
   })
 
