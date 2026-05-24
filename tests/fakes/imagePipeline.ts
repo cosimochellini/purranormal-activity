@@ -15,7 +15,7 @@ import type { AIResult } from '@/services/storyForge'
 // `createTestPipeline` helper that wires them together. Used by
 // `services/imagePipeline/index.test.ts` to exercise the orchestrator
 // without any per-seam `vi.mock` of `@/drizzle`, `@/services/imageGen`,
-// `@/services/storyForge`, or `@/utils/cloudflare`.
+// `@/services/storyForge`, or `@/services/imageStore`.
 
 export interface InMemoryAiText extends AiTextPort {
   setResult(r: AIResult<string>): void

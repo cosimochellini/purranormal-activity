@@ -1,14 +1,11 @@
-/* eslint-disable node/prefer-global/buffer */
-
-import { deleteFromR2, uploadToR2 } from '@/utils/cloudflare'
+import { imageStore } from '@/services/imageStore'
 import type { ImageStorePort } from '../ports'
 
-// `Buffer` is polyfilled by `@cloudflare/workers-types` and is required
-// by the AWS SDK's `PutObjectCommand` body. The conversion lives here
-// (not in the pipeline core) so the orchestrator stays Buffer-free.
+// Three-line delegate: the pipeline keeps the `ImageStorePort` seam (the
+// orchestrator/tests still wire a fake adapter), and the single production
+// adapter forwards to the consolidated `services/imageStore` module which
+// owns the S3 client, key scheme, buffer conversion, and error wrapping.
 export const defaultImageStore: ImageStorePort = {
-  put: async (logId, bytes) => {
-    await uploadToR2(Buffer.from(bytes), logId)
-  },
-  delete: (logId) => deleteFromR2(logId),
+  put: (logId, bytes) => imageStore.put(logId, bytes),
+  delete: (logId) => imageStore.delete(logId),
 }
