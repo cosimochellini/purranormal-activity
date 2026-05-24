@@ -7,9 +7,9 @@ import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
 import { imagePipeline, logPipelineOutcome } from '@/services/imagePipeline'
+import { imageStore } from '@/services/imageStore'
 import { defineHandlers, method } from '@/services/route/defineHandlers'
 import type { LogIdDeleteResponse, LogIdGetResponse, LogIdPutResponse } from '@/types/api/log-id'
-import { deleteFromR2 } from '@/utils/cloudflare'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 import { createFriendly, type FriendlyMessages } from './_friendly'
@@ -183,7 +183,7 @@ export const Route = createFileRoute('/api/log/$id')({
             }
 
             await db.delete(log).where(eq(log.id, id))
-            await deleteFromR2(id)
+            await imageStore.delete(id)
 
             const data: LogIdDeleteResponse = { success: true }
             return { data, invalidate: ['logs', `log:${id}`] }

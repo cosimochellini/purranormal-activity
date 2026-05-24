@@ -1,5 +1,6 @@
 import type { LogWithCategories } from '@/db/schema'
 import { TELEGRAM_BOT_CHAT_IDS } from '@/env/telegram'
+import { imageStore } from '@/services/imageStore'
 import { storyForge } from '@/services/storyForge'
 import {
   sendMessage as telegramSendMessage,
@@ -7,7 +8,6 @@ import {
 } from '@/services/telegram'
 import type { ChatResult } from '@/services/telegram/types'
 import { logger as defaultLogger, type Logger } from '@/utils/logger'
-import { publicImage } from '@/utils/public-image'
 
 const composeViaStoryForge = async (event: LogWithCategories): Promise<string> => {
   const r = await storyForge.telegramMessage(event)
@@ -46,7 +46,6 @@ export interface NotifierDeps {
   sendMessage: (chatId: string, body: string) => Promise<ChatResult>
   sendPhoto: (chatId: string, photoUrl: string) => Promise<ChatResult>
   composeMessage: (event: LogWithCategories) => Promise<string>
-  resolveImageUrl: (id: number) => string
   logger: Logger
 }
 
@@ -71,7 +70,6 @@ export const createNotifier = (overrides: Partial<NotifierDeps> = {}): Notifier 
     sendMessage: overrides.sendMessage ?? ((chatId, body) => telegramSendMessage(chatId, body)),
     sendPhoto: overrides.sendPhoto ?? ((chatId, url) => telegramSendPhoto(chatId, url)),
     composeMessage: overrides.composeMessage ?? composeViaStoryForge,
-    resolveImageUrl: overrides.resolveImageUrl ?? publicImage,
     logger: overrides.logger ?? defaultLogger,
   }
 
@@ -132,7 +130,7 @@ export const createNotifier = (overrides: Partial<NotifierDeps> = {}): Notifier 
       }
 
       const text = await deps.composeMessage(event)
-      const photoUrl = deps.resolveImageUrl(event.id)
+      const photoUrl = imageStore.publicUrl(event.id)
 
       const results = await Promise.all(
         deps.chatIds.map((chatId) => oneChat(chatId, text, photoUrl, event.id)),

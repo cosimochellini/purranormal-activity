@@ -6,7 +6,7 @@ import { createTestPipeline } from '../../tests/fakes/imagePipeline'
 
 // Boundary suite. NO `vi.mock('@/drizzle')`,
 // `vi.mock('@/services/imageGen')`, `vi.mock('@/services/storyForge')`,
-// or `vi.mock('@/utils/cloudflare')` — the in-memory adapters from
+// or `vi.mock('@/services/imageStore')` — the in-memory adapters from
 // `tests/fakes/imagePipeline.ts` replace those at the port level.
 
 describe('pipeline.submit', () => {

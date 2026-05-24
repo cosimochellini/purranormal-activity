@@ -18,15 +18,18 @@ vi.mock('@/services/imagePipeline', () => ({
   logPipelineOutcome: vi.fn(),
 }))
 
-vi.mock('@/utils/cloudflare', () => ({
-  deleteFromR2: vi.fn(async () => undefined),
-  uploadToR2: vi.fn(async () => ({ ETag: '"etag"', VersionId: null })),
+vi.mock('@/services/imageStore', () => ({
+  imageStore: {
+    put: vi.fn(),
+    delete: vi.fn(async () => undefined),
+    publicUrl: vi.fn(),
+  },
 }))
 
 import { SECRET } from '@/env/secret'
 import { imagePipeline } from '@/services/imagePipeline'
+import { imageStore } from '@/services/imageStore'
 import { Route } from '@/start/routes/api/log/$id'
-import { deleteFromR2 } from '@/utils/cloudflare'
 
 const { db: fakeDb } = (await import('@/drizzle')) as unknown as {
   db: ReturnType<typeof makeFakeDb>
@@ -213,7 +216,7 @@ describe('PUT /api/log/$id', () => {
 describe('DELETE /api/log/$id', () => {
   beforeEach(() => {
     fakeDb.__reset()
-    vi.mocked(deleteFromR2).mockClear()
+    vi.mocked(imageStore.delete).mockClear()
   })
 
   it('rejects when the secret is wrong with the pre-refactor `error: Invalid secret` shape', async () => {
@@ -244,11 +247,11 @@ describe('DELETE /api/log/$id', () => {
     expect(await res.json()).toEqual({ success: true })
     expect(res.headers.get('X-Invalidate')).toBe('logs,log:7')
     expect(fakeDb.delete).toHaveBeenCalled()
-    expect(deleteFromR2).toHaveBeenCalledWith(7)
+    expect(imageStore.delete).toHaveBeenCalledWith(7)
   })
 
   it('returns the catch-all error response when deletion throws', async () => {
-    vi.mocked(deleteFromR2).mockRejectedValueOnce(new Error('r2 down'))
+    vi.mocked(imageStore.delete).mockRejectedValueOnce(new Error('r2 down'))
     const res = await DELETE({
       request: jsonRequest('DELETE', { secret: SECRET }),
       params: { id: '7' },

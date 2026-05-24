@@ -5,9 +5,9 @@ import { LogStatus } from '@/data/enum/logStatus'
 import type { LogWithCategories } from '@/db/schema'
 import Bug from '@/images/bug.jpg'
 import { randomImage } from '@/images/loading'
+import { imageStore } from '@/services/imageStore'
 import { toAssetSrc } from '@/utils/image'
 import { logger } from '@/utils/logger'
-import { publicImage } from '@/utils/public-image'
 import { randomItem } from '../../utils/random'
 
 interface ImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
@@ -117,7 +117,7 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
 
     if (imageError) return toAssetSrc(Bug)
 
-    return publicImage(id)
+    return imageStore.publicUrl(id)
   }, [id, imageError, status])
 
   const onImageError = () => {
