@@ -5,7 +5,7 @@ import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants
 import { LogStatus } from '@/data/enum/logStatus'
 import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
-import { SECRET } from '@/env/secret'
+import { serverEnv } from '@/env/server'
 import { imagePipeline } from '@/services/imagePipeline'
 import { imageStore } from '@/services/imageStore'
 import { defineHandlers, method } from '@/services/route/defineHandlers'
@@ -27,11 +27,11 @@ const putSchema = z.object({
     .array(z.number())
     .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.CATEGORIES_REQUIRED),
   imageDescription: z.string().nullable(),
-  secret: z.string().refine((val) => val === SECRET, { message: 'Invalid secret' }),
+  secret: z.string().refine((val) => val === serverEnv.secret, { message: 'Invalid secret' }),
 })
 
 const deleteSchema = z.object({
-  secret: z.string().refine((val) => val === SECRET, { message: 'Invalid secret' }),
+  secret: z.string().refine((val) => val === serverEnv.secret, { message: 'Invalid secret' }),
 })
 
 // Routes without an AI dependency still need a reporter (envelope-mandated)

@@ -1,4 +1,4 @@
-import { TELEGRAM_BOT_API_KEY } from '@/env/telegram'
+import { serverEnv } from '@/env/server'
 import { fetcher } from '@/utils/fetch'
 import { logger } from '../../utils/logger'
 import type {
@@ -10,15 +10,23 @@ import type {
   TelegramApiResponse,
 } from './types'
 
-const sendMessageAPI = fetcher<TelegramApiResponse, never, SendMessageBody>(
-  `https://api.telegram.org/bot${TELEGRAM_BOT_API_KEY}/sendMessage`,
-  'POST',
-)
+// Per-call fetcher construction: keeps `serverEnv.telegramApiKey` read out of
+// the module-load global scope (required for Workers, where the per-request
+// env binding postdates module evaluation) AND avoids freezing the URL for
+// the process lifetime. The template-literal eval + fetcher closure is
+// trivially cheap relative to the network round-trip that follows, so the
+// memoisation gain isn't worth the stale-token footgun.
+const getSendMessageAPI = () =>
+  fetcher<TelegramApiResponse, never, SendMessageBody>(
+    `https://api.telegram.org/bot${serverEnv.telegramApiKey}/sendMessage`,
+    'POST',
+  )
 
-const sendPhotoAPI = fetcher<TelegramApiResponse, never, SendPhotoBody>(
-  `https://api.telegram.org/bot${TELEGRAM_BOT_API_KEY}/sendPhoto`,
-  'POST',
-)
+const getSendPhotoAPI = () =>
+  fetcher<TelegramApiResponse, never, SendPhotoBody>(
+    `https://api.telegram.org/bot${serverEnv.telegramApiKey}/sendPhoto`,
+    'POST',
+  )
 
 /**
  * Send a single Telegram message to a single chat.
@@ -35,7 +43,7 @@ export async function sendMessage(
   const { parseMode = 'HTML', disableWebPagePreview = true, silent = false } = options
 
   try {
-    const responseData = await sendMessageAPI({
+    const responseData = await getSendMessageAPI()({
       body: {
         chat_id: chatId.trim(),
         text,
@@ -94,7 +102,7 @@ export async function sendPhoto(
   } = options
 
   try {
-    const responseData = await sendPhotoAPI({
+    const responseData = await getSendPhotoAPI()({
       body: {
         business_connection_id: businessConnectionId,
         chat_id: chatId.trim(),

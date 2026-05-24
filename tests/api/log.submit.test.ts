@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/env/secret', () => ({
-  SECRET: 'test-secret',
+vi.mock('@/env/server', () => ({
+  serverEnv: { secret: 'test-secret' },
+  bucket: { name: 'purranormal-images', url: 'https://test-account.r2.cloudflarestorage.com' },
 }))
 
 vi.mock('@/services/storyForge', () => ({

@@ -1,5 +1,5 @@
 import type { LogWithCategories } from '@/db/schema'
-import { TELEGRAM_BOT_CHAT_IDS } from '@/env/telegram'
+import { serverEnv } from '@/env/server'
 import { imageStore } from '@/services/imageStore'
 import { storyForge } from '@/services/storyForge'
 import {
@@ -66,7 +66,7 @@ const emptyOutcome = (): NotifyOutcome => ({
 
 export const createNotifier = (overrides: Partial<NotifierDeps> = {}): Notifier => {
   const deps: NotifierDeps = {
-    chatIds: overrides.chatIds ?? TELEGRAM_BOT_CHAT_IDS,
+    chatIds: overrides.chatIds ?? serverEnv.telegramChatIds,
     sendMessage: overrides.sendMessage ?? ((chatId, body) => telegramSendMessage(chatId, body)),
     sendPhoto: overrides.sendPhoto ?? ((chatId, url) => telegramSendPhoto(chatId, url)),
     composeMessage: overrides.composeMessage ?? composeViaStoryForge,

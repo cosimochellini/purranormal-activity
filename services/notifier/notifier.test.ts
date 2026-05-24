@@ -27,9 +27,11 @@ vi.mock('@/services/imageStore', () => ({
     publicUrl: vi.fn((id: number) => `https://images.example.test/${id}/cover.webp`),
   },
 }))
-vi.mock('@/env/telegram', () => ({
-  TELEGRAM_BOT_API_KEY: 'test-key',
-  TELEGRAM_BOT_CHAT_IDS: ['env-c1', 'env-c2'],
+vi.mock('@/env/server', () => ({
+  serverEnv: {
+    telegramApiKey: 'test-key',
+    telegramChatIds: ['env-c1', 'env-c2'],
+  },
 }))
 
 import { imageStore } from '@/services/imageStore'

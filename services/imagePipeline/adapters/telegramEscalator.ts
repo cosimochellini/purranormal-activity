@@ -1,4 +1,4 @@
-import { TELEGRAM_BOT_CHAT_IDS } from '@/env/telegram'
+import { serverEnv } from '@/env/server'
 import { sendMessage as telegramSendMessage } from '@/services/telegram'
 import { logger } from '@/utils/logger'
 import type { EscalatorPort } from '../ports'
@@ -18,7 +18,8 @@ const escapeHTML = (text: string) =>
  */
 export const telegramEscalator: EscalatorPort = {
   async alert({ logId, message, writeError }) {
-    if (TELEGRAM_BOT_CHAT_IDS.length === 0) return
+    const chatIds = serverEnv.telegramChatIds
+    if (chatIds.length === 0) return
 
     const text = [
       '🚨 Image pipeline write-also-failed',
@@ -28,7 +29,7 @@ export const telegramEscalator: EscalatorPort = {
     ].join('\n')
 
     await Promise.all(
-      TELEGRAM_BOT_CHAT_IDS.map(async (chatId) => {
+      chatIds.map(async (chatId) => {
         try {
           const result = await telegramSendMessage(chatId, text)
           if (!result.success) {

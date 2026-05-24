@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants'
-import { SECRET } from '@/env/secret'
+import { serverEnv } from '@/env/server'
 import { imagePipeline } from '@/services/imagePipeline'
 import { defineHandlers, method } from '@/services/route/defineHandlers'
 import { storyForge } from '@/services/storyForge'
@@ -26,7 +26,9 @@ const submitFormSchema = z.object({
   secret: z
     .string()
     .min(1, VALIDATION_MESSAGES.SECRET_REQUIRED)
-    .refine((val) => val.toLowerCase() === SECRET, { message: VALIDATION_MESSAGES.SECRET_INVALID }),
+    .refine((val) => val.toLowerCase() === serverEnv.secret, {
+      message: VALIDATION_MESSAGES.SECRET_INVALID,
+    }),
 })
 
 const messages: FriendlyMessages = {
