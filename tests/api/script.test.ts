@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/services/script', () => ({
-  runImageGenerationScript: vi.fn(),
+vi.mock('@/services/imagePipeline', () => ({
+  imagePipeline: {
+    drain: vi.fn(async () => ({ processed: 0, failed: 0 })),
+  },
 }))
 
-import { runImageGenerationScript } from '@/services/script'
+import { imagePipeline } from '@/services/imagePipeline'
 import { Route } from '@/start/routes/api/script'
 
 const POST = Route.options.server?.handlers?.POST as (ctx: {
@@ -18,43 +20,38 @@ const callGet = () => GET({ request: new Request('http://test/api/script', { met
 
 describe('POST /api/script', () => {
   beforeEach(() => {
-    vi.mocked(runImageGenerationScript).mockReset()
+    vi.mocked(imagePipeline.drain).mockReset()
   })
 
-  it('invokes runImageGenerationScript and emits X-Invalidate when rows were processed', async () => {
-    vi.mocked(runImageGenerationScript).mockResolvedValueOnce({
-      success: true,
-      processed: 3,
-    })
+  it('invokes imagePipeline.drain and emits X-Invalidate when rows were processed', async () => {
+    vi.mocked(imagePipeline.drain).mockResolvedValueOnce({ processed: 3, failed: 0 })
 
     const res = await callPost()
 
     expect(res.status).toBe(200)
     expect(res.headers.get('X-Invalidate')).toBe('logs')
     expect(await res.json()).toEqual({ success: true, processed: 3 })
-    expect(runImageGenerationScript).toHaveBeenCalledOnce()
+    expect(imagePipeline.drain).toHaveBeenCalledOnce()
   })
 
   it('omits X-Invalidate when no rows were processed (idle batch)', async () => {
-    vi.mocked(runImageGenerationScript).mockResolvedValueOnce({
-      success: true,
-      processed: 0,
-    })
+    vi.mocked(imagePipeline.drain).mockResolvedValueOnce({ processed: 0, failed: 0 })
 
     const res = await callPost()
 
     expect(res.status).toBe(200)
     expect(res.headers.get('X-Invalidate')).toBeNull()
+    expect(await res.json()).toEqual({ success: true, processed: 0 })
   })
 
-  it('omits X-Invalidate on the failure response', async () => {
-    vi.mocked(runImageGenerationScript).mockResolvedValueOnce({
-      success: false,
-      processed: 0,
-      error: 'Failed to process logs',
-    })
+  it('routes a thrown drain() through the reporter as a failure response', async () => {
+    vi.mocked(imagePipeline.drain).mockRejectedValueOnce(new Error('db down'))
 
     const res = await callPost()
+    const body = (await res.json()) as { success: false; processed: number; error: string }
+    expect(body.success).toBe(false)
+    expect(body.processed).toBe(0)
+    expect(body.error).toMatch(/process logs|temporarily unavailable/i)
     expect(res.headers.get('X-Invalidate')).toBeNull()
   })
 

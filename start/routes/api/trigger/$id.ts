@@ -6,8 +6,6 @@ import { logger } from '@/utils/logger'
 import { assertNever } from '@/utils/typed'
 import { createFriendly, type FriendlyMessages } from '../log/_friendly'
 
-const errorMessage = (cause: unknown) => (cause instanceof Error ? cause.message : 'Unknown error')
-
 const messages: FriendlyMessages = {
   AI_UNAVAILABLE:
     'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.',
@@ -38,45 +36,31 @@ export const Route = createFileRoute('/api/trigger/$id')({
               return { data: { success: false as const, error: 'Invalid log id' } }
             }
 
-            const outcome = await imagePipeline.generateImageFor(logId)
+            const report = await imagePipeline.generateImageFor(logId)
 
-            switch (outcome.kind) {
+            switch (report.status) {
               case 'success':
                 return {
                   data: { success: true as const },
                   invalidate: [`log:${logId}`] as const,
                 }
-
               case 'skipped':
-                return outcome.reason === 'not-found'
-                  ? { data: { success: false as const, error: outcome.reason } }
+                // skipped:not-found means the row never existed, so no
+                // loader needs invalidating. Every other skip reason still
+                // touched a real row whose loader should re-fetch.
+                return report.reason === 'not-found'
+                  ? { data: { success: false as const, error: report.reason } }
                   : {
-                      data: { success: false as const, error: outcome.reason },
+                      data: { success: false as const, error: report.reason },
                       invalidate: [`log:${logId}`] as const,
                     }
-
-              case 'failed-recorded':
-                logger.error('image pipeline recorded an error', {
-                  logId,
-                  cause: outcome.cause,
-                })
+              case 'failed':
                 return {
-                  data: { success: false as const, error: errorMessage(outcome.cause) },
-                  invalidate: [`log:${logId}`] as const,
-                }
-
-              case 'failed-write-also-failed':
-                logger.error('image pipeline failed to write the error column', {
-                  logId,
-                  cause: outcome.cause,
-                  writeError: outcome.writeError,
-                })
-                return {
-                  data: { success: false as const, error: errorMessage(outcome.cause) },
+                  data: { success: false as const, error: report.message ?? 'Unknown error' },
                   invalidate: [`log:${logId}`] as const,
                 }
               default:
-                return assertNever(outcome)
+                return assertNever(report.status)
             }
           },
         },

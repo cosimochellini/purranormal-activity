@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { LogStatus } from '@/data/enum/logStatus'
-import { logPipelineOutcome } from '@/services/imagePipeline/outcome'
+import * as pipelineModule from '@/services/imagePipeline'
 import { logger } from '@/utils/logger'
 import { createTestPipeline } from '../../tests/fakes/imagePipeline'
 
@@ -23,7 +23,7 @@ describe('pipeline.submit', () => {
     })
 
     expect(result.id).toBe(1)
-    expect(result.outcome).toEqual({ kind: 'success', logId: 1 })
+    expect(result.report).toEqual({ status: 'success', logId: 1 })
 
     const row = repo.findRow(1)
     expect(row?.status).toBe(LogStatus.ImageGenerated)
@@ -52,8 +52,8 @@ describe('pipeline.submit', () => {
     expect(repo.findRow(1)?.status).toBe(LogStatus.ImageGenerated)
   })
 
-  it('records failed-recorded when linkCategories throws after a successful insert', async () => {
-    const { pipeline, repo, store, aiImage } = createTestPipeline()
+  it('reports failed when linkCategories throws after a successful insert', async () => {
+    const { pipeline, repo, store, aiImage, escalator } = createTestPipeline()
     const linkError = new Error('link table is down')
     repo.setLinkThrow(linkError)
 
@@ -63,16 +63,22 @@ describe('pipeline.submit', () => {
     })
 
     expect(result.id).toBe(1)
-    expect(result.outcome).toEqual({ kind: 'failed-recorded', logId: 1, cause: linkError })
+    expect(result.report).toEqual({
+      status: 'failed',
+      logId: 1,
+      message: 'link table is down',
+    })
     const row = repo.findRow(1)
     expect(row?.status).toBe(LogStatus.Error)
     expect(row?.error).toBe('link table is down')
     // Image generation never ran when linkCategories threw.
     expect(aiImage.calls).toHaveLength(0)
     expect(store.snapshot().size).toBe(0)
+    // First-write succeeded → escalator MUST NOT be paged.
+    expect(escalator.calls).toHaveLength(0)
   })
 
-  it('records failed-recorded when AiImagePort.generateBase64 throws', async () => {
+  it('reports failed when AiImagePort.generateBase64 throws', async () => {
     const { pipeline, repo, aiImage, store } = createTestPipeline()
     const aiError = new Error('rate limit')
     aiImage.setThrow(aiError)
@@ -82,7 +88,7 @@ describe('pipeline.submit', () => {
       categoryIds: [],
     })
 
-    expect(result.outcome).toEqual({ kind: 'failed-recorded', logId: 1, cause: aiError })
+    expect(result.report).toEqual({ status: 'failed', logId: 1, message: 'rate limit' })
     const row = repo.findRow(1)
     expect(row?.status).toBe(LogStatus.Error)
     expect(row?.error).toBe('rate limit')
@@ -104,7 +110,7 @@ describe('pipeline.submit', () => {
     expect(repo.findRow(1)?.error).toBe('content_policy_violation')
   })
 
-  it('records failed-recorded when AiTextPort returns ok:false (preserves AIError discriminator)', async () => {
+  it('reports failed when AiTextPort returns ok:false (preserves AIError discriminator)', async () => {
     const { pipeline, repo, aiText, aiImage } = createTestPipeline()
     aiText.setResult({ ok: false, error: 'model', message: 'rate limit' })
 
@@ -113,13 +119,13 @@ describe('pipeline.submit', () => {
       categoryIds: [],
     })
 
-    expect(result.outcome.kind).toBe('failed-recorded')
+    expect(result.report.status).toBe('failed')
     expect(repo.findRow(1)?.error).toBe('rate limit')
     expect(aiImage.calls).toHaveLength(0)
   })
 
-  it('returns failed-write-also-failed when both generate and markError throw', async () => {
-    const { pipeline, aiImage, repo } = createTestPipeline()
+  it('pages the escalator when both generate and markError throw (write-also-failed)', async () => {
+    const { pipeline, aiImage, repo, escalator } = createTestPipeline()
     const aiError = new Error('AI down')
     const writeError = new Error('db down')
     aiImage.setThrow(aiError)
@@ -130,12 +136,14 @@ describe('pipeline.submit', () => {
       categoryIds: [],
     })
 
-    expect(result.outcome).toEqual({
-      kind: 'failed-write-also-failed',
+    // External surface collapses to plain `failed`.
+    expect(result.report).toEqual({
+      status: 'failed',
       logId: 1,
-      cause: aiError,
-      writeError,
+      message: 'AI down',
     })
+    // The internal write-also-failed branch fires the escalator.
+    expect(escalator.calls).toEqual([{ logId: 1, message: 'AI down', writeError: 'db down' }])
     // Status stays Created when markError itself failed.
     expect(repo.findRow(1)?.status).toBe(LogStatus.Created)
   })
@@ -156,25 +164,25 @@ describe('pipeline.submit', () => {
 })
 
 describe('pipeline.generateImageFor', () => {
-  it('returns success and marks ImageGenerated for a Created row', async () => {
+  it('returns status:success and marks ImageGenerated for a Created row', async () => {
     const { pipeline, repo, store } = createTestPipeline()
     repo.preload([
       { id: 7, description: 'd', imageDescription: 'cached', status: LogStatus.Created },
     ])
 
-    const outcome = await pipeline.generateImageFor(7)
+    const report = await pipeline.generateImageFor(7)
 
-    expect(outcome).toEqual({ kind: 'success', logId: 7 })
+    expect(report).toEqual({ status: 'success', logId: 7 })
     expect(repo.findRow(7)?.status).toBe(LogStatus.ImageGenerated)
     expect(store.snapshot().has(7)).toBe(true)
   })
 
-  it('returns skipped:not-found when the row is absent', async () => {
+  it('returns status:skipped reason:not-found when the row is absent', async () => {
     const { pipeline, store } = createTestPipeline()
 
-    const outcome = await pipeline.generateImageFor(99)
+    const report = await pipeline.generateImageFor(99)
 
-    expect(outcome).toEqual({ kind: 'skipped', logId: 99, reason: 'not-found' })
+    expect(report).toEqual({ status: 'skipped', logId: 99, reason: 'not-found' })
     expect(store.snapshot().size).toBe(0)
   })
 
@@ -187,9 +195,9 @@ describe('pipeline.generateImageFor', () => {
       { id: 7, description: 'haunted teapot', imageDescription: '', status: LogStatus.Created },
     ])
 
-    const outcome = await pipeline.generateImageFor(7)
+    const report = await pipeline.generateImageFor(7)
 
-    expect(outcome).toEqual({ kind: 'success', logId: 7 })
+    expect(report).toEqual({ status: 'success', logId: 7 })
     expect(aiText.calls).toHaveLength(1)
     expect(aiText.calls[0].description).toBe('haunted teapot')
   })
@@ -197,63 +205,63 @@ describe('pipeline.generateImageFor', () => {
   it.each([
     LogStatus.ImageGenerated,
     LogStatus.Error,
-  ])('returns skipped:not-pending for status=%s', async (status) => {
+  ])('returns status:skipped reason:not-pending for status=%s', async (status) => {
     const { pipeline, repo, store, aiImage } = createTestPipeline()
     repo.preload([{ id: 7, status }])
 
-    const outcome = await pipeline.generateImageFor(7)
+    const report = await pipeline.generateImageFor(7)
 
-    expect(outcome).toEqual({ kind: 'skipped', logId: 7, reason: 'not-pending' })
+    expect(report).toEqual({ status: 'skipped', logId: 7, reason: 'not-pending' })
     expect(aiImage.calls).toHaveLength(0)
     expect(store.snapshot().size).toBe(0)
   })
 
-  it('records best-effort error when loadStatus throws (failed-recorded)', async () => {
-    const { pipeline, repo } = createTestPipeline()
+  it('records best-effort error when loadStatus throws (reports failed)', async () => {
+    const { pipeline, repo, escalator } = createTestPipeline()
     const cause = new Error('libsql refused')
     repo.preload([{ id: 7, status: LogStatus.Created }])
     repo.setLoadStatusThrow(cause)
 
-    const outcome = await pipeline.generateImageFor(7)
+    const report = await pipeline.generateImageFor(7)
 
-    expect(outcome).toEqual({ kind: 'failed-recorded', logId: 7, cause })
+    expect(report).toEqual({ status: 'failed', logId: 7, message: 'libsql refused' })
     expect(repo.findRow(7)?.status).toBe(LogStatus.Error)
     expect(repo.findRow(7)?.error).toBe('libsql refused')
+    // Recovery write succeeded → escalator stays silent.
+    expect(escalator.calls).toHaveLength(0)
   })
 
-  it('returns failed-write-also-failed when loadStatus AND markError both throw', async () => {
-    const { pipeline, repo } = createTestPipeline()
+  it('pages the escalator when loadStatus AND markError both throw', async () => {
+    const { pipeline, repo, escalator } = createTestPipeline()
     const cause = new Error('libsql refused')
     const writeError = new Error('also broken')
     repo.preload([{ id: 7, status: LogStatus.Created }])
     repo.setLoadStatusThrow(cause)
     repo.setMarkErrorThrow(writeError)
 
-    const outcome = await pipeline.generateImageFor(7)
+    const report = await pipeline.generateImageFor(7)
 
-    expect(outcome).toEqual({
-      kind: 'failed-write-also-failed',
-      logId: 7,
-      cause,
-      writeError,
-    })
+    expect(report).toEqual({ status: 'failed', logId: 7, message: 'libsql refused' })
+    expect(escalator.calls).toEqual([
+      { logId: 7, message: 'libsql refused', writeError: 'also broken' },
+    ])
   })
 
-  it('returns failed-recorded when markImageGenerated throws after a successful upload', async () => {
+  it('reports failed when markImageGenerated throws after a successful upload', async () => {
     const { pipeline, repo, store } = createTestPipeline()
     const writeError = new Error('mark failed')
     repo.preload([{ id: 7, description: 'd', imageDescription: 'p', status: LogStatus.Created }])
     repo.setMarkGeneratedThrow(writeError)
 
-    const outcome = await pipeline.generateImageFor(7)
+    const report = await pipeline.generateImageFor(7)
 
-    expect(outcome).toEqual({ kind: 'failed-recorded', logId: 7, cause: writeError })
+    expect(report).toEqual({ status: 'failed', logId: 7, message: 'mark failed' })
     // Image was uploaded — pre-existing leak behaviour preserved.
     expect(store.snapshot().has(7)).toBe(true)
     expect(repo.findRow(7)?.status).toBe(LogStatus.Error)
   })
 
-  it('throws "Log not found" when the row vanishes between loadStatus and findById', async () => {
+  it('reports failed with "Log not found" when the row vanishes between loadStatus and findById', async () => {
     // Hijack loadStatus to claim the row exists & is Created, while
     // the underlying repo storage knows nothing about id=42.
     const { repo } = createTestPipeline()
@@ -263,23 +271,44 @@ describe('pipeline.generateImageFor', () => {
     }
     const { pipeline } = createTestPipeline({ repo: customRepo })
 
-    const outcome = await pipeline.generateImageFor(42)
+    const report = await pipeline.generateImageFor(42)
 
-    expect(outcome.kind).toBe('failed-recorded')
-    if (outcome.kind === 'failed-recorded') {
-      expect((outcome.cause as Error).message).toBe('Log not found')
-    }
+    expect(report).toEqual({ status: 'failed', logId: 42, message: 'Log not found' })
+  })
+
+  it('emits an info log line on skipped outcomes', async () => {
+    const { pipeline } = createTestPipeline()
+    vi.mocked(logger.info).mockClear()
+
+    await pipeline.generateImageFor(99)
+
+    expect(vi.mocked(logger.info)).toHaveBeenCalledWith('imagePipeline: skipped log 99 (not-found)')
+  })
+
+  it('emits an error log line on failed-recorded', async () => {
+    const { pipeline, repo, aiImage } = createTestPipeline()
+    repo.preload([{ id: 7, status: LogStatus.Created, imageDescription: 'p' }])
+    const cause = new Error('AI down')
+    aiImage.setThrow(cause)
+    vi.mocked(logger.error).mockClear()
+
+    await pipeline.generateImageFor(7)
+
+    expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
+      'imagePipeline: recorded an error for log 7',
+      { cause },
+    )
   })
 })
 
-describe('pipeline.drainOnePending', () => {
-  it('returns null when no Created rows exist', async () => {
+describe('pipeline.drain', () => {
+  it('returns processed:0 / failed:0 when no Created rows exist', async () => {
     const { pipeline } = createTestPipeline()
 
-    expect(await pipeline.drainOnePending()).toBeNull()
+    expect(await pipeline.drain()).toEqual({ processed: 0, failed: 0 })
   })
 
-  it('picks the lowest-id Created row and processes it', async () => {
+  it('drains the entire queue across N rows', async () => {
     const { pipeline, repo } = createTestPipeline()
     repo.preload([
       { id: 5, status: LogStatus.ImageGenerated },
@@ -287,106 +316,78 @@ describe('pipeline.drainOnePending', () => {
       { id: 7, status: LogStatus.Created, imageDescription: 'p' },
     ])
 
-    const outcome = await pipeline.drainOnePending()
+    const summary = await pipeline.drain()
 
-    expect(outcome).toEqual({ kind: 'success', logId: 6 })
+    expect(summary).toEqual({ processed: 2, failed: 0 })
     expect(repo.findRow(6)?.status).toBe(LogStatus.ImageGenerated)
-    expect(repo.findRow(7)?.status).toBe(LogStatus.Created) // untouched
+    expect(repo.findRow(7)?.status).toBe(LogStatus.ImageGenerated)
   })
 
-  it('drains the entire queue across N+1 calls', async () => {
-    const { pipeline, repo } = createTestPipeline()
+  it('counts failed rows in the summary and keeps draining', async () => {
+    const { pipeline, repo, aiImage } = createTestPipeline()
     repo.preload([
       { id: 1, status: LogStatus.Created, imageDescription: 'p' },
       { id: 2, status: LogStatus.Created, imageDescription: 'p' },
-      { id: 3, status: LogStatus.Created, imageDescription: 'p' },
     ])
+    aiImage.setThrow(new Error('AI down'))
 
-    const o1 = await pipeline.drainOnePending()
-    const o2 = await pipeline.drainOnePending()
-    const o3 = await pipeline.drainOnePending()
-    const o4 = await pipeline.drainOnePending()
-
-    expect(o1).toEqual({ kind: 'success', logId: 1 })
-    expect(o2).toEqual({ kind: 'success', logId: 2 })
-    expect(o3).toEqual({ kind: 'success', logId: 3 })
-    expect(o4).toBeNull()
+    const summary = await pipeline.drain()
+    // Both rows get marked Error (markError works), so both report failed.
+    expect(summary).toEqual({ processed: 2, failed: 2 })
+    expect(repo.findRow(1)?.status).toBe(LogStatus.Error)
+    expect(repo.findRow(2)?.status).toBe(LogStatus.Error)
   })
 
-  it('returns the wrapped failed-recorded outcome when a per-row generation fails', async () => {
-    const { pipeline, repo, aiImage } = createTestPipeline()
-    repo.preload([{ id: 11, status: LogStatus.Created, imageDescription: 'p' }])
-    const cause = new Error('AI down')
-    aiImage.setThrow(cause)
-
-    const outcome = await pipeline.drainOnePending()
-
-    expect(outcome).toEqual({ kind: 'failed-recorded', logId: 11, cause })
-  })
-
-  it('returns skipped:not-pending (non-null) when the row is racingly advanced between findFirstPending and loadStatus', async () => {
+  it('counts a racing skipped outcome as processed but not failed', async () => {
     // Models the FR-009 / spec clarification race: another caller marked
     // the row ImageGenerated after findFirstPending picked it up but
-    // before loadStatus ran. drainOnePending MUST return non-null so the
-    // script's processed counter ticks toward queue exhaustion.
+    // before loadStatus ran. drain MUST still tick the counter so the
+    // queue exhausts.
     const { repo } = createTestPipeline()
     repo.preload([{ id: 4, status: LogStatus.Created, imageDescription: 'p' }])
+    let calls = 0
     const racingRepo = {
       ...repo,
       loadStatus: async () => ({ status: LogStatus.ImageGenerated }),
+      findFirstPending: async () => {
+        calls++
+        return calls === 1 ? { id: 4 } : null
+      },
     }
     const { pipeline } = createTestPipeline({ repo: racingRepo })
 
-    const outcome = await pipeline.drainOnePending()
+    const summary = await pipeline.drain()
 
-    expect(outcome).toEqual({ kind: 'skipped', logId: 4, reason: 'not-pending' })
+    expect(summary).toEqual({ processed: 1, failed: 0 })
   })
 })
 
-describe('logPipelineOutcome', () => {
-  beforeEach(() => {
-    vi.mocked(logger.info).mockClear()
-    vi.mocked(logger.error).mockClear()
+describe('public export surface', () => {
+  it('does NOT re-export PipelineOutcome / logPipelineOutcome / NO_FAILURE / causeToErrorString', () => {
+    // The internal 4-kind discriminator and its helpers MUST stay private.
+    const mod = pipelineModule as Record<string, unknown>
+    expect(mod.PipelineOutcome).toBeUndefined()
+    expect(mod.logPipelineOutcome).toBeUndefined()
+    expect(mod.NO_FAILURE).toBeUndefined()
+    expect(mod.causeToErrorString).toBeUndefined()
   })
 
-  it('is silent on success', () => {
-    logPipelineOutcome({ kind: 'success', logId: 7 }, 'ctx')
-    expect(vi.mocked(logger.info)).not.toHaveBeenCalled()
-    expect(vi.mocked(logger.error)).not.toHaveBeenCalled()
-  })
-
-  it('logs an info line on skipped', () => {
-    logPipelineOutcome({ kind: 'skipped', logId: 7, reason: 'not-pending' }, 'ctx')
-    expect(vi.mocked(logger.info)).toHaveBeenCalledWith('ctx: pipeline skipped log 7 (not-pending)')
-  })
-
-  it('logs an error with the cause on failed-recorded', () => {
-    const cause = new Error('AI down')
-    logPipelineOutcome({ kind: 'failed-recorded', logId: 7, cause }, 'ctx')
-    expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
-      'ctx: pipeline recorded an error for log 7',
-      { cause },
-    )
-  })
-
-  it('logs an error with cause + writeError on failed-write-also-failed', () => {
-    const cause = new Error('AI down')
-    const writeError = new Error('db down')
-    logPipelineOutcome({ kind: 'failed-write-also-failed', logId: 7, cause, writeError }, 'ctx')
-    expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
-      'ctx: pipeline failed to write the error column for log 7',
-      { cause, writeError },
-    )
+  it('exposes imagePipeline + createImagePipeline + createDefaultImagePipeline', () => {
+    const mod = pipelineModule as Record<string, unknown>
+    expect(mod.imagePipeline).toBeDefined()
+    expect(typeof mod.createImagePipeline).toBe('function')
+    expect(typeof mod.createDefaultImagePipeline).toBe('function')
   })
 })
 
 describe('createImagePipeline (factory contract)', () => {
-  it('exposes exactly three methods: submit, generateImageFor, drainOnePending', () => {
+  it('exposes exactly three methods: submit, generateImageFor, drain', () => {
     const { pipeline } = createTestPipeline()
     expect(typeof pipeline.submit).toBe('function')
     expect(typeof pipeline.generateImageFor).toBe('function')
-    expect(typeof pipeline.drainOnePending).toBe('function')
-    // The legacy `run` method MUST be gone (FR-001).
+    expect(typeof pipeline.drain).toBe('function')
+    // The legacy `drainOnePending` and `run` methods MUST be gone.
+    expect((pipeline as unknown as { drainOnePending?: unknown }).drainOnePending).toBeUndefined()
     expect((pipeline as unknown as { run?: unknown }).run).toBeUndefined()
   })
 })

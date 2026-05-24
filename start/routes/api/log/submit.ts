@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants'
 import { SECRET } from '@/env/secret'
-import { imagePipeline, logPipelineOutcome } from '@/services/imagePipeline'
+import { imagePipeline } from '@/services/imagePipeline'
 import { defineHandlers, method } from '@/services/route/defineHandlers'
 import { storyForge } from '@/services/storyForge'
 import type { LogSubmitResponse } from '@/types/api/log-submit'
@@ -99,15 +99,16 @@ export const Route = createFileRoute('/api/log/submit')({
               .map(({ id }) => id)
               .filter((id) => allCategoryIds.includes(id))
 
-            const submitResult = await imagePipeline.submit({
+            // The pipeline now logs every outcome internally — no
+            // post-call `logPipelineOutcome` invocation needed here.
+            const { id } = await imagePipeline.submit({
               draft: { title, description, imageDescription },
               categoryIds,
             })
-            logPipelineOutcome(submitResult.outcome, 'POST /api/log/submit')
 
             return {
-              data: { success: true, id: submitResult.id, missingCategories: [] },
-              invalidate: ['logs', `log:${submitResult.id}`],
+              data: { success: true, id, missingCategories: [] },
+              invalidate: ['logs', `log:${id}`],
             }
           },
         }),

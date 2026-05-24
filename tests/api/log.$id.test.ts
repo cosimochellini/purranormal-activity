@@ -13,9 +13,8 @@ vi.mock('@/env/secret', () => ({
 
 vi.mock('@/services/imagePipeline', () => ({
   imagePipeline: {
-    generateImageFor: vi.fn(async (id: number) => ({ kind: 'success', logId: id })),
+    generateImageFor: vi.fn(async (id: number) => ({ status: 'success', logId: id })),
   },
-  logPipelineOutcome: vi.fn(),
 }))
 
 vi.mock('@/services/imageStore', () => ({
