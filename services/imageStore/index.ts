@@ -2,8 +2,8 @@
 
 import { Buffer } from 'node:buffer'
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import { ACCESS_KEY_ID, ACCOUNT_ID, BUCKET_NAME, SECRET_ACCESS_KEY } from '@/env/cloudflare'
 import { VITE_CLOUDFLARE_PUBLIC_URL } from '@/env/public'
+import { bucket, serverEnv } from '@/env/server'
 import { logger } from '@/utils/logger'
 
 // Single key-scheme constant: rename = one edit.
@@ -17,10 +17,10 @@ const getClient = (): S3Client => {
   if (!_client) {
     _client = new S3Client({
       region: 'auto',
-      endpoint: `https://${ACCOUNT_ID}.r2.cloudflarestorage.com`,
+      endpoint: bucket.url,
       credentials: {
-        accessKeyId: ACCESS_KEY_ID,
-        secretAccessKey: SECRET_ACCESS_KEY,
+        accessKeyId: serverEnv.accessKeyId,
+        secretAccessKey: serverEnv.secretAccessKey,
       },
     })
   }
@@ -38,7 +38,7 @@ export const imageStore: ImageStore = {
     try {
       await getClient().send(
         new PutObjectCommand({
-          Bucket: BUCKET_NAME,
+          Bucket: bucket.name,
           Key: objectKey(id),
           // `Buffer.from(bytes)` keeps the AWS SDK's `PutObjectCommand` body
           // typing happy on Workers (where `Buffer` is polyfilled by
@@ -60,7 +60,7 @@ export const imageStore: ImageStore = {
     try {
       await getClient().send(
         new DeleteObjectCommand({
-          Bucket: BUCKET_NAME,
+          Bucket: bucket.name,
           Key: objectKey(id),
         }),
       )

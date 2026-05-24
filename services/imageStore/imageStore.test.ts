@@ -5,13 +5,16 @@ import { logger } from '@/utils/logger'
 // the S3 SDK is fully stubbed so the lazy client constructed inside
 // `services/imageStore` never reaches a real R2 endpoint, and the command
 // constructors are spied so we can assert on the key scheme.
-vi.mock('@/env/cloudflare', () => ({
-  ACCOUNT_ID: 'fake-account',
-  ACCESS_KEY_ID: 'fake-access',
-  SECRET_ACCESS_KEY: 'fake-secret',
-  BUCKET_NAME: 'fake-bucket',
-  BUCKET_URL: 'https://fake-account.r2.cloudflarestorage.com',
-  CLOUDFLARE_IMAGE_TOKEN: 'fake-token',
+vi.mock('@/env/server', () => ({
+  serverEnv: {
+    accountId: 'fake-account',
+    accessKeyId: 'fake-access',
+    secretAccessKey: 'fake-secret',
+  },
+  bucket: {
+    name: 'fake-bucket',
+    url: 'https://fake-account.r2.cloudflarestorage.com',
+  },
 }))
 
 vi.mock('@/env/public', () => ({

@@ -7,8 +7,9 @@ vi.mock('@/drizzle', async () => {
   return { db: make() }
 })
 
-vi.mock('@/env/secret', () => ({
-  SECRET: 'test-secret',
+vi.mock('@/env/server', () => ({
+  serverEnv: { secret: 'test-secret' },
+  bucket: { name: 'purranormal-images', url: 'https://test-account.r2.cloudflarestorage.com' },
 }))
 
 vi.mock('@/services/imagePipeline', () => ({
@@ -25,8 +26,11 @@ vi.mock('@/services/imageStore', () => ({
   },
 }))
 
-import { SECRET } from '@/env/secret'
+import { serverEnv } from '@/env/server'
 import { imagePipeline } from '@/services/imagePipeline'
+
+const SECRET = serverEnv.secret
+
 import { imageStore } from '@/services/imageStore'
 import { Route } from '@/start/routes/api/log/$id'
 

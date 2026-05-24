@@ -1,4 +1,4 @@
-import { TELEGRAM_BOT_API_KEY } from '@/env/telegram'
+import { serverEnv } from '@/env/server'
 import { fetcher } from '@/utils/fetch'
 import { logger } from '../../utils/logger'
 import type {
@@ -10,15 +10,31 @@ import type {
   TelegramApiResponse,
 } from './types'
 
-const sendMessageAPI = fetcher<TelegramApiResponse, never, SendMessageBody>(
-  `https://api.telegram.org/bot${TELEGRAM_BOT_API_KEY}/sendMessage`,
-  'POST',
-)
+// Lazy: build the fetchers on first call so `serverEnv.telegramApiKey` is
+// only read after the Workers per-request env binding exists. Without this
+// the module-load access fires inside global scope and (on a missing key)
+// emits the warn before any route ever runs.
+let _sendMessageAPI: ReturnType<typeof fetcher<TelegramApiResponse, never, SendMessageBody>>
+const getSendMessageAPI = () => {
+  if (!_sendMessageAPI) {
+    _sendMessageAPI = fetcher<TelegramApiResponse, never, SendMessageBody>(
+      `https://api.telegram.org/bot${serverEnv.telegramApiKey}/sendMessage`,
+      'POST',
+    )
+  }
+  return _sendMessageAPI
+}
 
-const sendPhotoAPI = fetcher<TelegramApiResponse, never, SendPhotoBody>(
-  `https://api.telegram.org/bot${TELEGRAM_BOT_API_KEY}/sendPhoto`,
-  'POST',
-)
+let _sendPhotoAPI: ReturnType<typeof fetcher<TelegramApiResponse, never, SendPhotoBody>>
+const getSendPhotoAPI = () => {
+  if (!_sendPhotoAPI) {
+    _sendPhotoAPI = fetcher<TelegramApiResponse, never, SendPhotoBody>(
+      `https://api.telegram.org/bot${serverEnv.telegramApiKey}/sendPhoto`,
+      'POST',
+    )
+  }
+  return _sendPhotoAPI
+}
 
 /**
  * Send a single Telegram message to a single chat.
@@ -35,7 +51,7 @@ export async function sendMessage(
   const { parseMode = 'HTML', disableWebPagePreview = true, silent = false } = options
 
   try {
-    const responseData = await sendMessageAPI({
+    const responseData = await getSendMessageAPI()({
       body: {
         chat_id: chatId.trim(),
         text,
@@ -94,7 +110,7 @@ export async function sendPhoto(
   } = options
 
   try {
-    const responseData = await sendPhotoAPI({
+    const responseData = await getSendPhotoAPI()({
       body: {
         business_connection_id: businessConnectionId,
         chat_id: chatId.trim(),

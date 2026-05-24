@@ -1,5 +1,5 @@
-import { TURSO_AUTH_TOKEN, TURSO_DATABASE_URL } from '@/env/db'
 import { drizzle } from 'drizzle-orm/libsql/web'
+import { serverEnv } from '@/env/server'
 
 type FetchRequestLike = {
   url: string
@@ -34,8 +34,12 @@ const libsqlFetch: typeof fetch = (input, init) => {
 
 export const db = drizzle({
   connection: {
-    url: TURSO_DATABASE_URL,
-    authToken: TURSO_AUTH_TOKEN,
+    get url() {
+      return serverEnv.tursoUrl
+    },
+    get authToken() {
+      return serverEnv.tursoToken
+    },
     fetch: libsqlFetch,
   },
 })
