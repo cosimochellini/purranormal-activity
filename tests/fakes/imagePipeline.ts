@@ -1,8 +1,10 @@
 import { LogStatus } from '@/data/enum/logStatus'
+import { noopEscalator } from '@/services/imagePipeline/adapters/noopEscalator'
 import { createImagePipeline } from '@/services/imagePipeline/core'
 import type {
   AiImagePort,
   AiTextPort,
+  EscalatorPort,
   ImagePipeline,
   ImageStorePort,
   LogRepositoryPort,
@@ -266,12 +268,27 @@ export const createInMemoryLogRepository = (): InMemoryLogRepository => {
   }
 }
 
+export interface RecordingEscalator extends EscalatorPort {
+  calls: Array<{ logId: number; message: string; writeError: string }>
+}
+
+export const createRecordingEscalator = (): RecordingEscalator => {
+  const calls: RecordingEscalator['calls'] = []
+  return {
+    calls,
+    async alert(failure) {
+      calls.push(failure)
+    },
+  }
+}
+
 export interface TestPipeline {
   pipeline: ImagePipeline
   aiText: InMemoryAiText
   aiImage: InMemoryAiImage
   store: InMemoryImageStore
   repo: InMemoryLogRepository
+  escalator: RecordingEscalator
 }
 
 export const createTestPipeline = (overrides: Partial<PipelineDeps> = {}): TestPipeline => {
@@ -279,13 +296,19 @@ export const createTestPipeline = (overrides: Partial<PipelineDeps> = {}): TestP
   const aiImage = createInMemoryAiImage()
   const store = createInMemoryImageStore()
   const repo = createInMemoryLogRepository()
+  const escalator = createRecordingEscalator()
 
   const pipeline = createImagePipeline({
     aiText: overrides.aiText ?? aiText,
     aiImage: overrides.aiImage ?? aiImage,
     store: overrides.store ?? store,
     repo: overrides.repo ?? repo,
+    escalator: overrides.escalator ?? escalator,
+    logger: overrides.logger,
   })
 
-  return { pipeline, aiText, aiImage, store, repo }
+  return { pipeline, aiText, aiImage, store, repo, escalator }
 }
+
+// Re-export the noop escalator so test setup files can wire it in once.
+export { noopEscalator }

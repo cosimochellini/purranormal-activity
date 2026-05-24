@@ -1,6 +1,6 @@
 import type { LogStatus } from '@/data/enum/logStatus'
 import type { AIResult } from '@/services/storyForge'
-import type { PipelineOutcome } from './outcome'
+import type { Logger } from '@/utils/logger'
 
 export interface DraftLog {
   title: string
@@ -20,9 +20,25 @@ export interface SubmitInput {
   categoryIds: number[]
 }
 
+/**
+ * External-facing pipeline result. Collapses the internal 4-kind
+ * `PipelineOutcome` discriminator (success | skipped | failed-recorded |
+ * failed-write-also-failed) into a 3-kind status. The internal "secondary
+ * write also failed" branch is escalated via `EscalatorPort` and surfaces
+ * here as a plain `status: 'failed'`.
+ */
+export interface PipelineReport {
+  status: 'success' | 'skipped' | 'failed'
+  logId: number
+  /** Present iff `status === 'skipped'`. */
+  reason?: 'not-found' | 'not-pending'
+  /** Present iff `status === 'failed'`. */
+  message?: string
+}
+
 export interface SubmitResult {
   id: number
-  outcome: PipelineOutcome
+  report: PipelineReport
 }
 
 export interface AiTextPort {
@@ -48,15 +64,29 @@ export interface LogRepositoryPort {
   markError(id: number, errorText: string): Promise<void>
 }
 
+/**
+ * Loud-alert port for the catastrophic `failed-write-also-failed` branch:
+ * the row cannot be marked Error because the secondary write also threw,
+ * so a human needs to be paged. Two adapters justify the port:
+ * `telegramEscalator` (prod) fans out via the bot; `noopEscalator` (tests)
+ * is silent.
+ */
+export interface EscalatorPort {
+  alert(failure: { logId: number; message: string; writeError: string }): Promise<void>
+}
+
 export interface PipelineDeps {
   aiText: AiTextPort
   aiImage: AiImagePort
   store: ImageStorePort
   repo: LogRepositoryPort
+  escalator: EscalatorPort
+  /** Optional — defaults to the global `logger`. Tests can inject a spy. */
+  logger?: Logger
 }
 
 export interface ImagePipeline {
-  submit(input: SubmitInput): Promise<SubmitResult>
-  generateImageFor(logId: number): Promise<PipelineOutcome>
-  drainOnePending(): Promise<PipelineOutcome | null>
+  submit(input: SubmitInput): Promise<{ id: number; report: PipelineReport }>
+  generateImageFor(logId: number): Promise<PipelineReport>
+  drain(): Promise<{ processed: number; failed: number }>
 }

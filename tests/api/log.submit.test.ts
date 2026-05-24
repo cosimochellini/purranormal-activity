@@ -17,9 +17,8 @@ vi.mock('@/services/storyForge', () => ({
 
 vi.mock('@/services/imagePipeline', () => ({
   imagePipeline: {
-    submit: vi.fn(async () => ({ id: 1, outcome: { kind: 'success', logId: 1 } })),
+    submit: vi.fn(async () => ({ id: 1, report: { status: 'success', logId: 1 } })),
   },
-  logPipelineOutcome: vi.fn(),
 }))
 
 import { imagePipeline } from '@/services/imagePipeline'
@@ -49,7 +48,7 @@ describe('POST /api/log/submit', () => {
       async ({ draft }) =>
         ({
           id: 1,
-          outcome: { kind: 'success', logId: 1 },
+          report: { status: 'success', logId: 1 },
           draft,
         }) as never,
     )
@@ -92,7 +91,7 @@ describe('POST /api/log/submit', () => {
 
       vi.mocked(imagePipeline.submit).mockResolvedValueOnce({
         id: 123,
-        outcome: { kind: 'success', logId: 123 },
+        report: { status: 'success', logId: 123 },
       })
 
       const res = await callPost({
@@ -134,7 +133,7 @@ describe('POST /api/log/submit', () => {
       vi.mocked(storyForge.categories).mockResolvedValueOnce([{ id: 1, name: 'Real' }])
       vi.mocked(imagePipeline.submit).mockResolvedValueOnce({
         id: 5,
-        outcome: { kind: 'success', logId: 5 },
+        report: { status: 'success', logId: 5 },
       })
 
       const res = await callPost({
@@ -278,7 +277,7 @@ describe('POST /api/log/submit', () => {
       vi.mocked(storyForge.categories).mockResolvedValueOnce([])
       vi.mocked(imagePipeline.submit).mockResolvedValueOnce({
         id: 9,
-        outcome: { kind: 'failed-recorded', logId: 9, cause: new Error('downstream') },
+        report: { status: 'failed', logId: 9, message: 'downstream' },
       })
 
       const res = await callPost({

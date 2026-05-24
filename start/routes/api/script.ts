@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { imagePipeline } from '@/services/imagePipeline'
 import { defineHandlers } from '@/services/route/defineHandlers'
-import { runImageGenerationScript } from '@/services/script'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 import { createFriendly, type FriendlyMessages } from './log/_friendly'
@@ -19,7 +19,7 @@ const messages: FriendlyMessages = {
 const reporter = createFriendly<Response>({
   messages,
   build: (text) => ok({ success: false, processed: 0, error: text }),
-  onError: (error) => logger.error('runImageGenerationScript failed:', error),
+  onError: (error) => logger.error('imagePipeline.drain failed:', error),
 })
 
 export const Route = createFileRoute('/api/script')({
@@ -29,11 +29,11 @@ export const Route = createFileRoute('/api/script')({
         POST: {
           reporter,
           handler: async () => {
-            const response = await runImageGenerationScript()
+            const { processed } = await imagePipeline.drain()
             // Tag list-affecting routes only when at least one row was mutated.
             return {
-              data: response,
-              invalidate: response.processed > 0 ? (['logs'] as const) : undefined,
+              data: { success: true as const, processed },
+              invalidate: processed > 0 ? (['logs'] as const) : undefined,
             }
           },
         },

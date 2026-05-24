@@ -6,7 +6,7 @@ import { LogStatus } from '@/data/enum/logStatus'
 import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
-import { imagePipeline, logPipelineOutcome } from '@/services/imagePipeline'
+import { imagePipeline } from '@/services/imagePipeline'
 import { imageStore } from '@/services/imageStore'
 import { defineHandlers, method } from '@/services/route/defineHandlers'
 import type { LogIdDeleteResponse, LogIdGetResponse, LogIdPutResponse } from '@/types/api/log-id'
@@ -156,8 +156,9 @@ export const Route = createFileRoute('/api/log/$id')({
                 .values(categories.map((category) => ({ logId: id, categoryId: category })))
             }
 
-            const outcome = await imagePipeline.generateImageFor(updated.id)
-            logPipelineOutcome(outcome, 'PUT /api/log/$id')
+            // Pipeline owns its own outcome logging — no need to thread
+            // the report back through this route's response.
+            await imagePipeline.generateImageFor(updated.id)
 
             const data: LogIdPutResponse = { success: true, data: updated }
             return { data, invalidate: ['logs', `log:${id}`] }
