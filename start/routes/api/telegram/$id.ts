@@ -1,88 +1,68 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { getLog } from '@/services/log'
 import { notifier } from '@/services/notifier'
-import { defineHandlers } from '@/services/route/defineHandlers'
 import type { TelegramIdResponse } from '@/types/api/telegram-id'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { createFriendly, type FriendlyMessages } from '../log/_friendly'
 
-const messages: FriendlyMessages = {
-  AI_UNAVAILABLE:
-    'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.',
-  AI_UNEXPECTED_RESPONSE:
-    'Our mystical AI assistant returned an unexpected response. Please try again.',
-  CONNECTION_ISSUE: 'Connection issue detected. Please check your internet and try again.',
-  REQUEST_TIMEOUT: 'The request took too long. Please try again.',
-  GENERIC_FALLBACK: 'Telegram dispatch failed',
-  DB_UNAVAILABLE: 'Telegram dispatch failed',
-}
-
-// The pre-refactor catch returned `error.message` verbatim — preserve that
-// exact shape by forwarding the thrown value's message through the
-// reporter's `build`. The friendly-copy classifier still runs, but the
-// route surface remains the raw cause string for backward compatibility.
-const reporter = createFriendly<Response>({
-  messages,
-  build: (text) => ok<TelegramIdResponse>({ success: false, error: text }),
-  onError: (error) => logger.error('Telegram dispatch failed:', error),
-})
-
+// This route is intentionally OFF the `defineHandlers` envelope's
+// reporter-guard catch path. The pre-refactor contract was: forward the
+// thrown error's `message` verbatim — the friendly-copy classifier in
+// `_friendly.ts` would otherwise rewrite libsql / fetch / OpenAI surfaces
+// into static user-facing copy, breaking the byte-for-byte response shape.
+//
+// Telegram dispatch is a backend-driven, programmatic endpoint where the
+// raw cause string is the useful debugging surface. We catch in-handler,
+// forward `error.message`, and skip the envelope entirely.
 export const Route = createFileRoute('/api/telegram/$id')({
   server: {
-    handlers: defineHandlers(
-      {
-        POST: {
-          reporter,
-          handler: async (_input, { params }) => {
-            const id = Number(params.id)
+    handlers: {
+      POST: async ({ params }) => {
+        try {
+          const id = Number(params.id)
 
-            if (Number.isNaN(id)) {
-              return {
-                data: {
-                  success: false as const,
-                  error: 'Invalid event ID',
-                } satisfies TelegramIdResponse,
-              }
-            }
+          if (Number.isNaN(id)) {
+            return ok<TelegramIdResponse>({
+              success: false,
+              error: 'Invalid event ID',
+            })
+          }
 
-            const event = await getLog(id)
-            if (!event) {
-              return {
-                data: {
-                  success: false as const,
-                  error: 'Event not found',
-                } satisfies TelegramIdResponse,
-              }
-            }
+          const event = await getLog(id)
+          if (!event) {
+            return ok<TelegramIdResponse>({
+              success: false,
+              error: 'Event not found',
+            })
+          }
 
-            const outcome = await notifier.notify(event)
-            if (outcome.delivered) {
-              return {
-                data: {
-                  success: true as const,
-                  messageId: outcome.messageId ?? 0,
-                } satisfies TelegramIdResponse,
-              }
-            }
+          const outcome = await notifier.notify(event)
+          if (outcome.delivered) {
+            return ok<TelegramIdResponse>({
+              success: true,
+              messageId: outcome.messageId ?? 0,
+            })
+          }
 
-            const error =
-              outcome.reachedChats === 0 ? 'Telegram fan-out failed' : 'Telegram fan-out partial'
-            return {
-              data: {
-                success: false as const,
-                error,
-                partial: {
-                  reachedChats: outcome.reachedChats,
-                  totalChats: outcome.totalChats,
-                  failedPhotoChats: outcome.failedPhotoChats,
-                },
-              } satisfies TelegramIdResponse,
-            }
-          },
-        },
+          const error =
+            outcome.reachedChats === 0 ? 'Telegram fan-out failed' : 'Telegram fan-out partial'
+          return ok<TelegramIdResponse>({
+            success: false,
+            error,
+            partial: {
+              reachedChats: outcome.reachedChats,
+              totalChats: outcome.totalChats,
+              failedPhotoChats: outcome.failedPhotoChats,
+            },
+          })
+        } catch (error) {
+          logger.error('Telegram dispatch failed:', error)
+          return ok<TelegramIdResponse>({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          })
+        }
       },
-      { route: '/api/telegram/$id' },
-    ),
+    },
   },
 })

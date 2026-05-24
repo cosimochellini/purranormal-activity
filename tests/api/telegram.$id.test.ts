@@ -108,8 +108,25 @@ describe('POST /api/telegram/$id', () => {
     })
   })
 
-  // Try/catch coverage (the notifier-throw and getLog-throw cases) is covered
-  // by the envelope's boundary tests — the reporter's response is verified
-  // there, and the friendly-copy classification is exercised in
-  // `tests/api/_friendly.test.ts`.
+  it('forwards a thrown Error.message verbatim (no friendly-copy rewrite)', async () => {
+    // The friendly classifier would normally rewrite libsql tokens into a
+    // static "Telegram dispatch failed" string. This route opts out so the
+    // raw cause survives — the contract pre-refactor.
+    vi.mocked(getLog).mockRejectedValueOnce(new Error('libsql: connection lost'))
+
+    const res = await callPost('7')
+
+    expect(await res.json()).toEqual({
+      success: false,
+      error: 'libsql: connection lost',
+    })
+  })
+
+  it('falls back to `Unknown error` when a non-Error value is thrown', async () => {
+    vi.mocked(getLog).mockRejectedValueOnce('explosion' as never)
+
+    const res = await callPost('7')
+
+    expect(await res.json()).toEqual({ success: false, error: 'Unknown error' })
+  })
 })

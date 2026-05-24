@@ -42,23 +42,21 @@ export const Route = createFileRoute('/api/log/all')({
   server: {
     handlers: defineHandlers(
       {
-        GET: method<
-          undefined,
-          {
-            page: number
-            limit: number
-            search: string
-            categories: number[]
-            sortBy: SortBy
-            timeRange: TimeRange
-          },
-          undefined,
-          LogAllResponse
-        >({
-          query: querySchema,
+        // Query parsing is done inside the handler so the failure shape
+        // matches pre-refactor: `{ success: false, error: <zod message> }`
+        // rather than the envelope's `errors: { <field>: [...] }`.
+        GET: method<undefined, undefined, undefined, LogAllResponse>({
           reporter,
-          handler: async ({ query }) => {
-            const { page, limit, search, categories, sortBy, timeRange } = query
+          handler: async (_input, { request }) => {
+            const { searchParams } = new URL(request.url)
+            const result = await querySchema.safeParseAsync(Object.fromEntries(searchParams))
+
+            if (!result.success) {
+              const data: LogAllResponse = { success: false, error: result.error.message }
+              return { data }
+            }
+
+            const { page, limit, search, categories, sortBy, timeRange } = result.data
             const skip = (page - 1) * limit
 
             const rows = await getLogs({

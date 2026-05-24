@@ -33,14 +33,23 @@ const reporter = createFriendly<Response>({
   onError: (error) => logger.error('Failed to add categories to log:', error),
 })
 
+const readJson = async (request: Request): Promise<unknown> => {
+  try {
+    return await request.json()
+  } catch {
+    return {}
+  }
+}
+
 export const Route = createFileRoute('/api/log/$id/categories')({
   server: {
     handlers: defineHandlers(
       {
-        POST: method<{ categories: number[] }, undefined, undefined, LogIdCategoriesPostResponse>({
-          body: schema,
+        // Body validation lives in the handler so the id-guard fires first
+        // (pre-refactor: bad-id + bad-body → `{ categories: ['Invalid log id'] }`).
+        POST: method<undefined, undefined, undefined, LogIdCategoriesPostResponse>({
           reporter,
-          handler: async ({ body }, { params }) => {
+          handler: async (_input, { request, params }) => {
             const logId = Number(params.id)
             if (Number.isNaN(logId)) {
               const data: LogIdCategoriesPostResponse = {
@@ -50,8 +59,18 @@ export const Route = createFileRoute('/api/log/$id/categories')({
               return { data }
             }
 
+            const raw = await readJson(request)
+            const result = await schema.safeParseAsync(raw)
+            if (!result.success) {
+              const data: LogIdCategoriesPostResponse = {
+                success: false,
+                errors: result.error.flatten().fieldErrors as Record<string, string[]>,
+              }
+              return { data }
+            }
+
             await db.insert(logCategory).values(
-              body.categories.map((categoryId) => ({
+              result.data.categories.map((categoryId) => ({
                 logId,
                 categoryId,
               })),

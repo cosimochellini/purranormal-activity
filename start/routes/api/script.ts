@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { defineHandlers } from '@/services/route/defineHandlers'
 import { runImageGenerationScript } from '@/services/script'
-import { methodNotAllowed, ok } from '@/utils/http'
+import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 import { createFriendly, type FriendlyMessages } from './log/_friendly'
 
@@ -22,29 +22,31 @@ const reporter = createFriendly<Response>({
   onError: (error) => logger.error('runImageGenerationScript failed:', error),
 })
 
-const envelope = defineHandlers(
-  {
-    POST: {
-      reporter,
-      handler: async () => {
-        const response = await runImageGenerationScript()
-        // Tag list-affecting routes only when at least one row was mutated.
-        return {
-          data: response,
-          invalidate: response.processed > 0 ? (['logs'] as const) : undefined,
-        }
-      },
-    },
-  },
-  { route: '/api/script' },
-)
-
 export const Route = createFileRoute('/api/script')({
   server: {
-    handlers: {
-      ...envelope,
-      // The envelope does not own non-200 responses; GET stays hand-rolled.
-      GET: async () => methodNotAllowed('POST'),
-    },
+    handlers: defineHandlers(
+      {
+        POST: {
+          reporter,
+          handler: async () => {
+            const response = await runImageGenerationScript()
+            // Tag list-affecting routes only when at least one row was mutated.
+            return {
+              data: response,
+              invalidate: response.processed > 0 ? (['logs'] as const) : undefined,
+            }
+          },
+        },
+      },
+      {
+        route: '/api/script',
+        // TanStack Start does NOT emit a default 405 when a handler is
+        // missing for the requested method — control falls through to the
+        // page route. The `methodNotAllowed` option lets the envelope own
+        // the 405 + `Allow:` header for this route without a hand-merged
+        // spread of envelope output plus extra entries.
+        methodNotAllowed: ['GET'],
+      },
+    ),
   },
 })

@@ -24,6 +24,8 @@ const logFormSchema = z.object({
     .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.CATEGORIES_REQUIRED),
 })
 
+const FALLBACK_COPY = 'Failed to create log. Please try again.'
+
 const messages: FriendlyMessages = {
   AI_UNAVAILABLE:
     'Our mystical AI assistant is temporarily unavailable. Please try again in a moment.',
@@ -31,13 +33,17 @@ const messages: FriendlyMessages = {
     'Our mystical AI assistant returned an unexpected response. Please try again.',
   CONNECTION_ISSUE: 'Connection issue detected. Please check your internet and try again.',
   REQUEST_TIMEOUT: 'The request took too long. Please try again.',
-  GENERIC_FALLBACK: 'Failed to create log. Please try again.',
-  DB_UNAVAILABLE: 'Failed to create log. Please try again.',
+  GENERIC_FALLBACK: FALLBACK_COPY,
+  DB_UNAVAILABLE: FALLBACK_COPY,
 }
 
+// The catch path is handled INSIDE the handler so every throw maps to the
+// unconditional fallback copy — pre-refactor behaviour. The reporter still
+// guards against unexpected throws (e.g. validation infra), but the
+// in-handler catch wins for db-write failures.
 const reporter = createFriendly<Response>({
   messages,
-  build: (text) => ok<LogPostResponse>({ success: false, errors: { general: [text] } }),
+  build: () => ok<LogPostResponse>({ success: false, errors: { general: [FALLBACK_COPY] } }),
   onError: (error) => logger.error('Failed to create log:', error),
 })
 
@@ -49,27 +55,36 @@ export const Route = createFileRoute('/api/log')({
           body: logFormSchema,
           reporter,
           handler: async ({ body }) => {
-            const [created] = await db
-              .insert(log)
-              .values({
-                ...body,
-                createdAt: Date.now(),
-                updatedAt: Date.now(),
-                status: LogStatus.Created,
-              })
-              .returning()
+            try {
+              const [created] = await db
+                .insert(log)
+                .values({
+                  ...body,
+                  createdAt: Date.now(),
+                  updatedAt: Date.now(),
+                  status: LogStatus.Created,
+                })
+                .returning()
 
-            if (body.categories.length > 0) {
-              await db.insert(logCategory).values(
-                body.categories.map((category) => ({
-                  logId: created.id,
-                  categoryId: category,
-                })),
-              )
+              if (body.categories.length > 0) {
+                await db.insert(logCategory).values(
+                  body.categories.map((category) => ({
+                    logId: created.id,
+                    categoryId: category,
+                  })),
+                )
+              }
+
+              const data: LogPostResponse = { success: true }
+              return { data, invalidate: ['logs'] }
+            } catch (error) {
+              logger.error('Failed to create log:', error)
+              const data: LogPostResponse = {
+                success: false,
+                errors: { general: [FALLBACK_COPY] },
+              }
+              return { data }
             }
-
-            const data: LogPostResponse = { success: true }
-            return { data, invalidate: ['logs'] }
           },
         }),
       },

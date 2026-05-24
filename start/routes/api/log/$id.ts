@@ -8,13 +8,7 @@ import { db } from '@/drizzle'
 import { SECRET } from '@/env/secret'
 import { imagePipeline, logPipelineOutcome } from '@/services/imagePipeline'
 import { defineHandlers, method } from '@/services/route/defineHandlers'
-import type {
-  LogIdDeleteBody,
-  LogIdDeleteResponse,
-  LogIdGetResponse,
-  LogIdPutBody,
-  LogIdPutResponse,
-} from '@/types/api/log-id'
+import type { LogIdDeleteResponse, LogIdGetResponse, LogIdPutResponse } from '@/types/api/log-id'
 import { deleteFromR2 } from '@/utils/cloudflare'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
@@ -75,6 +69,14 @@ const deleteReporter = createFriendly<Response>({
 
 const getLog = async (id: number) => (await db.select().from(log).where(eq(log.id, id)))[0]
 
+const readJson = async (request: Request): Promise<unknown> => {
+  try {
+    return await request.json()
+  } catch {
+    return {}
+  }
+}
+
 export const Route = createFileRoute('/api/log/$id')({
   server: {
     handlers: defineHandlers(
@@ -94,15 +96,27 @@ export const Route = createFileRoute('/api/log/$id')({
             return { data }
           },
         }),
-        PUT: method<LogIdPutBody, undefined, undefined, LogIdPutResponse>({
-          body: putSchema,
+        // PUT does its own body validation INSIDE the handler so the id-guard
+        // can fire first (pre-refactor: bad-id + bad-body → `{ title: ['Invalid log id'] }`).
+        // Envelope owns the catch path + scoped logger only.
+        PUT: method<undefined, undefined, undefined, LogIdPutResponse>({
           reporter: putReporter,
-          handler: async ({ body }, { params }) => {
+          handler: async (_input, { request, params }) => {
             const id = Number(params.id)
             if (Number.isNaN(id)) {
               const data: LogIdPutResponse = {
                 success: false,
                 errors: { title: ['Invalid log id'] },
+              }
+              return { data }
+            }
+
+            const raw = await readJson(request)
+            const result = await putSchema.safeParseAsync(raw)
+            if (!result.success) {
+              const data: LogIdPutResponse = {
+                success: false,
+                errors: result.error.flatten().fieldErrors,
               }
               return { data }
             }
@@ -116,7 +130,7 @@ export const Route = createFileRoute('/api/log/$id')({
               return { data }
             }
 
-            const { title, description, categories, imageDescription } = body
+            const { title, description, categories, imageDescription } = result.data
 
             const [updated] = await db
               .update(log)
@@ -149,14 +163,19 @@ export const Route = createFileRoute('/api/log/$id')({
             return { data, invalidate: ['logs', `log:${id}`] }
           },
         }),
-        DELETE: method<LogIdDeleteBody, undefined, undefined, LogIdDeleteResponse>({
-          body: deleteSchema,
+        // DELETE: body validation lives in the handler so a wrong secret emits
+        // the legacy `{ success: false, error: 'Invalid secret' }` shape rather
+        // than the envelope's `{ errors: { secret: [...] } }` shape.
+        DELETE: method<undefined, undefined, undefined, LogIdDeleteResponse>({
           reporter: deleteReporter,
-          handler: async (_input, { params }) => {
-            // Note: body validation has already enforced the secret. The id
-            // check is inline to preserve the pre-refactor `{ error: 'Invalid log id' }`
-            // shape for non-numeric ids (which is distinct from the validation
-            // failure shape the envelope would produce for a bad secret).
+          handler: async (_input, { request, params }) => {
+            const raw = await readJson(request)
+            const parsed = deleteSchema.safeParse(raw)
+            if (!parsed.success) {
+              const data: LogIdDeleteResponse = { success: false, error: 'Invalid secret' }
+              return { data }
+            }
+
             const id = Number(params.id)
             if (Number.isNaN(id)) {
               const data: LogIdDeleteResponse = { success: false, error: 'Invalid log id' }
