@@ -113,3 +113,21 @@ describe('serverEnv.version', () => {
     expect(serverEnv.version).toBe('')
   })
 })
+
+// The drizzle client is constructed by `@/drizzle` and reads `TURSO_*` env
+// vars. Historically the construction was eager at module-load (the getter
+// values were snapshotted inside libsql's `expandConfig`), which would crash
+// the Worker on import with missing env. These tests pin the Proxy-based
+// lazy contract: importing the module is safe, the env read only fires on
+// first method access.
+describe('@/drizzle lazy client (Workers cold-start contract)', () => {
+  it('does NOT throw when TURSO_* are unset and the module is imported', async () => {
+    // TRACKED_KEYS already wiped TURSO_DATABASE_URL / TURSO_AUTH_TOKEN in beforeEach.
+    await expect(import('../drizzle')).resolves.toBeTruthy()
+  })
+
+  it('throws the documented "Missing required env" error on first db method call', async () => {
+    const { db } = await import('../drizzle')
+    expect(() => db.select()).toThrow('Missing required env: TURSO_DATABASE_URL')
+  })
+})

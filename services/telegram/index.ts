@@ -10,31 +10,23 @@ import type {
   TelegramApiResponse,
 } from './types'
 
-// Lazy: build the fetchers on first call so `serverEnv.telegramApiKey` is
-// only read after the Workers per-request env binding exists. Without this
-// the module-load access fires inside global scope and (on a missing key)
-// emits the warn before any route ever runs.
-let _sendMessageAPI: ReturnType<typeof fetcher<TelegramApiResponse, never, SendMessageBody>>
-const getSendMessageAPI = () => {
-  if (!_sendMessageAPI) {
-    _sendMessageAPI = fetcher<TelegramApiResponse, never, SendMessageBody>(
-      `https://api.telegram.org/bot${serverEnv.telegramApiKey}/sendMessage`,
-      'POST',
-    )
-  }
-  return _sendMessageAPI
-}
+// Per-call fetcher construction: keeps `serverEnv.telegramApiKey` read out of
+// the module-load global scope (required for Workers, where the per-request
+// env binding postdates module evaluation) AND avoids freezing the URL for
+// the process lifetime. The template-literal eval + fetcher closure is
+// trivially cheap relative to the network round-trip that follows, so the
+// memoisation gain isn't worth the stale-token footgun.
+const getSendMessageAPI = () =>
+  fetcher<TelegramApiResponse, never, SendMessageBody>(
+    `https://api.telegram.org/bot${serverEnv.telegramApiKey}/sendMessage`,
+    'POST',
+  )
 
-let _sendPhotoAPI: ReturnType<typeof fetcher<TelegramApiResponse, never, SendPhotoBody>>
-const getSendPhotoAPI = () => {
-  if (!_sendPhotoAPI) {
-    _sendPhotoAPI = fetcher<TelegramApiResponse, never, SendPhotoBody>(
-      `https://api.telegram.org/bot${serverEnv.telegramApiKey}/sendPhoto`,
-      'POST',
-    )
-  }
-  return _sendPhotoAPI
-}
+const getSendPhotoAPI = () =>
+  fetcher<TelegramApiResponse, never, SendPhotoBody>(
+    `https://api.telegram.org/bot${serverEnv.telegramApiKey}/sendPhoto`,
+    'POST',
+  )
 
 /**
  * Send a single Telegram message to a single chat.

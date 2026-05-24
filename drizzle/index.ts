@@ -32,14 +32,31 @@ const libsqlFetch: typeof fetch = (input, init) => {
   })
 }
 
-export const db = drizzle({
-  connection: {
-    get url() {
-      return serverEnv.tursoUrl
+// Lazy drizzle client: `drizzle({connection})` calls `createClient` which in
+// turn destructures `{ url, authToken, ... }` synchronously
+// (see `@libsql/core/lib-esm/config.js` -> `expandConfig`). That snapshots
+// any getters at module-load, defeating the lazy-env stance. Wrap the
+// client in a Proxy so construction only fires on first method access
+// (e.g. `db.select(...)`) — by which point the per-request env binding
+// exists on Workers.
+type DrizzleClient = ReturnType<typeof drizzle>
+
+let _db: DrizzleClient | null = null
+
+const getDb = (): DrizzleClient => {
+  if (_db) return _db
+  _db = drizzle({
+    connection: {
+      url: serverEnv.tursoUrl,
+      authToken: serverEnv.tursoToken,
+      fetch: libsqlFetch,
     },
-    get authToken() {
-      return serverEnv.tursoToken
-    },
-    fetch: libsqlFetch,
+  })
+  return _db
+}
+
+export const db = new Proxy({} as DrizzleClient, {
+  get(_target, prop, receiver) {
+    return Reflect.get(getDb(), prop, receiver)
   },
-})
+}) as DrizzleClient
