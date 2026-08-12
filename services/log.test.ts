@@ -153,27 +153,24 @@ describe('getLogs', () => {
     expect(fakeDb.where).toHaveBeenCalled()
   })
 
-  it.each([
-    SortBy.Recent,
-    SortBy.Oldest,
-    SortBy.Title,
-  ])('accepts sortBy=%s without error', async (sortBy) => {
-    queueGetLogsResult([], [])
-    const result = await getLogs({ sortBy })
-    expect(result).toEqual([])
-    expect(fakeDb.orderBy).toHaveBeenCalled()
-  })
+  it.each([SortBy.Recent, SortBy.Oldest, SortBy.Title])(
+    'accepts sortBy=%s without error',
+    async (sortBy) => {
+      queueGetLogsResult([], [])
+      const result = await getLogs({ sortBy })
+      expect(result).toEqual([])
+      expect(fakeDb.orderBy).toHaveBeenCalled()
+    },
+  )
 
-  it.each([
-    TimeRange.All,
-    TimeRange.Day,
-    TimeRange.Week,
-    TimeRange.Month,
-  ])('accepts timeRange=%s without error', async (timeRange) => {
-    queueGetLogsResult([], [])
-    const result = await getLogs({ timeRange })
-    expect(result).toEqual([])
-  })
+  it.each([TimeRange.All, TimeRange.Day, TimeRange.Week, TimeRange.Month])(
+    'accepts timeRange=%s without error',
+    async (timeRange) => {
+      queueGetLogsResult([], [])
+      const result = await getLogs({ timeRange })
+      expect(result).toEqual([])
+    },
+  )
 
   it('returns an empty array (and skips category merge) when no logs match', async () => {
     queueGetLogsResult([], [])

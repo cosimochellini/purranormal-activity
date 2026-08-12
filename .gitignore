@@ -130,3 +130,6 @@ dist
 .pnp.*
 .vercel
 .wrangler
+
+# Agent-created git worktrees (see .claude/worktrees)
+.claude/worktrees/
