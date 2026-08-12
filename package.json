@@ -45,7 +45,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.13",
+    "@biomejs/biome": "2.5.8",
     "@cloudflare/vite-plugin": "1.51.3",
     "@tailwindcss/postcss": "^4.3.3",
     "@tanstack/react-router": "1.170.25",

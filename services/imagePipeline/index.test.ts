@@ -202,19 +202,19 @@ describe('pipeline.generateImageFor', () => {
     expect(aiText.calls[0].description).toBe('haunted teapot')
   })
 
-  it.each([
-    LogStatus.ImageGenerated,
-    LogStatus.Error,
-  ])('returns status:skipped reason:not-pending for status=%s', async (status) => {
-    const { pipeline, repo, store, aiImage } = createTestPipeline()
-    repo.preload([{ id: 7, status }])
+  it.each([LogStatus.ImageGenerated, LogStatus.Error])(
+    'returns status:skipped reason:not-pending for status=%s',
+    async (status) => {
+      const { pipeline, repo, store, aiImage } = createTestPipeline()
+      repo.preload([{ id: 7, status }])
 
-    const report = await pipeline.generateImageFor(7)
+      const report = await pipeline.generateImageFor(7)
 
-    expect(report).toEqual({ status: 'skipped', logId: 7, reason: 'not-pending' })
-    expect(aiImage.calls).toHaveLength(0)
-    expect(store.snapshot().size).toBe(0)
-  })
+      expect(report).toEqual({ status: 'skipped', logId: 7, reason: 'not-pending' })
+      expect(aiImage.calls).toHaveLength(0)
+      expect(store.snapshot().size).toBe(0)
+    },
+  )
 
   it('records best-effort error when loadStatus throws (reports failed)', async () => {
     const { pipeline, repo, escalator } = createTestPipeline()
