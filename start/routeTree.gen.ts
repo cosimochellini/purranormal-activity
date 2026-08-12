@@ -9,32 +9,27 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as NewRouteImport } from './routes/new'
-import { Route as ExploreRouteImport } from './routes/explore'
-import { Route as IdRouteImport } from './routes/$id'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as IdRouteImport } from './routes/$id'
+import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as NewRouteImport } from './routes/new'
 import { Route as IdIndexRouteImport } from './routes/$id/index'
-import { Route as ApiScriptRouteImport } from './routes/api/script'
-import { Route as ApiLogRouteImport } from './routes/api/log'
-import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
 import { Route as IdEditRouteImport } from './routes/$id/edit'
-import { Route as ApiUploadIdRouteImport } from './routes/api/upload/$id'
-import { Route as ApiTriggerIdRouteImport } from './routes/api/trigger/$id'
-import { Route as ApiTelegramIdRouteImport } from './routes/api/telegram/$id'
-import { Route as ApiLogSubmitRouteImport } from './routes/api/log/submit'
-import { Route as ApiLogRefineRouteImport } from './routes/api/log/refine'
-import { Route as ApiLogAllRouteImport } from './routes/api/log/all'
+import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
+import { Route as ApiLogRouteImport } from './routes/api/log'
+import { Route as ApiScriptRouteImport } from './routes/api/script'
 import { Route as ApiLogIdRouteImport } from './routes/api/log/$id'
+import { Route as ApiLogAllRouteImport } from './routes/api/log/all'
+import { Route as ApiLogRefineRouteImport } from './routes/api/log/refine'
+import { Route as ApiLogSubmitRouteImport } from './routes/api/log/submit'
+import { Route as ApiTelegramIdRouteImport } from './routes/api/telegram/$id'
+import { Route as ApiTriggerIdRouteImport } from './routes/api/trigger/$id'
+import { Route as ApiUploadIdRouteImport } from './routes/api/upload/$id'
 import { Route as ApiLogIdCategoriesRouteImport } from './routes/api/log/$id/categories'
 
-const NewRoute = NewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ExploreRoute = ExploreRouteImport.update({
-  id: '/explore',
-  path: '/explore',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IdRoute = IdRouteImport.update({
@@ -42,9 +37,14 @@ const IdRoute = IdRouteImport.update({
   path: '/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const ExploreRoute = ExploreRouteImport.update({
+  id: '/explore',
+  path: '/explore',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewRoute = NewRouteImport.update({
+  id: '/new',
+  path: '/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IdIndexRoute = IdIndexRouteImport.update({
@@ -52,9 +52,14 @@ const IdIndexRoute = IdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => IdRoute,
 } as any)
-const ApiScriptRoute = ApiScriptRouteImport.update({
-  id: '/api/script',
-  path: '/api/script',
+const IdEditRoute = IdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => IdRoute,
+} as any)
+const ApiCategoriesRoute = ApiCategoriesRouteImport.update({
+  id: '/api/categories',
+  path: '/api/categories',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiLogRoute = ApiLogRouteImport.update({
@@ -62,39 +67,14 @@ const ApiLogRoute = ApiLogRouteImport.update({
   path: '/api/log',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiCategoriesRoute = ApiCategoriesRouteImport.update({
-  id: '/api/categories',
-  path: '/api/categories',
+const ApiScriptRoute = ApiScriptRouteImport.update({
+  id: '/api/script',
+  path: '/api/script',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IdEditRoute = IdEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => IdRoute,
-} as any)
-const ApiUploadIdRoute = ApiUploadIdRouteImport.update({
-  id: '/api/upload/$id',
-  path: '/api/upload/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiTriggerIdRoute = ApiTriggerIdRouteImport.update({
-  id: '/api/trigger/$id',
-  path: '/api/trigger/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiTelegramIdRoute = ApiTelegramIdRouteImport.update({
-  id: '/api/telegram/$id',
-  path: '/api/telegram/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiLogSubmitRoute = ApiLogSubmitRouteImport.update({
-  id: '/submit',
-  path: '/submit',
-  getParentRoute: () => ApiLogRoute,
-} as any)
-const ApiLogRefineRoute = ApiLogRefineRouteImport.update({
-  id: '/refine',
-  path: '/refine',
+const ApiLogIdRoute = ApiLogIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
   getParentRoute: () => ApiLogRoute,
 } as any)
 const ApiLogAllRoute = ApiLogAllRouteImport.update({
@@ -102,10 +82,30 @@ const ApiLogAllRoute = ApiLogAllRouteImport.update({
   path: '/all',
   getParentRoute: () => ApiLogRoute,
 } as any)
-const ApiLogIdRoute = ApiLogIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
+const ApiLogRefineRoute = ApiLogRefineRouteImport.update({
+  id: '/refine',
+  path: '/refine',
   getParentRoute: () => ApiLogRoute,
+} as any)
+const ApiLogSubmitRoute = ApiLogSubmitRouteImport.update({
+  id: '/submit',
+  path: '/submit',
+  getParentRoute: () => ApiLogRoute,
+} as any)
+const ApiTelegramIdRoute = ApiTelegramIdRouteImport.update({
+  id: '/api/telegram/$id',
+  path: '/api/telegram/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTriggerIdRoute = ApiTriggerIdRouteImport.update({
+  id: '/api/trigger/$id',
+  path: '/api/trigger/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadIdRoute = ApiUploadIdRouteImport.update({
+  id: '/api/upload/$id',
+  path: '/api/upload/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiLogIdCategoriesRoute = ApiLogIdCategoriesRouteImport.update({
   id: '/categories',
@@ -244,18 +244,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/new': {
-      id: '/new'
-      path: '/new'
-      fullPath: '/new'
-      preLoaderRoute: typeof NewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/explore': {
-      id: '/explore'
-      path: '/explore'
-      fullPath: '/explore'
-      preLoaderRoute: typeof ExploreRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$id': {
@@ -265,11 +258,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/explore': {
+      id: '/explore'
+      path: '/explore'
+      fullPath: '/explore'
+      preLoaderRoute: typeof ExploreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/new': {
+      id: '/new'
+      path: '/new'
+      fullPath: '/new'
+      preLoaderRoute: typeof NewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$id/': {
@@ -279,11 +279,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IdIndexRouteImport
       parentRoute: typeof IdRoute
     }
-    '/api/script': {
-      id: '/api/script'
-      path: '/api/script'
-      fullPath: '/api/script'
-      preLoaderRoute: typeof ApiScriptRouteImport
+    '/$id/edit': {
+      id: '/$id/edit'
+      path: '/edit'
+      fullPath: '/$id/edit'
+      preLoaderRoute: typeof IdEditRouteImport
+      parentRoute: typeof IdRoute
+    }
+    '/api/categories': {
+      id: '/api/categories'
+      path: '/api/categories'
+      fullPath: '/api/categories'
+      preLoaderRoute: typeof ApiCategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/log': {
@@ -293,53 +300,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiLogRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/categories': {
-      id: '/api/categories'
-      path: '/api/categories'
-      fullPath: '/api/categories'
-      preLoaderRoute: typeof ApiCategoriesRouteImport
+    '/api/script': {
+      id: '/api/script'
+      path: '/api/script'
+      fullPath: '/api/script'
+      preLoaderRoute: typeof ApiScriptRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/$id/edit': {
-      id: '/$id/edit'
-      path: '/edit'
-      fullPath: '/$id/edit'
-      preLoaderRoute: typeof IdEditRouteImport
-      parentRoute: typeof IdRoute
-    }
-    '/api/upload/$id': {
-      id: '/api/upload/$id'
-      path: '/api/upload/$id'
-      fullPath: '/api/upload/$id'
-      preLoaderRoute: typeof ApiUploadIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/trigger/$id': {
-      id: '/api/trigger/$id'
-      path: '/api/trigger/$id'
-      fullPath: '/api/trigger/$id'
-      preLoaderRoute: typeof ApiTriggerIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/telegram/$id': {
-      id: '/api/telegram/$id'
-      path: '/api/telegram/$id'
-      fullPath: '/api/telegram/$id'
-      preLoaderRoute: typeof ApiTelegramIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/log/submit': {
-      id: '/api/log/submit'
-      path: '/submit'
-      fullPath: '/api/log/submit'
-      preLoaderRoute: typeof ApiLogSubmitRouteImport
-      parentRoute: typeof ApiLogRoute
-    }
-    '/api/log/refine': {
-      id: '/api/log/refine'
-      path: '/refine'
-      fullPath: '/api/log/refine'
-      preLoaderRoute: typeof ApiLogRefineRouteImport
+    '/api/log/$id': {
+      id: '/api/log/$id'
+      path: '/$id'
+      fullPath: '/api/log/$id'
+      preLoaderRoute: typeof ApiLogIdRouteImport
       parentRoute: typeof ApiLogRoute
     }
     '/api/log/all': {
@@ -349,12 +321,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiLogAllRouteImport
       parentRoute: typeof ApiLogRoute
     }
-    '/api/log/$id': {
-      id: '/api/log/$id'
-      path: '/$id'
-      fullPath: '/api/log/$id'
-      preLoaderRoute: typeof ApiLogIdRouteImport
+    '/api/log/refine': {
+      id: '/api/log/refine'
+      path: '/refine'
+      fullPath: '/api/log/refine'
+      preLoaderRoute: typeof ApiLogRefineRouteImport
       parentRoute: typeof ApiLogRoute
+    }
+    '/api/log/submit': {
+      id: '/api/log/submit'
+      path: '/submit'
+      fullPath: '/api/log/submit'
+      preLoaderRoute: typeof ApiLogSubmitRouteImport
+      parentRoute: typeof ApiLogRoute
+    }
+    '/api/telegram/$id': {
+      id: '/api/telegram/$id'
+      path: '/api/telegram/$id'
+      fullPath: '/api/telegram/$id'
+      preLoaderRoute: typeof ApiTelegramIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/trigger/$id': {
+      id: '/api/trigger/$id'
+      path: '/api/trigger/$id'
+      fullPath: '/api/trigger/$id'
+      preLoaderRoute: typeof ApiTriggerIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/upload/$id': {
+      id: '/api/upload/$id'
+      path: '/api/upload/$id'
+      fullPath: '/api/upload/$id'
+      preLoaderRoute: typeof ApiUploadIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/log/$id/categories': {
       id: '/api/log/$id/categories'
