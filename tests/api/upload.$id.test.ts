@@ -1,4 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { makeFakeDb } from '../helpers'
+
+vi.mock('@/drizzle', async () => {
+  const { makeFakeDb: make } = await import('../helpers')
+  return { db: make() }
+})
 
 vi.mock('@/services/imageStore/r2.server', () => ({
   imageStore: {
@@ -9,6 +15,10 @@ vi.mock('@/services/imageStore/r2.server', () => ({
 
 import { imageStore } from '@/services/imageStore/r2.server'
 import { Route } from '@/start/routes/api/upload/$id'
+
+const { db: fakeDb } = (await import('@/drizzle')) as unknown as {
+  db: ReturnType<typeof makeFakeDb>
+}
 
 const POST = Route.options.server?.handlers?.POST as (ctx: {
   request: Request
@@ -54,6 +64,24 @@ describe('POST /api/upload/$id', () => {
     expect(await res.json()).toEqual({ success: true })
 
     expect(imageStore.put).toHaveBeenCalledWith(7, expect.any(Uint8Array))
+  })
+
+  it('marks the row ImageGenerated so the cron sweeper cannot overwrite the upload', async () => {
+    // Without this the row stays `Created`, and the sweeper would eventually
+    // enqueue it, replace the hand-uploaded cover with a generated one, and
+    // then mark it `Error`.
+    vi.mocked(imageStore.put).mockResolvedValueOnce(undefined)
+    vi.mocked(fakeDb.update).mockClear()
+
+    const formData = new FormData()
+    formData.append('file', new File(['payload'], 'cover.webp', { type: 'image/webp' }))
+
+    await POST({ request: buildRequest('7', formData), params: { id: '7' } })
+
+    expect(fakeDb.update).toHaveBeenCalledOnce()
+    expect(fakeDb.set).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'ImageGenerated', error: null, attempts: 0 }),
+    )
   })
 
   it('returns 400 with the verbatim cause string when imageStore.put throws', async () => {

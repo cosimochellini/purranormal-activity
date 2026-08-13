@@ -48,6 +48,16 @@ export const UI_CONFIG = {
   PROGRESS_DURATION_SECONDS: 40,
   /** Maximum percentage value */
   MAX_PERCENTAGE: 100,
+  /** Base delay between image-status polls on a pending log's detail page */
+  POLL_INTERVAL_MS: 3000,
+  /** Polls at each speed tier before backing off (3s, then 6s, then 12s) */
+  POLL_FAST_ATTEMPTS: 10,
+  /**
+   * Hard cap on polls. 10×3s + 10×6s + 10×12s ≈ 3.5 minutes, which has to
+   * outlast a failed first attempt plus the queue's 30s retry delay plus a
+   * second generation — a 60s budget would give up on logs that do succeed.
+   */
+  POLL_MAX_ATTEMPTS: 30,
 } as const
 
 // Validation messages

@@ -29,6 +29,11 @@ export const log = sqliteTable('log', {
   status: text('status').notNull().default(LogStatus.Created),
   error: text('error'),
   imageDescription: text('image_description'),
+  // Generation attempts already claimed for the current cycle. Incremented in
+  // SQL by `logRepository.claim` (never assigned from a queue message's
+  // counter, which restarts at 1 on a sweeper re-enqueue) and reset to 0 when
+  // an edit puts the row back into `Created`.
+  attempts: int('attempts').notNull().default(0),
 })
 
 // Type definitions

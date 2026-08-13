@@ -13,7 +13,7 @@ vi.mock('@/env/server', () => ({
 
 vi.mock('@/services/imagePipeline', () => ({
   imagePipeline: {
-    generateImageFor: vi.fn(async (id: number) => ({ status: 'success', logId: id })),
+    enqueue: vi.fn(async () => true),
   },
 }))
 
@@ -88,7 +88,7 @@ describe('GET /api/log/$id', () => {
 describe('PUT /api/log/$id', () => {
   beforeEach(() => {
     fakeDb.__reset()
-    vi.mocked(imagePipeline.generateImageFor).mockClear()
+    vi.mocked(imagePipeline.enqueue).mockClear()
   })
 
   it('rejects a non-numeric id with a title field error (id-guard fires before body validation)', async () => {
@@ -164,7 +164,7 @@ describe('PUT /api/log/$id', () => {
     expect(body.errors.title).toEqual(['Log not found'])
   })
 
-  it('updates the log, replaces categories, and triggers regeneration on success', async () => {
+  it('updates the log, replaces categories, and enqueues regeneration on success', async () => {
     const existing = { id: 7, status: 'Created', imageDescription: 'old' }
     const updated = { id: 7, status: 'Created' }
 
@@ -191,7 +191,52 @@ describe('PUT /api/log/$id', () => {
     expect(fakeDb.update).toHaveBeenCalled()
     expect(fakeDb.delete).toHaveBeenCalled()
     expect(fakeDb.insert).toHaveBeenCalled()
-    expect(imagePipeline.generateImageFor).toHaveBeenCalledWith(7)
+    expect(imagePipeline.enqueue).toHaveBeenCalledWith(7, 'update')
+    // A new prompt is a new generation cycle, so the attempt budget and the
+    // previous failure text must be cleared alongside the status flip.
+    expect(fakeDb.set).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'Created', attempts: 0, error: null }),
+    )
+  })
+
+  it('does NOT enqueue when the prompt is unchanged and the row already has its image', async () => {
+    // The pre-queue code called the pipeline unconditionally and relied on its
+    // `not-pending` skip; under a queue that costs a message plus a DB read.
+    const existing = { id: 7, status: 'ImageGenerated', imageDescription: 'same' }
+    vi.mocked(fakeDb.where).mockReturnValueOnce([existing] as never)
+    fakeDb.__queue('returning', [{ id: 7, status: 'ImageGenerated' }])
+
+    await PUT({
+      request: jsonRequest('PUT', {
+        title: 'New title',
+        description: 'New description content',
+        categories: [1],
+        imageDescription: 'same',
+        secret: SECRET,
+      }),
+      params: { id: '7' },
+    })
+
+    expect(imagePipeline.enqueue).not.toHaveBeenCalled()
+  })
+
+  it('DOES enqueue an unchanged prompt when the row is still pending', async () => {
+    const existing = { id: 7, status: 'Created', imageDescription: 'same' }
+    vi.mocked(fakeDb.where).mockReturnValueOnce([existing] as never)
+    fakeDb.__queue('returning', [{ id: 7, status: 'Created' }])
+
+    await PUT({
+      request: jsonRequest('PUT', {
+        title: 'New title',
+        description: 'New description content',
+        categories: [1],
+        imageDescription: 'same',
+        secret: SECRET,
+      }),
+      params: { id: '7' },
+    })
+
+    expect(imagePipeline.enqueue).toHaveBeenCalledWith(7, 'update')
   })
 
   it('returns the catch-all error response when the DB update throws', async () => {

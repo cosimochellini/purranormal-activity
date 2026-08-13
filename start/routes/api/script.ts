@@ -1,9 +1,28 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { z } from 'zod'
+import { VALIDATION_MESSAGES } from '@/constants'
+import { serverEnv } from '@/env/server'
 import { imagePipeline } from '@/services/imagePipeline'
-import { defineHandlers } from '@/services/route/defineHandlers'
+import { defineHandlers, method } from '@/services/route/defineHandlers'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
 import { createFriendly, type FriendlyMessages } from './log/_friendly'
+
+// Manual kick for the queue: enqueues every pending log (capped) without
+// generating anything inline. The cron sweeper covers the same ground
+// automatically; this endpoint exists for local development (where the cron
+// trigger is awkward to fire) and for operators who do not want to wait for
+// the next tick.
+const scriptSchema = z.object({
+  // Gated because an enqueue is cheap for the caller and expensive for us:
+  // every queued message becomes a paid image generation.
+  secret: z
+    .string()
+    .min(1, VALIDATION_MESSAGES.SECRET_REQUIRED)
+    .refine((val) => val.toLowerCase() === serverEnv.secret, {
+      message: VALIDATION_MESSAGES.SECRET_INVALID,
+    }),
+})
 
 const messages: FriendlyMessages = {
   AI_UNAVAILABLE:
@@ -19,24 +38,30 @@ const messages: FriendlyMessages = {
 const reporter = createFriendly<Response>({
   messages,
   build: (text) => ok({ success: false, processed: 0, error: text }),
-  onError: (error) => logger.error('imagePipeline.drain failed:', error),
+  onError: (error) => logger.error('imagePipeline.enqueuePending failed:', error),
 })
+
+interface ScriptResponse {
+  success: boolean
+  processed?: number
+  error?: string
+}
 
 export const Route = createFileRoute('/api/script')({
   server: {
     handlers: defineHandlers(
       {
-        POST: {
+        POST: method<{ secret: string }, undefined, undefined, ScriptResponse>({
+          body: scriptSchema,
           reporter,
           handler: async () => {
-            const { processed } = await imagePipeline.drain()
-            // Tag list-affecting routes only when at least one row was mutated.
-            return {
-              data: { success: true as const, processed },
-              invalidate: processed > 0 ? (['logs'] as const) : undefined,
-            }
+            const { processed } = await imagePipeline.enqueuePending()
+            // No `invalidate`: enqueueing mutates no row that a loader reads.
+            // The detail page's poller picks the change up once the consumer
+            // has actually generated the image.
+            return { data: { success: true as const, processed } }
           },
-        },
+        }),
       },
       {
         route: '/api/script',
