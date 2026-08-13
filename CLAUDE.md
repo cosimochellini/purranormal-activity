@@ -87,6 +87,8 @@ Image generation runs on a Cloudflare Queue, never inside a request.
 
 **Anyone who puts a row into `Created` enqueues; only the consumer generates.** Entry points: `submit`, `PUT /api/log/[id]` (when `imageDescription` changed), `POST /api/trigger/[id]` (operator retry, secret-gated), `POST /api/script` (manual enqueue of all pending, secret-gated), and the cron sweeper.
 
+Every endpoint that can create or re-pend a row is secret-gated, `POST /api/log` included: the sweeper pays for an image for any stale `Created` row regardless of who created it, so a single open endpoint would defeat the gates on all the others.
+
 Queue tuning lives in `services/imagePipeline/config.ts`; `config.test.ts` asserts it agrees with `wrangler.jsonc` (queue names, `max_retries`, `retry_delay`, cron, `main`).
 
 ### Database Schema

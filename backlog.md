@@ -39,9 +39,11 @@ This backlog is ordered and intentionally excluded from the current migration sc
 
 ### New (from the queue migration)
 1. Alert on queue backlog and dead-letter depth — nothing currently notices if the consumer stops keeping up.
-2. `POST /api/log` creates `Created` rows with no `imageDescription`, no auth and no enqueue, and no client calls it. The cron sweeper now generates images for those rows: delete the endpoint or gate it.
-3. `/api/trigger/[id]`'s secret is the same shared password as the content endpoints; a real admin auth layer is still item 6 above.
-4. Surface `log.attempts` in the UI so a retrying row is distinguishable from a fresh one.
+2. `POST /api/log` now requires the shared `SECRET` (the sweeper made it a free recurring OpenAI amplifier otherwise), but it still creates `Created` rows with no `imageDescription` that no client calls. Consider deleting it outright.
+3. A manual `POST /api/upload/[id]` that races an in-flight generation for the same row can be overwritten: the consumer's `store.put` writes the same R2 key and the upload's status flip does not cancel the claim already granted. Narrow window, no data loss beyond the cover itself.
+4. `/api/trigger/[id]`'s secret is the same shared password as the content endpoints; a real admin auth layer is still item 6 above.
+5. Surface `log.attempts` in the UI so a retrying row is distinguishable from a fresh one.
+6. `db/schema.ts` drifts from the live Turso `log` table, which still has a `placeholder` column. That drift makes `drizzle-kit push` stop on an interactive "was it renamed?" prompt for any new `log` column.
 
 ## 3) Documentation Backlog
 1. Add an architecture decision record (ADR) for the migration choices and tradeoffs.

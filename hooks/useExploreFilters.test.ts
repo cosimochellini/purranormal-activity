@@ -227,8 +227,19 @@ describe('useExploreFilters', () => {
       expect(onUrlUpdate).not.toHaveBeenCalled()
 
       // After the throttle window elapses, the queued write flushes.
+      //
+      // Advanced in bounded steps rather than one fixed 2000ms jump: nuqs keeps
+      // `lastFlushedAt` on a module-level queue singleton and stamps it with
+      // `performance.now()`, so the earlier real-timer tests in this file leave
+      // a REAL timestamp there. Against this fake clock (which starts near zero)
+      // that subtraction goes negative by however long the process has been
+      // alive, which only ever *inflates* the scheduled delay — harmless for the
+      // 500ms assertion above, but it made a fixed 2000ms advance too short on
+      // CI, where the suite reaches this file later than it does locally.
       await act(async () => {
-        await vi.advanceTimersByTimeAsync(2000)
+        for (let i = 0; i < 300 && onUrlUpdate.mock.calls.length === 0; i++) {
+          await vi.advanceTimersByTimeAsync(1000)
+        }
       })
       expect(onUrlUpdate).toHaveBeenCalledTimes(1)
       const last = onUrlUpdate.mock.calls.at(-1)?.[0] as UrlUpdateEvent | undefined

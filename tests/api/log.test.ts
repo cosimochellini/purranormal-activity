@@ -6,6 +6,10 @@ vi.mock('@/drizzle', async () => {
   return { db: make() }
 })
 
+vi.mock('@/env/server', () => ({
+  serverEnv: { secret: 'test-secret' },
+}))
+
 // Pull the same singleton fake DB out of the mocked module.
 const { db: fakeDb } = (await import('@/drizzle')) as unknown as {
   db: ReturnType<typeof makeFakeDb>
@@ -16,6 +20,8 @@ import { Route } from '@/start/routes/api/log'
 const POST = Route.options.server?.handlers?.POST as (ctx: {
   request: Request
 }) => Promise<Response>
+
+const SECRET = 'test-secret'
 
 const callPost = (body: unknown) =>
   POST({
@@ -32,7 +38,7 @@ describe('POST /api/log', () => {
   })
 
   it('returns success:false with field errors when the body is invalid', async () => {
-    const res = await callPost({ title: '', description: '', categories: [] })
+    const res = await callPost({ title: '', description: '', categories: [], secret: SECRET })
 
     expect(res.status).toBe(200)
     const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
@@ -54,6 +60,7 @@ describe('POST /api/log', () => {
       title: 'A spooky cat',
       description: 'It floated for ten seconds',
       categories: [1, 2],
+      secret: SECRET,
     })
 
     expect(res.status).toBe(200)
@@ -68,6 +75,31 @@ describe('POST /api/log', () => {
       { logId: 42, categoryId: 1 },
       { logId: 42, categoryId: 2 },
     ])
+    // `secret` is a credential, not a column: it must never reach the insert.
+    expect(fakeDb.values).toHaveBeenNthCalledWith(
+      1,
+      expect.not.objectContaining({ secret: SECRET }),
+    )
+  })
+
+  it.each([
+    ['a missing secret', undefined],
+    ['a wrong secret', 'nope'],
+  ])('rejects %s without touching the DB', async (_label, secret) => {
+    // Rows created here land in `Created`, and the cron sweeper now pays for an
+    // image for every such row — an ungated endpoint would defeat the gates on
+    // `/api/script` and `/api/trigger/[id]`.
+    const res = await callPost({
+      title: 'A spooky cat',
+      description: 'It floated for ten seconds',
+      categories: [1],
+      ...(secret === undefined ? {} : { secret }),
+    })
+
+    const body = (await res.json()) as { success: false; errors: Record<string, string[]> }
+    expect(body.success).toBe(false)
+    expect(body.errors.secret?.length).toBeGreaterThan(0)
+    expect(fakeDb.insert).not.toHaveBeenCalled()
   })
 
   it('returns success:false with a general error when the DB insert throws', async () => {
@@ -77,6 +109,7 @@ describe('POST /api/log', () => {
       title: 'A title',
       description: 'A description',
       categories: [1],
+      secret: SECRET,
     })
 
     expect(res.status).toBe(200)
