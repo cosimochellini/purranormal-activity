@@ -49,7 +49,7 @@ Husky + lint-staged auto-formats staged files on commit via Biome.
 - **Database**: Turso (SQLite) + Drizzle ORM
 - **Styling**: Tailwind CSS v4 (custom mystical palette: deep-purple, midnight-blue, ghost-white, neon-green)
 - **Fonts**: Quicksand (primary) + Caveat (accent) — loaded via CSS/static, not `next/font`
-- **AI**: OpenAI (o3 for structured generation, gpt-4o for text, gpt-image-1 for images)
+- **AI**: OpenAI via the Vercel AI SDK (`gpt-5.6-terra` for log details and image prompts, `gpt-5.6-luna` for refine questions and Telegram messages, `gpt-image-2` for images)
 - **Storage**: Cloudflare R2 for generated images, via the native `IMAGES` bucket binding
 - **Linter/Formatter**: Biome (single quotes, no semicolons, 2-space indent, 100 char line width)
 - **Package Manager**: pnpm

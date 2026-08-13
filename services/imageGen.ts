@@ -5,7 +5,7 @@ import { logger } from '@/utils/logger'
 export async function generateImageBase64(imagePrompt: string) {
   try {
     const result = await generateImage({
-      model: openai.image('gpt-image-1.5'),
+      model: openai.image('gpt-image-2'),
       prompt: imagePrompt,
       n: 1,
       size: '1024x1024',
