@@ -741,6 +741,24 @@ describe('pipeline.abandon', () => {
 
     expect(repo.findRow(7)?.error).toBe('the real reason')
   })
+
+  it('cannot clobber a successful row even when it fails to read the state first', async () => {
+    // The dangerous combination: `loadState` throws, so `abandon` has no idea
+    // the row already succeeded, and goes ahead with the terminal write. The
+    // repository's own `status = 'Created'` guard is what makes that harmless
+    // — otherwise a transient read failure during a dead-letter hop would hide
+    // a perfectly good cover behind an `Error` status.
+    const { repo } = createTestPipeline()
+    repo.preload([{ id: 7, status: LogStatus.ImageGenerated }])
+    repo.setLoadStateThrow(new Error('libsql refused'))
+    const { pipeline } = createTestPipeline({ repo })
+
+    await pipeline.abandon(7, 'dead-lettered')
+
+    const row = repo.findRow(7)
+    expect(row?.status).toBe(LogStatus.ImageGenerated)
+    expect(row?.error).toBeNull()
+  })
 })
 
 describe('public export surface', () => {

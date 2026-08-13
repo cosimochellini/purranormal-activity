@@ -273,7 +273,10 @@ export const createInMemoryLogRepository = (
     async markError(id, errorText) {
       if (markErrorShouldThrow) throw markErrorThrow
       const row = rowsById.get(id)
-      if (row) {
+      // Mirrors the Drizzle adapter's `AND status = 'Created'` guard: only a
+      // pending row can be terminated, so a caller that could not read the row
+      // first cannot clobber one that already succeeded.
+      if (row && row.status === LogStatus.Created) {
         row.status = LogStatus.Error
         row.error = errorText
         row.updatedAt = now()

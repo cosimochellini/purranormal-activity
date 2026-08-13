@@ -119,9 +119,16 @@ export const defaultLogRepository: LogRepositoryPort = {
   async markError(id, errorText) {
     // `attempts` is left as the claim set it — this write only makes the
     // failure terminal.
+    //
+    // Guarded on `Created` because terminating a pending row is the only thing
+    // this is ever for. Without the guard, a caller that could not read the row
+    // first (a dead-letter hop whose `loadState` threw) would assume it is
+    // pending and could flip a row that had meanwhile succeeded to `Error`,
+    // hiding a perfectly good cover. Every intended caller holds a claim on a
+    // `Created` row, so the guard never costs a legitimate write.
     await db
       .update(log)
       .set({ status: LogStatus.Error, error: errorText, updatedAt: Date.now() })
-      .where(eq(log.id, id))
+      .where(and(eq(log.id, id), eq(log.status, LogStatus.Created)))
   },
 }
