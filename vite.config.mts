@@ -17,6 +17,15 @@ export default defineConfig({
     cloudflare({ viteEnvironment: { name: 'ssr' } }),
     tanstackStart({
       srcDirectory: 'start',
+      // Import protection is what keeps `services/imageStore/r2.server.ts`
+      // (and its `cloudflare:workers` import) out of the client bundle.
+      // Without an explicit `include`, the gate defaults to
+      // `isInsideDirectory(file, srcDirectory)` — i.e. `start/` only — so the
+      // `**/*.server.*` client rule would never fire for a file under
+      // `services/`.
+      importProtection: {
+        include: ['start/**', 'services/**'],
+      },
     }),
     react(),
   ],

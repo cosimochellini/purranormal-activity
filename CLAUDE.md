@@ -50,7 +50,7 @@ Husky + lint-staged auto-formats staged files on commit via Biome.
 - **Styling**: Tailwind CSS v4 (custom mystical palette: deep-purple, midnight-blue, ghost-white, neon-green)
 - **Fonts**: Quicksand (primary) + Caveat (accent) — loaded via CSS/static, not `next/font`
 - **AI**: OpenAI (o3 for structured generation, gpt-4o for text, gpt-image-1 for images)
-- **Storage**: Cloudflare R2 (S3-compatible) for generated images
+- **Storage**: Cloudflare R2 for generated images, via the native `IMAGES` bucket binding
 - **Linter/Formatter**: Biome (single quotes, no semicolons, 2-space indent, 100 char line width)
 - **Package Manager**: pnpm
 - **Node**: 22
@@ -101,7 +101,10 @@ Three tables in Turso (SQLite): `log` (events with title, description, status, i
 - `VITE_CLOUDFLARE_DEPLOY_URL` *(migrated from `NEXT_PUBLIC_CLOUDFLARE_DEPLOY_URL`)*
 
 **Server-only secrets (no prefix):**
-`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `OPENAI_API_KEY`, `ACCESS_KEY_ID`, `SECRET_ACCESS_KEY`, `ACCOUNT_ID`, `SECRET`, `TELEGRAM_BOT_API_KEY`, `TELEGRAM_BOT_CHAT_IDS`, `CLOUDFLARE_IMAGE_TOKEN`
+`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `OPENAI_API_KEY`, `SECRET`, `TELEGRAM_BOT_API_KEY`, `TELEGRAM_BOT_CHAT_IDS`, `CLOUDFLARE_IMAGE_TOKEN`
+
+**Cloudflare bindings (`wrangler.jsonc`, not env vars):**
+- `IMAGES` — R2 bucket `purranormal-images`, used by `services/imageStore/r2.server.ts`. `remote: true` so local dev/preview write to the real bucket (needs `wrangler login`).
 
 ### Key Patterns
 

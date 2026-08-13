@@ -4,7 +4,7 @@ import { logger } from '../utils/logger'
 // `env/server.ts` exposes lazy getters, so a single fresh import is enough
 // for every test — mutating `process.env` after the module loads must be
 // reflected on the very next access.
-import { bucket, serverEnv } from './server'
+import { serverEnv } from './server'
 
 // Snapshot every env key the module touches, then restore in afterEach so
 // the wider test suite (especially `test-setup.ts` stubs) is never perturbed.
@@ -12,9 +12,6 @@ const TRACKED_KEYS = [
   'TURSO_DATABASE_URL',
   'TURSO_AUTH_TOKEN',
   'OPENAI_API_KEY',
-  'ACCESS_KEY_ID',
-  'SECRET_ACCESS_KEY',
-  'ACCOUNT_ID',
   'SECRET',
   'TELEGRAM_BOT_API_KEY',
   'TELEGRAM_BOT_CHAT_IDS',
@@ -77,20 +74,6 @@ describe('serverEnv.telegramChatIds', () => {
     expect(vi.mocked(logger.warn)).toHaveBeenCalledWith(
       expect.stringContaining('TELEGRAM_BOT_CHAT_IDS'),
     )
-  })
-})
-
-describe('bucket.url (lazy composition)', () => {
-  it('composes from ACCOUNT_ID at access time, not at module load', () => {
-    // The module already loaded above with TRACKED_KEYS wiped — if the value
-    // were captured at load it would now throw or hold stale data. Setting
-    // the env right before access must take effect.
-    process.env.ACCOUNT_ID = 'foo'
-    expect(bucket.url).toBe('https://foo.r2.cloudflarestorage.com')
-  })
-
-  it('exposes the static bucket name', () => {
-    expect(bucket.name).toBe('purranormal-images')
   })
 })
 

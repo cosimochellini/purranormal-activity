@@ -1,14 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/services/imageStore', () => ({
+vi.mock('@/services/imageStore/r2.server', () => ({
   imageStore: {
     put: vi.fn(),
     delete: vi.fn(),
-    publicUrl: vi.fn(),
   },
 }))
 
-import { imageStore } from '@/services/imageStore'
+import { imageStore } from '@/services/imageStore/r2.server'
 import { Route } from '@/start/routes/api/upload/$id'
 
 const POST = Route.options.server?.handlers?.POST as (ctx: {

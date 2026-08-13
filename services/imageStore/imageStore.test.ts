@@ -1,92 +1,66 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { logger } from '@/utils/logger'
 
-// Mirror the boundary-mocking style of the deleted `utils/cloudflare.test.ts`:
-// the S3 SDK is fully stubbed so the lazy client constructed inside
-// `services/imageStore` never reaches a real R2 endpoint, and the command
-// constructors are spied so we can assert on the key scheme.
-vi.mock('@/env/server', () => ({
-  serverEnv: {
-    accountId: 'fake-account',
-    accessKeyId: 'fake-access',
-    secretAccessKey: 'fake-secret',
-  },
-  bucket: {
-    name: 'fake-bucket',
-    url: 'https://fake-account.r2.cloudflarestorage.com',
-  },
-}))
-
+// The R2 write surface is a factory over a bucket accessor, so the boundary is
+// mocked by handing `createR2ImageStore` a plain fake instead of stubbing a
+// module. Nothing here touches `cloudflare:workers` — that binding is wired up
+// only in `r2.server.ts`.
 vi.mock('@/env/public', () => ({
   VITE_APP_URL: 'http://localhost:5173',
   APP_URL: 'http://localhost:5173',
   VITE_CLOUDFLARE_PUBLIC_URL: 'images.example.com',
 }))
 
-const sendMock = vi.fn(async () => ({}))
+import { publicUrl } from './index'
+import { createR2ImageStore } from './r2'
 
-vi.mock('@aws-sdk/client-s3', () => {
-  const PutObjectCommand = vi.fn(function PutObjectCommandCtor(
-    this: { input: unknown },
-    input: unknown,
-  ) {
-    this.input = input
-    return Object.assign(this, { __type: 'Put', input })
-  })
-  const DeleteObjectCommand = vi.fn(function DeleteObjectCommandCtor(
-    this: { input: unknown },
-    input: unknown,
-  ) {
-    this.input = input
-    return Object.assign(this, { __type: 'Delete', input })
-  })
-  const S3Client = vi.fn(function S3ClientCtor(this: { send: typeof sendMock }) {
-    this.send = sendMock
-    return this
-  })
-  return { PutObjectCommand, DeleteObjectCommand, S3Client }
-})
+const put = vi.fn(async () => ({}))
+const del = vi.fn(async () => undefined)
 
-import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
-import { imageStore } from './index'
-
-const putMock = vi.mocked(PutObjectCommand) as unknown as ReturnType<typeof vi.fn>
-const deleteMock = vi.mocked(DeleteObjectCommand) as unknown as ReturnType<typeof vi.fn>
+// There is no bucket *name* in any assertion below: with a binding, the bucket
+// identity lives in `wrangler.jsonc`, not in the call.
+const fakeBucket = { put, delete: del } as unknown as R2Bucket
+const imageStore = createR2ImageStore(() => fakeBucket)
 
 beforeEach(() => {
-  sendMock.mockReset()
-  sendMock.mockImplementation(async () => ({}))
-  putMock.mockClear()
-  deleteMock.mockClear()
+  put.mockReset()
+  put.mockImplementation(async () => ({}))
+  del.mockReset()
+  del.mockImplementation(async () => undefined)
 })
 
 describe('imageStore.put', () => {
-  it('writes the configured key with a Buffer body and image/webp content type', async () => {
+  it('writes the configured key with the raw bytes and image/webp content type', async () => {
     await imageStore.put(99, new Uint8Array([1, 2, 3]))
 
-    expect(putMock).toHaveBeenCalledTimes(1)
-    const [putArgs] = putMock.mock.calls[0] as [
-      { Bucket: string; Key: string; Body: unknown; ContentType: string },
+    expect(put).toHaveBeenCalledTimes(1)
+    const [key, body, options] = put.mock.calls[0] as unknown as [
+      string,
+      Uint8Array,
+      { httpMetadata: { contentType: string } },
     ]
-    expect(putArgs.Bucket).toBe('fake-bucket')
-    expect(putArgs.Key).toBe('99/cover.webp')
-    expect(putArgs.ContentType).toBe('image/webp')
-    // Body is wrapped in a Node Buffer (polyfilled on Workers).
-    expect(putArgs.Body).toBeInstanceOf(Uint8Array)
-    expect(Array.from(putArgs.Body as Uint8Array)).toEqual([1, 2, 3])
-
-    expect(sendMock).toHaveBeenCalledTimes(1)
-    expect(sendMock.mock.calls[0][0]).toMatchObject({ __type: 'Put' })
+    expect(key).toBe('99/cover.webp')
+    expect(options).toEqual({ httpMetadata: { contentType: 'image/webp' } })
+    // `R2Bucket.put` takes an `ArrayBufferView`, so no Buffer wrapping.
+    expect(body).toBeInstanceOf(Uint8Array)
+    expect(Array.from(body)).toEqual([1, 2, 3])
   })
 
-  it('wraps S3 errors with the documented `R2 upload failed:` prefix', async () => {
-    sendMock.mockRejectedValueOnce(new Error('s3 down'))
+  it('wraps R2 errors with the documented `R2 upload failed:` prefix', async () => {
+    put.mockRejectedValueOnce(new Error('r2 down'))
     await expect(imageStore.put(1, new Uint8Array([0]))).rejects.toThrow(
-      'R2 upload failed: s3 down',
+      'R2 upload failed: r2 down',
     )
     expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
       'Error uploading to R2:',
       expect.any(Error),
+    )
+  })
+
+  it('stringifies non-Error rejections into the same prefix', async () => {
+    put.mockRejectedValueOnce({ code: 'nope' })
+    await expect(imageStore.put(1, new Uint8Array([0]))).rejects.toThrow(
+      'R2 upload failed: {"code":"nope"}',
     )
   })
 })
@@ -95,16 +69,11 @@ describe('imageStore.delete', () => {
   it('deletes the configured key', async () => {
     await imageStore.delete(7)
 
-    expect(deleteMock).toHaveBeenCalledWith({
-      Bucket: 'fake-bucket',
-      Key: '7/cover.webp',
-    })
-    expect(sendMock).toHaveBeenCalledTimes(1)
-    expect(sendMock.mock.calls[0][0]).toMatchObject({ __type: 'Delete' })
+    expect(del).toHaveBeenCalledWith('7/cover.webp')
   })
 
-  it('wraps S3 errors with the generic delete-failed message', async () => {
-    sendMock.mockRejectedValueOnce(new Error('boom'))
+  it('wraps R2 errors with the generic delete-failed message', async () => {
+    del.mockRejectedValueOnce(new Error('boom'))
     await expect(imageStore.delete(7)).rejects.toThrow('Failed to delete object from R2')
     expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
       'Error deleting object from R2:',
@@ -113,15 +82,15 @@ describe('imageStore.delete', () => {
   })
 })
 
-describe('imageStore.publicUrl', () => {
+describe('publicUrl', () => {
   it('returns the canonical R2 URL for a given id', () => {
-    expect(imageStore.publicUrl(42)).toBe('https://images.example.com/42/cover.webp')
-    expect(imageStore.publicUrl(0)).toBe('https://images.example.com/0/cover.webp')
-    expect(imageStore.publicUrl(123456)).toBe('https://images.example.com/123456/cover.webp')
+    expect(publicUrl(42)).toBe('https://images.example.com/42/cover.webp')
+    expect(publicUrl(0)).toBe('https://images.example.com/0/cover.webp')
+    expect(publicUrl(123456)).toBe('https://images.example.com/123456/cover.webp')
   })
 })
 
-describe('imageStore.publicUrl with empty VITE_CLOUDFLARE_PUBLIC_URL', () => {
+describe('publicUrl with empty VITE_CLOUDFLARE_PUBLIC_URL', () => {
   it('returns an empty string when the env value is empty', async () => {
     vi.resetModules()
     vi.doMock('@/env/public', () => ({
@@ -129,8 +98,8 @@ describe('imageStore.publicUrl with empty VITE_CLOUDFLARE_PUBLIC_URL', () => {
       APP_URL: 'http://localhost:5173',
       VITE_CLOUDFLARE_PUBLIC_URL: '',
     }))
-    const { imageStore: rebuilt } = await import('./index')
-    expect(rebuilt.publicUrl(7)).toBe('')
+    const { publicUrl: rebuilt } = await import('./index')
+    expect(rebuilt(7)).toBe('')
     vi.doUnmock('@/env/public')
     vi.resetModules()
   })

@@ -9,7 +9,6 @@ vi.mock('@/drizzle', async () => {
 
 vi.mock('@/env/server', () => ({
   serverEnv: { secret: 'test-secret' },
-  bucket: { name: 'purranormal-images', url: 'https://test-account.r2.cloudflarestorage.com' },
 }))
 
 vi.mock('@/services/imagePipeline', () => ({
@@ -18,11 +17,10 @@ vi.mock('@/services/imagePipeline', () => ({
   },
 }))
 
-vi.mock('@/services/imageStore', () => ({
+vi.mock('@/services/imageStore/r2.server', () => ({
   imageStore: {
     put: vi.fn(),
     delete: vi.fn(async () => undefined),
-    publicUrl: vi.fn(),
   },
 }))
 
@@ -31,7 +29,7 @@ import { imagePipeline } from '@/services/imagePipeline'
 
 const SECRET = serverEnv.secret
 
-import { imageStore } from '@/services/imageStore'
+import { imageStore } from '@/services/imageStore/r2.server'
 import { Route } from '@/start/routes/api/log/$id'
 
 const { db: fakeDb } = (await import('@/drizzle')) as unknown as {

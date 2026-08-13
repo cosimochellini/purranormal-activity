@@ -34,15 +34,6 @@ export const serverEnv = {
   get openaiApiKey() {
     return required('OPENAI_API_KEY')
   },
-  get accessKeyId() {
-    return required('ACCESS_KEY_ID')
-  },
-  get secretAccessKey() {
-    return required('SECRET_ACCESS_KEY')
-  },
-  get accountId() {
-    return required('ACCOUNT_ID')
-  },
   get secret() {
     return required('SECRET')
   },
@@ -57,12 +48,5 @@ export const serverEnv = {
   },
   get version() {
     return process.env.npm_package_version ?? ''
-  },
-}
-
-export const bucket = {
-  name: 'purranormal-images' as const,
-  get url() {
-    return `https://${serverEnv.accountId}.r2.cloudflarestorage.com`
   },
 }

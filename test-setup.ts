@@ -11,9 +11,6 @@ const stubEnv = (key: string, value: string) => {
 }
 stubEnv('TURSO_DATABASE_URL', 'http://test.invalid')
 stubEnv('TURSO_AUTH_TOKEN', 'test-token')
-stubEnv('ACCOUNT_ID', 'test-account')
-stubEnv('ACCESS_KEY_ID', 'test-access-key')
-stubEnv('SECRET_ACCESS_KEY', 'test-secret-access-key')
 stubEnv('SECRET', 'test-secret')
 
 // Default boundary mocks. Individual tests can override per-case via

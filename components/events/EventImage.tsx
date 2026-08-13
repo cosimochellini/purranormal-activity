@@ -5,7 +5,7 @@ import { LogStatus } from '@/data/enum/logStatus'
 import type { LogWithCategories } from '@/db/schema'
 import Bug from '@/images/bug.jpg'
 import { randomImage } from '@/images/loading'
-import { imageStore } from '@/services/imageStore'
+import { publicUrl } from '@/services/imageStore'
 import { toAssetSrc } from '@/utils/image'
 import { logger } from '@/utils/logger'
 import { randomItem } from '../../utils/random'
@@ -117,7 +117,7 @@ export function EventImage({ log, ...props }: Omit<EventImageProps, 'src' | 'alt
 
     if (imageError) return toAssetSrc(Bug)
 
-    return imageStore.publicUrl(id)
+    return publicUrl(id)
   }, [id, imageError, status])
 
   const onImageError = () => {

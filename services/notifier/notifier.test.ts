@@ -21,11 +21,8 @@ vi.mock('@/services/telegram', () => ({
   sendPhoto: vi.fn(async () => ({ success: true, messageId: 2 })),
 }))
 vi.mock('@/services/imageStore', () => ({
-  imageStore: {
-    put: vi.fn(),
-    delete: vi.fn(),
-    publicUrl: vi.fn((id: number) => `https://images.example.test/${id}/cover.webp`),
-  },
+  objectKey: vi.fn((id: number) => `${id}/cover.webp`),
+  publicUrl: vi.fn((id: number) => `https://images.example.test/${id}/cover.webp`),
 }))
 vi.mock('@/env/server', () => ({
   serverEnv: {
@@ -34,7 +31,7 @@ vi.mock('@/env/server', () => ({
   },
 }))
 
-import { imageStore } from '@/services/imageStore'
+import { publicUrl } from '@/services/imageStore'
 import { createNotifier, type NotifierDeps } from './index'
 
 const event: LogWithCategories = {
@@ -84,7 +81,7 @@ describe('createNotifier.notify', () => {
       messageId: undefined,
     })
     expect(deps.composeMessage).not.toHaveBeenCalled()
-    expect(imageStore.publicUrl).not.toHaveBeenCalled()
+    expect(publicUrl).not.toHaveBeenCalled()
     expect(deps.sendMessage).not.toHaveBeenCalled()
     expect(deps.sendPhoto).not.toHaveBeenCalled()
     expect(vi.mocked(logger.warn)).toHaveBeenCalledWith(
@@ -236,7 +233,7 @@ describe('createNotifier.notify', () => {
     )
   })
 
-  it('calls composeMessage exactly once per fan-out and imageStore.publicUrl with event.id', async () => {
+  it('calls composeMessage exactly once per fan-out and publicUrl with event.id', async () => {
     const composeMessage = vi.fn<NotifierDeps['composeMessage']>(async () => 'one-shot text')
 
     const deps = buildDeps({
@@ -247,13 +244,13 @@ describe('createNotifier.notify', () => {
 
     expect(composeMessage).toHaveBeenCalledTimes(1)
     expect(composeMessage).toHaveBeenCalledWith(event)
-    expect(imageStore.publicUrl).toHaveBeenCalledTimes(1)
-    expect(imageStore.publicUrl).toHaveBeenCalledWith(7)
+    expect(publicUrl).toHaveBeenCalledTimes(1)
+    expect(publicUrl).toHaveBeenCalledWith(7)
   })
 
-  it('forwards imageStore.publicUrl return value to sendPhoto (no hardcoded host)', async () => {
+  it('forwards publicUrl return value to sendPhoto (no hardcoded host)', async () => {
     const sendPhoto = vi.fn<NotifierDeps['sendPhoto']>(async () => ok(22))
-    vi.mocked(imageStore.publicUrl).mockReturnValueOnce('https://custom.example.test/7/cover.webp')
+    vi.mocked(publicUrl).mockReturnValueOnce('https://custom.example.test/7/cover.webp')
 
     const deps = buildDeps({ chatIds: ['c1'], sendPhoto })
     await createNotifier(deps).notify(event)

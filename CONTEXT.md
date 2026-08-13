@@ -23,10 +23,21 @@ Public surface (see `services/imagePipeline/`):
 The R2-backed object store. Replaces the fragmented `utils/cloudflare.ts` +
 `instances/s3.ts` pair that pre-dated sub-#3.
 
-Public surface (see `services/imageStore/`):
-- `put(id, bytes)` — write the cover for a log id.
-- `delete(id)` — remove the cover.
-- `publicUrl(id)` — canonical R2 URL (empty string when public URL unset).
+Split along the client/server boundary, because `start/routeTree.gen.ts`
+statically imports every API route and would otherwise drag the R2 binding into
+the browser bundle:
+
+- `@/services/imageStore` — **client-safe**, no binding, no secrets.
+  - `objectKey(id)` — the `<id>/cover.webp` key scheme, single source of truth.
+  - `publicUrl(id)` — canonical R2 read URL (empty string when the public host
+    is unset).
+- `@/services/imageStore/r2` — `createR2ImageStore(getBucket)`, the pure write
+  factory. Tests call it with a fake bucket.
+- `@/services/imageStore/r2.server` — **server-only** (`.server.ts` triggers
+  TanStack Start's client import protection; see `vite.config.mts`). Wires the
+  factory to the `IMAGES` R2 binding and exports `imageStore`.
+  - `put(id, bytes)` — write the cover for a log id.
+  - `delete(id)` — remove the cover.
 
 ## escalator
 
