@@ -9,8 +9,9 @@
  * without mocking it, which reaches the R2 module transitively. Without this
  * alias that import fails to resolve.
  *
- * No test asserts against this object: R2 behaviour is covered by calling
- * `createR2ImageStore(() => fakeBucket)` from `services/imageStore/r2.ts`
- * directly.
+ * R2 behaviour itself is covered by calling `createR2ImageStore(() =>
+ * fakeBucket)` from `services/imageStore/r2.ts` directly. The one test that
+ * does touch this object is `services/imageStore/r2.server.test.ts`, which
+ * assigns `env.IMAGES` to assert the binding is actually wired up.
  */
 export const env = {} as Cloudflare.Env

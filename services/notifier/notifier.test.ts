@@ -21,7 +21,6 @@ vi.mock('@/services/telegram', () => ({
   sendPhoto: vi.fn(async () => ({ success: true, messageId: 2 })),
 }))
 vi.mock('@/services/imageStore', () => ({
-  objectKey: vi.fn((id: number) => `${id}/cover.webp`),
   publicUrl: vi.fn((id: number) => `https://images.example.test/${id}/cover.webp`),
 }))
 vi.mock('@/env/server', () => ({
