@@ -27,9 +27,13 @@ const uploadImage = fetcher<UploadIdResponse, never, FormData>('/api/upload/[id]
 
 interface UpdateImageButtonProps {
   id: number
+  // The upload endpoint writes to R2 *and* flips the row to `ImageGenerated`,
+  // which takes it out of the cron sweeper's reach — so it is gated like every
+  // other write endpoint, and the form has to hand its secret over.
+  secret: string
 }
 
-function UpdateImageButton({ id }: UpdateImageButtonProps) {
+function UpdateImageButton({ id, secret }: UpdateImageButtonProps) {
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -46,6 +50,7 @@ function UpdateImageButton({ id }: UpdateImageButtonProps) {
     try {
       const formData = new FormData()
       formData.append('file', file)
+      formData.append('secret', secret)
 
       const data = await uploadImage({
         params: { id },
@@ -179,7 +184,7 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
           height={200}
           style={styles.image}
         />
-        <UpdateImageButton id={initialData.id} />
+        <UpdateImageButton id={initialData.id} secret={formData.secret} />
       </div>
 
       <form onSubmit={handleSubmit} className="w-full max-w-2xl space-y-6 p-4">

@@ -260,27 +260,31 @@ export const createInMemoryLogRepository = (
       return { id: row.id }
     },
 
-    async markImageGenerated(id) {
+    // Mirrors the Drizzle adapter exactly, fence included: a fake that is more
+    // permissive than its adapter makes the suite lie about the very race the
+    // fence exists for.
+    async markImageGenerated(id, forAttempt) {
       if (markGeneratedShouldThrow) throw markGeneratedThrow
       const row = rowsById.get(id)
-      if (row) {
-        row.status = LogStatus.ImageGenerated
-        row.error = null
-        row.updatedAt = now()
-      }
+      if (!row || row.status !== LogStatus.Created || row.attempts !== forAttempt) return false
+      row.status = LogStatus.ImageGenerated
+      row.error = null
+      row.updatedAt = now()
+      return true
     },
 
-    async markError(id, errorText) {
+    async markError(id, errorText, forAttempt) {
       if (markErrorShouldThrow) throw markErrorThrow
       const row = rowsById.get(id)
       // Mirrors the Drizzle adapter's `AND status = 'Created'` guard: only a
       // pending row can be terminated, so a caller that could not read the row
       // first cannot clobber one that already succeeded.
-      if (row && row.status === LogStatus.Created) {
-        row.status = LogStatus.Error
-        row.error = errorText
-        row.updatedAt = now()
-      }
+      if (!row || row.status !== LogStatus.Created) return false
+      if (forAttempt !== undefined && row.attempts !== forAttempt) return false
+      row.status = LogStatus.Error
+      row.error = errorText
+      row.updatedAt = now()
+      return true
     },
 
     preload(rows) {

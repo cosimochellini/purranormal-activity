@@ -24,7 +24,7 @@ import type {
 // boundary in `handleOutcome` and never re-exported from the package barrel.
 type PipelineOutcome =
   | { kind: 'success'; logId: number }
-  | { kind: 'skipped'; logId: number; reason: 'not-found' | 'not-pending' }
+  | { kind: 'skipped'; logId: number; reason: 'not-found' | 'not-pending' | 'superseded' }
   | { kind: 'failed-recorded'; logId: number; cause: unknown }
   | { kind: 'failed-retryable'; logId: number; cause: unknown; attempt: number }
   | {
@@ -122,7 +122,16 @@ const decodeBase64 = (payload: string): Uint8Array => {
   return bytes
 }
 
-const runGeneration = async (deps: PipelineDeps, logId: number): Promise<void> => {
+/**
+ * Returns `false` when the generation succeeded but a newer cycle had already
+ * started (an edit or an operator retry reset `attempts`), so the fenced write
+ * did not land and the result must be discarded rather than published.
+ */
+const runGeneration = async (
+  deps: PipelineDeps,
+  logId: number,
+  forAttempt: number,
+): Promise<boolean> => {
   const row = await deps.repo.findById(logId)
   if (!row) {
     throw new Error('Log not found')
@@ -147,7 +156,7 @@ const runGeneration = async (deps: PipelineDeps, logId: number): Promise<void> =
   const bytes = decodeBase64(base64)
 
   await deps.store.put(logId, bytes)
-  await deps.repo.markImageGenerated(logId)
+  return deps.repo.markImageGenerated(logId, forAttempt)
 }
 
 /**
@@ -163,13 +172,17 @@ const recordFailure = async (
   deps: PipelineDeps,
   logId: number,
   cause: unknown,
-  opts: { final: boolean; attempt: number },
+  opts: { final: boolean; attempt: number; forAttempt?: number },
 ): Promise<PipelineOutcome> => {
   if (!opts.final) {
     return { kind: 'failed-retryable', logId, cause, attempt: opts.attempt }
   }
   try {
-    await deps.repo.markError(logId, causeToErrorString(cause))
+    const applied = await deps.repo.markError(logId, causeToErrorString(cause), opts.forAttempt)
+    // The write found no row to terminate: this failure belongs to a cycle that
+    // is over — the row was edited (so a newer cycle owns it and parking it in
+    // `Error` would deny that cycle its image), resolved, or deleted outright.
+    if (!applied) return { kind: 'skipped', logId, reason: 'not-pending' }
     return { kind: 'failed-recorded', logId, cause }
   } catch (writeError) {
     return { kind: 'failed-write-also-failed', logId, cause, writeError }
@@ -304,13 +317,18 @@ export const createImagePipeline = (deps: PipelineDeps): ImagePipeline => {
     if (!claim) return diagnoseUnclaimed(logId)
 
     try {
-      await runGeneration(deps, logId)
+      const published = await runGeneration(deps, logId, claim.attempt)
+      if (!published) return { kind: 'skipped', logId, reason: 'superseded' }
       return { kind: 'success', logId }
     } catch (cause) {
       const budgetSpent =
         claim.attempt >= MAX_ATTEMPTS || (ctx?.deliveryAttempt ?? 1) >= MAX_DELIVERIES
       const final = ctx?.final === true || budgetSpent || !isRetryable(cause)
-      return recordFailure(deps, logId, cause, { final, attempt: claim.attempt })
+      return recordFailure(deps, logId, cause, {
+        final,
+        attempt: claim.attempt,
+        forAttempt: claim.attempt,
+      })
     }
   }
 

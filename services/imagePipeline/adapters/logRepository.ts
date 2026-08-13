@@ -107,16 +107,23 @@ export const defaultLogRepository: LogRepositoryPort = {
     return row ? { id: row.id } : null
   },
 
-  async markImageGenerated(id) {
+  async markImageGenerated(id, forAttempt) {
     // Clearing `error` matters: a row that failed, was retried and then
     // succeeded used to keep its stale failure text forever.
-    await db
+    //
+    // Fenced on `attempts = forAttempt`: an edit or an operator retry resets
+    // the counter to 0, so a generation still in flight from the previous cycle
+    // finds the fence closed and its result is discarded instead of published
+    // as if it matched the new prompt.
+    const rows = await db
       .update(log)
       .set({ status: LogStatus.ImageGenerated, error: null, updatedAt: Date.now() })
-      .where(eq(log.id, id))
+      .where(and(eq(log.id, id), eq(log.status, LogStatus.Created), eq(log.attempts, forAttempt)))
+      .returning({ id: log.id })
+    return rows.length > 0
   },
 
-  async markError(id, errorText) {
+  async markError(id, errorText, forAttempt) {
     // `attempts` is left as the claim set it — this write only makes the
     // failure terminal.
     //
@@ -126,9 +133,21 @@ export const defaultLogRepository: LogRepositoryPort = {
     // pending and could flip a row that had meanwhile succeeded to `Error`,
     // hiding a perfectly good cover. Every intended caller holds a claim on a
     // `Created` row, so the guard never costs a legitimate write.
-    await db
+    //
+    // `forAttempt` additionally fences the write to its own generation cycle:
+    // a failure from a superseded cycle must not park the row in `Error`, or
+    // the edit that superseded it would never get its image.
+    const rows = await db
       .update(log)
       .set({ status: LogStatus.Error, error: errorText, updatedAt: Date.now() })
-      .where(and(eq(log.id, id), eq(log.status, LogStatus.Created)))
+      .where(
+        and(
+          eq(log.id, id),
+          eq(log.status, LogStatus.Created),
+          ...(forAttempt === undefined ? [] : [eq(log.attempts, forAttempt)]),
+        ),
+      )
+      .returning({ id: log.id })
+    return rows.length > 0
   },
 }

@@ -43,8 +43,12 @@ export interface ImageJob {
 export interface PipelineReport {
   status: 'success' | 'skipped' | 'failed'
   logId: number
-  /** Present iff `status === 'skipped'`. */
-  reason?: 'not-found' | 'not-pending'
+  /**
+   * Present iff `status === 'skipped'`. `superseded` means the generation
+   * finished but a newer cycle (an edit, or an operator retry) had already
+   * started, so the result was discarded rather than published.
+   */
+  reason?: 'not-found' | 'not-pending' | 'superseded'
   /** Present iff `status === 'failed'`. */
   message?: string
   /**
@@ -128,8 +132,22 @@ export interface LogRepositoryPort {
   touchPending(ids: number[]): Promise<void>
   /** Put a row back in the generation queue's reach with a fresh budget. */
   requeueForRetry(id: number): Promise<{ id: number } | null>
-  markImageGenerated(id: number): Promise<void>
-  markError(id: number, errorText: string): Promise<void>
+  /**
+   * Terminal writes, both fenced on the generation cycle they belong to.
+   *
+   * `forAttempt` is the value `claim` returned. An edit or an operator retry
+   * resets `attempts` to 0, which starts a new cycle — so a write carrying a
+   * stale attempt number belongs to a cycle nobody is waiting for any more and
+   * must not land. Without the fence, generation that finishes *after* a prompt
+   * edit would mark the row done and publish an image built from the old
+   * prompt, and the edit's own queued job would then be refused as
+   * `not-pending`: the user's change silently lost.
+   *
+   * Both return whether the write actually applied. Callers with no claim in
+   * hand (`abandon`, the dead-letter branch) omit `forAttempt`.
+   */
+  markImageGenerated(id: number, forAttempt: number): Promise<boolean>
+  markError(id: number, errorText: string, forAttempt?: number): Promise<boolean>
 }
 
 /**

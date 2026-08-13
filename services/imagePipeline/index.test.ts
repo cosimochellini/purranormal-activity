@@ -349,6 +349,60 @@ describe('pipeline.generateImageFor', () => {
     expect(repo.findRow(7)?.status).toBe(LogStatus.Created)
   })
 
+  it('discards a generation whose cycle was superseded by an edit mid-flight', async () => {
+    // The race this fence exists for: the user edits the prompt while the
+    // original generation is still running. `PUT /api/log/$id` resets `attempts`
+    // to 0 and enqueues a fresh job. Without the fence, the in-flight run would
+    // then mark the row `ImageGenerated` with the OLD prompt's image, and the
+    // edit's own job would be refused as `not-pending` — the change silently
+    // lost behind a cover that does not match the stored prompt.
+    const { repo } = createTestPipeline()
+    repo.preload([{ id: 7, imageDescription: 'old prompt', status: LogStatus.Created }])
+
+    const racingRepo = {
+      ...repo,
+      // Stands in for the edit landing between the image call and the write.
+      async put() {},
+      async markImageGenerated(id: number, forAttempt: number) {
+        await repo.requeueForRetry(id)
+        return repo.markImageGenerated(id, forAttempt)
+      },
+    }
+    const { pipeline, store } = createTestPipeline({ repo: racingRepo })
+
+    const report = await pipeline.generateImageFor(7, { deliveryAttempt: 1 })
+
+    expect(report).toEqual({ status: 'skipped', logId: 7, reason: 'superseded' })
+    const row = repo.findRow(7)
+    // Left pending with a fresh budget, so the edit's own job regenerates.
+    expect(row?.status).toBe(LogStatus.Created)
+    expect(row?.attempts).toBe(0)
+    // The bytes did reach R2 — harmless, the next run overwrites the same key.
+    expect(store.snapshot().has(7)).toBe(true)
+  })
+
+  it('does not park a row in Error when its failure belongs to a superseded cycle', async () => {
+    const { repo } = createTestPipeline()
+    repo.preload([{ id: 7, imageDescription: 'old prompt', status: LogStatus.Created }])
+
+    const racingRepo = {
+      ...repo,
+      async markError(id: number, errorText: string, forAttempt?: number) {
+        await repo.requeueForRetry(id)
+        return repo.markError(id, errorText, forAttempt)
+      },
+    }
+    const { pipeline, aiImage } = createTestPipeline({ repo: racingRepo })
+    aiImage.setThrow(new Error('content_policy_violation'))
+
+    const report = await pipeline.generateImageFor(7, { deliveryAttempt: 1 })
+
+    expect(report).toEqual({ status: 'skipped', logId: 7, reason: 'not-pending' })
+    const row = repo.findRow(7)
+    expect(row?.status).toBe(LogStatus.Created)
+    expect(row?.error).toBeNull()
+  })
+
   it('emits an info log line on skipped outcomes', async () => {
     const { pipeline } = createTestPipeline()
     vi.mocked(logger.info).mockClear()
@@ -463,14 +517,18 @@ describe('retryability classification', () => {
   })
 
   it('does NOT retry a vanished row', async () => {
+    // The claim is faked to succeed against a repo that holds no rows, so
+    // `runGeneration` throws `Log not found` and the terminal write then finds
+    // nothing to terminate. Either way the message must be acked, never
+    // redelivered.
     const { repo } = createTestPipeline()
     const customRepo = { ...repo, claim: async () => ({ attempt: 1 }) }
     const { pipeline } = createTestPipeline({ repo: customRepo })
 
     const report = await pipeline.generateImageFor(42, { deliveryAttempt: 1 })
 
-    expect(report.message).toBe('Log not found')
-    expect(report.retryable).toBe(false)
+    expect(report).toEqual({ status: 'skipped', logId: 42, reason: 'not-pending' })
+    expect(report.retryable).toBeUndefined()
   })
 })
 
