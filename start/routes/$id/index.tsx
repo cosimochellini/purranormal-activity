@@ -7,7 +7,7 @@ import { SendNotificationButton } from '@/components/common/SendNotificationButt
 import { EventImage } from '@/components/events/EventImage'
 import { TriggerImageGeneration } from '@/components/image/TriggerImageGeneration'
 import { APP_URL } from '@/env/public'
-import { imageStore } from '@/services/imageStore'
+import { publicUrl } from '@/services/imageStore'
 import { getLogById } from '@/start/services/log'
 import { transitions } from '@/utils/viewTransition'
 
@@ -40,11 +40,11 @@ export const Route = createFileRoute('/$id/')({
         { property: 'og:description', content: description },
         { property: 'og:type', content: 'article' },
         { property: 'og:url', content: `${APP_URL}/${params.id}` },
-        { property: 'og:image', content: imageStore.publicUrl(id) },
+        { property: 'og:image', content: publicUrl(id) },
         { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'twitter:title', content: `Day ${id * 2} - ${title}` },
         { name: 'twitter:description', content: description },
-        { name: 'twitter:image', content: imageStore.publicUrl(id) },
+        { name: 'twitter:image', content: publicUrl(id) },
       ],
       links: [{ rel: 'canonical', href: `${APP_URL}/${params.id}` }],
     }

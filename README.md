@@ -39,6 +39,18 @@ cp .env.example .env
 
 3. Fill `.env` with required values.
 
+4. Authenticate with Cloudflare:
+
+```bash
+pnpm exec wrangler login
+```
+
+Generated cover images live in the `purranormal-images` R2 bucket, reached through
+the `IMAGES` binding in `wrangler.jsonc`. That binding is declared `remote: true`,
+so local dev and preview read and write the **real** bucket instead of a simulated
+local one — which keeps uploaded covers resolvable from the public R2 host, but
+means image upload and deletion fail until you have logged in.
+
 ## Development
 
 Run dev server (keeps current project behavior with patch version bump):

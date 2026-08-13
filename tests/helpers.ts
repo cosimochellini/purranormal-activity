@@ -153,13 +153,3 @@ export const mockOpenAIClient = (options: MockOpenAIOptions = {}) => ({
     create: vi.fn(async () => options.responseCreate ?? { output_text: '{}' }),
   },
 })
-
-// ---------------------------------------------------------------------------
-// S3 / R2 client mock factory
-// ---------------------------------------------------------------------------
-
-export const mockS3Client = () => {
-  const send = vi.fn(async () => ({}))
-  const client = { send }
-  return { client, send }
-}

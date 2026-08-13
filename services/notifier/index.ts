@@ -1,6 +1,6 @@
 import type { LogWithCategories } from '@/db/schema'
 import { serverEnv } from '@/env/server'
-import { imageStore } from '@/services/imageStore'
+import { publicUrl } from '@/services/imageStore'
 import { storyForge } from '@/services/storyForge'
 import {
   sendMessage as telegramSendMessage,
@@ -130,7 +130,7 @@ export const createNotifier = (overrides: Partial<NotifierDeps> = {}): Notifier 
       }
 
       const text = await deps.composeMessage(event)
-      const photoUrl = imageStore.publicUrl(event.id)
+      const photoUrl = publicUrl(event.id)
 
       const results = await Promise.all(
         deps.chatIds.map((chatId) => oneChat(chatId, text, photoUrl, event.id)),

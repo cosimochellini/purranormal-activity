@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { imageStore } from '@/services/imageStore'
+import { imageStore } from '@/services/imageStore/r2.server'
 import type { UploadIdResponse } from '@/types/api/upload-id'
 import { badRequest, ok } from '@/utils/http'
 

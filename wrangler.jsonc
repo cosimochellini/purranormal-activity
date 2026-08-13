@@ -4,6 +4,19 @@
   "compatibility_date": "2026-02-24",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
+  // Cover images live at `<logId>/cover.webp`. The binding replaces the
+  // S3-compatible SigV4 path: no credentials, no signing, no HTTP hop.
+  // `remote: true` keeps `vite dev` / `vite preview` writing to the real
+  // bucket (rather than miniflare's local simulation) so dev-generated
+  // covers still resolve from the public R2 host — it requires a live
+  // `wrangler login` and has no effect on deployed Workers.
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "purranormal-images",
+      "remote": true
+    }
+  ],
   "observability": {
     "enabled": true
   }

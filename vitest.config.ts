@@ -15,6 +15,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': rootDir,
+      // Neither plugin below is loaded, so nothing strips server-only modules
+      // and `cloudflare:workers` has to resolve to something. See the stub.
+      'cloudflare:workers': path.resolve(rootDir, 'tests/stubs/cloudflare-workers.ts'),
     },
   },
   test: {
