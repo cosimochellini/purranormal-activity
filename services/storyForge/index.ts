@@ -29,10 +29,10 @@ export type {
   StoryForge,
 } from './types'
 
-const QUESTIONS_MODEL = 'gpt-5-mini'
-const LOG_DETAILS_MODEL = 'gpt-5.2'
-const IMAGE_PROMPT_MODEL = 'gpt-5.2'
-const TELEGRAM_MODEL = 'gpt-5-mini'
+const QUESTIONS_MODEL = 'gpt-5.6-luna'
+const LOG_DETAILS_MODEL = 'gpt-5.6-terra'
+const IMAGE_PROMPT_MODEL = 'gpt-5.6-terra'
+const TELEGRAM_MODEL = 'gpt-5.6-luna'
 
 const errorMessage = (err: unknown): string => {
   if (err instanceof Error) return err.message || err.name || 'Error'

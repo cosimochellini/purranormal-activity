@@ -92,7 +92,7 @@ describe('storyForge.questions', () => {
       ok: true,
       value: [{ question: 'Where?', availableAnswers: ['Home', 'Park'] }],
     })
-    expect(llm.calls[0]?.model).toBe('gpt-5-mini')
+    expect(llm.calls[0]?.model).toBe('gpt-5.6-luna')
   })
 
   it('returns ok:false error:parse on invalid JSON', async () => {
@@ -183,7 +183,7 @@ describe('storyForge.logDetails', () => {
       expect(r.value.title).toBe('T')
       expect(r.value.categories).toEqual([{ id: 1, name: 'magic' }])
     }
-    expect(llm.calls[0]?.model).toBe('gpt-5.2')
+    expect(llm.calls[0]?.model).toBe('gpt-5.6-terra')
   })
 
   it('returns ok:false error:parse on invalid JSON', async () => {
@@ -257,7 +257,7 @@ describe('storyForge.imagePrompt', () => {
     const sf = createStoryForge({ categories: fakeCategoriesPort(), llm, randomStyle: fakeStyle })
     const r = await sf.imagePrompt('event')
     expect(r).toEqual({ ok: true, value: 'the final image prompt' })
-    expect(llm.calls[0]?.model).toBe('gpt-5.2')
+    expect(llm.calls[0]?.model).toBe('gpt-5.6-terra')
   })
 
   it('returns ok:false error:validation on empty response', async () => {
@@ -291,7 +291,7 @@ describe('storyForge.telegramMessage', () => {
     const sf = createStoryForge({ categories: fakeCategoriesPort(), llm, randomStyle: fakeStyle })
     const r = await sf.telegramMessage(sampleLog)
     expect(r).toEqual({ ok: true, value: '<b>Hello</b>' })
-    expect(llm.calls[0]?.model).toBe('gpt-5-mini')
+    expect(llm.calls[0]?.model).toBe('gpt-5.6-luna')
   })
 
   it('returns ok:false error:validation when message becomes empty after fence-strip', async () => {
