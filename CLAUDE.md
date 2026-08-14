@@ -4,7 +4,7 @@
 
 Purranormal Activity is a whimsical web app for documenting paranormal events caused by a magical kitten. Users submit event descriptions, which are enriched by AI (OpenAI) to generate titles, descriptions, categories, and DALL-E images.
 
-**Current live**: https://purranormal-activity.pages.dev/ (Cloudflare Pages)
+**Current live**: https://purranormal-activity.grandekello.workers.dev/ (Cloudflare Pages)
 **Migration target**: https://purranormal-activity.workers.dev (Cloudflare Workers)
 
 > **Migration complete.** The codebase has been migrated from Next.js to TanStack Start + Vite + Cloudflare Workers. See `plan.md` for historical specs and `backlog.md` for deferred work.
@@ -81,7 +81,7 @@ Image generation runs on a Cloudflare Queue, never inside a request.
 2. `POST /api/log/submit` — `storyForge.logDetails` (`gpt-5.6-terra`) produces title, description, categories and `imageDescription`
 3. `imagePipeline.submit` inserts the row with status `Created`, links categories, and enqueues `{ v: 1, logId, source }` on `IMAGE_QUEUE`. The response returns immediately
 4. The queue consumer (`start/server.ts` → `services/imagePipeline/consumer.ts`) claims one attempt atomically, then generates: `storyForge.imagePrompt` if `imageDescription` is empty → `gpt-image-2` → R2 `put` at `<logId>/cover.webp` → status `ImageGenerated`
-5. On a *transient* failure the row stays `Created` and the message is retried once after 30s. On a deterministic failure (moderation refusal, storyForge `validation`, missing row) or once the budget is spent, the row becomes `Error`
+5. On a _transient_ failure the row stays `Created` and the message is retried once after 30s. On a deterministic failure (moderation refusal, storyForge `validation`, missing row) or once the budget is spent, the row becomes `Error`
 6. Two backstops: the dead-letter queue consumer forces a stuck row out of `Created`, and a 5-minute cron (`imagePipeline.sweep`) re-enqueues rows whose message was lost and abandons rows whose budget is gone
 7. `/[id]` mounts `ImageStatusPoller`, which re-runs the route loader on a backing-off schedule until the status changes
 
@@ -108,14 +108,16 @@ Three tables in Turso (SQLite): `log` (events with title, description, status, i
 ### Environment Variables
 
 **Client-exposed (Vite prefix — target naming):**
-- `VITE_APP_URL` *(migrated from `NEXT_PUBLIC_APP_URL`)*
-- `VITE_CLOUDFLARE_PUBLIC_URL` *(migrated from `NEXT_PUBLIC_CLOUDFLARE_PUBLIC_URL`)*
-- `VITE_CLOUDFLARE_DEPLOY_URL` *(migrated from `NEXT_PUBLIC_CLOUDFLARE_DEPLOY_URL`)*
+
+- `VITE_APP_URL` _(migrated from `NEXT_PUBLIC_APP_URL`)_
+- `VITE_CLOUDFLARE_PUBLIC_URL` _(migrated from `NEXT_PUBLIC_CLOUDFLARE_PUBLIC_URL`)_
+- `VITE_CLOUDFLARE_DEPLOY_URL` _(migrated from `NEXT_PUBLIC_CLOUDFLARE_DEPLOY_URL`)_
 
 **Server-only secrets (no prefix):**
 `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `OPENAI_API_KEY`, `SECRET`, `TELEGRAM_BOT_API_KEY`, `TELEGRAM_BOT_CHAT_IDS`, `CLOUDFLARE_IMAGE_TOKEN`
 
 **Cloudflare bindings (`wrangler.jsonc`, not env vars):**
+
 - `IMAGES` — R2 bucket `purranormal-images`, used by `services/imageStore/r2.server.ts`. `remote: true` so local dev/preview write to the real bucket (needs `wrangler login`).
 - `IMAGE_QUEUE` — producer binding for queue `purranormal-image-jobs`, used by `services/imagePipeline/adapters/queue.server.ts`. Consumed by this same worker (`max_retries: 1`, `max_batch_size: 1`, `max_concurrency: 2`), with `purranormal-image-jobs-dlq` as its dead-letter queue — also consumed here, discriminated by `batch.queue`. Requires the Workers Paid plan.
 - `triggers.crons: ["*/5 * * * *"]` — drives `imagePipeline.sweep()` via the `scheduled` handler.
@@ -140,6 +142,8 @@ Three tables in Turso (SQLite): `log` (events with title, description, status, i
 Mystical, whimsical, playful fairy-tale tone. Deep purples/midnight blues primary palette with neon green/ghost white accents. Consistent magical kitten + frightened chick characters throughout.
 
 <!-- SPECKIT START -->
+
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan
+
 <!-- SPECKIT END -->

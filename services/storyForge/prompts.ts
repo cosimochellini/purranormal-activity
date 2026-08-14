@@ -213,7 +213,7 @@ interface GenerateTelegramPromptParams {
 }
 
 export function GENERATE_TELEGRAM_PROMPT({ log }: GenerateTelegramPromptParams) {
-  const linkURL = `https://purranormal-activity.pages.dev/${log.id}`
+  const linkURL = `https://purranormal-activity.grandekello.workers.dev//${log.id}`
 
   return `
   ${COMMON_PROMPT_INSTRUCTIONS}
