@@ -5,7 +5,7 @@ import { Category } from '@/components/common/Category'
 import { NotFoundPage } from '@/components/common/NotFoundPage'
 import { SendNotificationButton } from '@/components/common/SendNotificationButton'
 import { EventImage } from '@/components/events/EventImage'
-import { TriggerImageGeneration } from '@/components/image/TriggerImageGeneration'
+import { ImageStatusPoller } from '@/components/image/ImageStatusPoller'
 import { APP_URL } from '@/env/public'
 import { publicUrl } from '@/services/imageStore'
 import { getLogById } from '@/start/services/log'
@@ -61,7 +61,7 @@ function RouteComponent() {
 
   return (
     <div className="relative min-h-full bg-deep-purple-900 p-1 md:p-4 text-white">
-      <TriggerImageGeneration log={log} />
+      <ImageStatusPoller log={log} />
 
       <SpookyBackground />
 

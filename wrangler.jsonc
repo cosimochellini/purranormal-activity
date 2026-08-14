@@ -3,7 +3,16 @@
   "name": "purranormal-activity",
   "compatibility_date": "2026-02-24",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
+  // `main` — and not the presence of `start/server.ts` — decides what the
+  // deployed worker exports. `@cloudflare/vite-plugin` builds the ssr
+  // environment from its own virtual entry (`import * as mod from "<main>";
+  // export default mod.default ?? {}`), and `@tanstack/start-plugin-core`
+  // keeps an ssr rollup input that is already set, so the cloudflare plugin
+  // wins. Pointing `main` at `./start/server.ts` also happens to be the file
+  // TanStack auto-discovers as the custom server entry
+  // (`srcDirectory: 'start'` + default entry name `server`), so both
+  // mechanisms resolve to one module and one chunk.
+  "main": "./start/server.ts",
   // Cover images live at `<logId>/cover.webp`. The binding replaces the
   // S3-compatible SigV4 path: no credentials, no signing, no HTTP hop.
   // `remote: true` keeps `vite dev` / `vite preview` writing to the real
@@ -17,6 +26,44 @@
       "remote": true
     }
   ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "IMAGE_QUEUE",
+        "queue": "purranormal-image-jobs"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "purranormal-image-jobs",
+        // One image per invocation: a batch-level failure must never punish a
+        // sibling message, and a generation is ~40s of wall clock anyway.
+        "max_batch_size": 1,
+        "max_batch_timeout": 5,
+        // `max_retries + 1` deliveries. Must stay equal to `MAX_DELIVERIES` in
+        // `services/imagePipeline/config.ts` — `config.test.ts` asserts it.
+        "max_retries": 1,
+        "retry_delay": 30,
+        // Capped on purpose: an unbounded fan-out turns one sweeper burst into
+        // a wall of OpenAI 429s, and every 429 spends a row's only retry.
+        "max_concurrency": 2,
+        "dead_letter_queue": "purranormal-image-jobs-dlq"
+      },
+      {
+        // Consumed by the same worker; `batch.queue` is the discriminator. Its
+        // only job is to force the row out of `Created`, so it never retries.
+        "queue": "purranormal-image-jobs-dlq",
+        "max_batch_size": 10,
+        "max_batch_timeout": 30,
+        "max_retries": 0
+      }
+    ]
+  },
+  // Reconciliation net for rows whose enqueue was lost or whose consumer died
+  // mid-flight. See `imagePipeline.sweep`.
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  },
   "observability": {
     "enabled": true
   }

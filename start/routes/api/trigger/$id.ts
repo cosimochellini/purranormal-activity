@@ -1,10 +1,30 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { z } from 'zod'
+import { VALIDATION_MESSAGES } from '@/constants'
+import { serverEnv } from '@/env/server'
 import { imagePipeline } from '@/services/imagePipeline'
-import { defineHandlers } from '@/services/route/defineHandlers'
+import { defineHandlers, method } from '@/services/route/defineHandlers'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { assertNever } from '@/utils/typed'
 import { createFriendly, type FriendlyMessages } from '../log/_friendly'
+
+// Operator endpoint: "regenerate this one's image, now". It resets the row to
+// `Created` with a fresh attempt budget and enqueues it — a plain enqueue would
+// be a silent no-op for `Error` rows, which are the only rows anyone ever asks
+// to retry.
+//
+// Gated on the secret: before the queue, an abusive caller paid for their own
+// abuse by holding a ~40s connection per request. An enqueue returns in
+// milliseconds, so the same endpoint would become an amplifier for our OpenAI
+// bill.
+const triggerSchema = z.object({
+  secret: z
+    .string()
+    .min(1, VALIDATION_MESSAGES.SECRET_REQUIRED)
+    .refine((val) => val.toLowerCase() === serverEnv.secret, {
+      message: VALIDATION_MESSAGES.SECRET_INVALID,
+    }),
+})
 
 const messages: FriendlyMessages = {
   AI_UNAVAILABLE:
@@ -20,14 +40,20 @@ const messages: FriendlyMessages = {
 const reporter = createFriendly<Response>({
   messages,
   build: (text) => ok({ success: false, error: text }),
-  onError: (error) => logger.error('trigger pipeline threw:', error),
+  onError: (error) => logger.error('trigger enqueue threw:', error),
 })
+
+interface TriggerResponse {
+  success: boolean
+  error?: string
+}
 
 export const Route = createFileRoute('/api/trigger/$id')({
   server: {
     handlers: defineHandlers(
       {
-        POST: {
+        POST: method<{ secret: string }, undefined, undefined, TriggerResponse>({
+          body: triggerSchema,
           reporter,
           handler: async (_input, { params }) => {
             const logId = Number(params.id)
@@ -36,34 +62,23 @@ export const Route = createFileRoute('/api/trigger/$id')({
               return { data: { success: false as const, error: 'Invalid log id' } }
             }
 
-            const report = await imagePipeline.generateImageFor(logId)
+            const { requeued, enqueued } = await imagePipeline.retry(logId)
 
-            switch (report.status) {
-              case 'success':
-                return {
-                  data: { success: true as const },
-                  invalidate: [`log:${logId}`] as const,
-                }
-              case 'skipped':
-                // skipped:not-found means the row never existed, so no
-                // loader needs invalidating. Every other skip reason still
-                // touched a real row whose loader should re-fetch.
-                return report.reason === 'not-found'
-                  ? { data: { success: false as const, error: report.reason } }
-                  : {
-                      data: { success: false as const, error: report.reason },
-                      invalidate: [`log:${logId}`] as const,
-                    }
-              case 'failed':
-                return {
-                  data: { success: false as const, error: report.message ?? 'Unknown error' },
-                  invalidate: [`log:${logId}`] as const,
-                }
-              default:
-                return assertNever(report.status)
+            if (!requeued) {
+              return { data: { success: false as const, error: 'not-found' } }
+            }
+
+            // The row is `Created` again either way, so the loaders should
+            // re-read it: the UI switches to the generating state, and the
+            // sweeper recovers the row if the enqueue itself failed.
+            return {
+              data: enqueued
+                ? { success: true as const }
+                : { success: false as const, error: 'Failed to enqueue image generation' },
+              invalidate: [`log:${logId}`] as const,
             }
           },
-        },
+        }),
       },
       { route: '/api/trigger/$id' },
     ),

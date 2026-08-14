@@ -70,7 +70,7 @@ export const Route = createFileRoute('/api/log/submit')({
         >({
           body: submitFormSchema,
           reporter,
-          handler: async ({ body }) => {
+          handler: async ({ body }, { log }) => {
             const details = await storyForge.logDetails(body.description, body.answers)
             // `AIResult.err` is passed through bare — the envelope routes it
             // via the reporter's `fromAi`. `AIResult.ok` we inspect locally.
@@ -101,12 +101,18 @@ export const Route = createFileRoute('/api/log/submit')({
               .map(({ id }) => id)
               .filter((id) => allCategoryIds.includes(id))
 
-            // The pipeline now logs every outcome internally — no
-            // post-call `logPipelineOutcome` invocation needed here.
-            const { id } = await imagePipeline.submit({
+            // The pipeline inserts the row and enqueues the image job; it no
+            // longer generates inline, so this request returns in milliseconds
+            // instead of waiting out an image model call.
+            const { id, enqueued } = await imagePipeline.submit({
               draft: { title, description, imageDescription },
               categoryIds,
             })
+
+            // The row is saved either way and the cron sweeper will pick it up,
+            // so the user still gets `success` — but this must be visible in
+            // the logs, because it means the queue itself is unreachable.
+            if (!enqueued) log.error(`submit: log ${id} was saved but not enqueued`)
 
             return {
               data: { success: true, id, missingCategories: [] },

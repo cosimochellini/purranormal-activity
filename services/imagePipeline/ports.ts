@@ -20,9 +20,22 @@ export interface SubmitInput {
   categoryIds: number[]
 }
 
+/** Who asked for a generation. Diagnostics only — never branched on. */
+export type EnqueueSource = 'submit' | 'update' | 'retry' | 'script' | 'sweeper'
+
 /**
- * External-facing pipeline result. Collapses the internal 4-kind
- * `PipelineOutcome` discriminator (success | skipped | failed-recorded |
+ * Queue message body. `v` is a version tag: the consumer rejects (and acks)
+ * anything it does not recognise instead of retrying a shape it cannot read.
+ */
+export interface ImageJob {
+  v: 1
+  logId: number
+  source: EnqueueSource
+}
+
+/**
+ * External-facing pipeline result. Collapses the internal `PipelineOutcome`
+ * discriminator (success | skipped | failed-recorded | failed-retryable |
  * failed-write-also-failed) into a 3-kind status. The internal "secondary
  * write also failed" branch is escalated via `EscalatorPort` and surfaces
  * here as a plain `status: 'failed'`.
@@ -30,15 +43,47 @@ export interface SubmitInput {
 export interface PipelineReport {
   status: 'success' | 'skipped' | 'failed'
   logId: number
-  /** Present iff `status === 'skipped'`. */
-  reason?: 'not-found' | 'not-pending'
+  /**
+   * Present iff `status === 'skipped'`. `superseded` means the generation
+   * finished but a newer cycle (an edit, or an operator retry) had already
+   * started, so the result was discarded rather than published.
+   */
+  reason?: 'not-found' | 'not-pending' | 'superseded'
   /** Present iff `status === 'failed'`. */
   message?: string
+  /**
+   * Present iff `status === 'failed'`. `true` means the row was deliberately
+   * left in `Created` and the caller should redeliver the message; `false`
+   * means the row is now `Error` and redelivery would only be skipped as
+   * `not-pending`.
+   */
+  retryable?: boolean
 }
 
 export interface SubmitResult {
   id: number
-  report: PipelineReport
+  /** `false` when the row was saved but the queue write failed. */
+  enqueued: boolean
+  /** Present iff `!enqueued`. */
+  message?: string
+}
+
+export interface SweepSummary {
+  scanned: number
+  requeued: number
+  abandoned: number
+  failed: number
+}
+
+/**
+ * Per-delivery context handed to `generateImageFor` by the queue consumer.
+ * A direct caller omits it and gets the durable budget from `repo.claim`.
+ */
+export interface AttemptContext {
+  /** 1-based per-MESSAGE counter, i.e. `Message.attempts`. */
+  deliveryAttempt?: number
+  /** Force terminal handling regardless of the remaining budget. */
+  final?: boolean
 }
 
 export interface AiTextPort {
@@ -54,14 +99,55 @@ export interface ImageStorePort {
   delete(logId: number): Promise<void>
 }
 
+export interface QueuePort {
+  send(job: ImageJob): Promise<void>
+  sendBatch(jobs: readonly ImageJob[]): Promise<void>
+}
+
+export interface PendingRow {
+  id: number
+  attempts: number
+}
+
 export interface LogRepositoryPort {
   insertDraft(draft: DraftLog): Promise<{ id: number }>
   linkCategories(logId: number, categoryIds: number[]): Promise<void>
   findById(id: number): Promise<LogRow | null>
-  findFirstPending(): Promise<{ id: number } | null>
-  loadStatus(id: number): Promise<{ status: LogStatus } | null>
-  markImageGenerated(id: number): Promise<void>
-  markError(id: number, errorText: string): Promise<void>
+  findPending(limit: number): Promise<{ id: number }[]>
+  findStalePending(opts: { cutoff: number; limit: number }): Promise<PendingRow[]>
+  loadState(id: number): Promise<{ status: LogStatus; attempts: number } | null>
+  /**
+   * Atomically take ownership of one generation attempt. Returns the 1-based
+   * attempt number, or `null` when the row is absent, no longer `Created`, or
+   * has already spent its `maxAttempts` budget.
+   *
+   * This is a lease, not a read: `loadState` would let two concurrent
+   * deliveries of the same `logId` both pass a status check and both pay for
+   * an image. The single conditional `UPDATE ... RETURNING` makes the budget
+   * enforceable, and bumping `updatedAt` in the same statement renews the
+   * staleness lease the sweeper reads.
+   */
+  claim(id: number, maxAttempts: number): Promise<{ attempt: number } | null>
+  /** Bump `updatedAt` on still-pending rows to renew their sweeper lease. */
+  touchPending(ids: number[]): Promise<void>
+  /** Put a row back in the generation queue's reach with a fresh budget. */
+  requeueForRetry(id: number): Promise<{ id: number } | null>
+  /**
+   * Terminal writes, both fenced on the generation cycle they belong to.
+   *
+   * `forAttempt` is the value `claim` returned. An edit or an operator retry
+   * resets `attempts` to 0, which starts a new cycle — so a write carrying a
+   * stale attempt number belongs to a cycle nobody is waiting for any more and
+   * must not land. Without the fence, generation that finishes *after* a prompt
+   * edit would mark the row done and publish an image built from the old
+   * prompt, and the edit's own queued job would then be refused as
+   * `not-pending`: the user's change silently lost.
+   *
+   * Both return whether the write actually applied. Callers with no claim in
+   * hand (`abandon`, the dead-letter branch) omit `forAttempt`.
+   */
+  markImageGenerated(id: number, forAttempt: number): Promise<boolean>
+  markError(id: number, errorText: string, forAttempt?: number): Promise<boolean>
 }
 
 /**
@@ -80,13 +166,25 @@ export interface PipelineDeps {
   aiImage: AiImagePort
   store: ImageStorePort
   repo: LogRepositoryPort
+  queue: QueuePort
   escalator: EscalatorPort
   /** Optional — defaults to the global `logger`. Tests can inject a spy. */
   logger?: Logger
 }
 
 export interface ImagePipeline {
-  submit(input: SubmitInput): Promise<{ id: number; report: PipelineReport }>
-  generateImageFor(logId: number): Promise<PipelineReport>
-  drain(): Promise<{ processed: number; failed: number }>
+  /** Insert + link categories + enqueue. Never generates inline. */
+  submit(input: SubmitInput): Promise<SubmitResult>
+  /** Fire-and-forget enqueue. Never throws; returns `false` and logs instead. */
+  enqueue(logId: number, source: EnqueueSource): Promise<boolean>
+  /** Reset a row to `Created` with a fresh budget, then enqueue it. */
+  retry(logId: number): Promise<{ requeued: boolean; enqueued: boolean }>
+  /** The work itself. Called by the queue consumer. Never throws. */
+  generateImageFor(logId: number, ctx?: AttemptContext): Promise<PipelineReport>
+  /** Bounded batch enqueue of pending rows. Replaces the old `drain()`. */
+  enqueuePending(limit?: number): Promise<{ processed: number }>
+  /** Cron reconciliation: re-enqueue stale rows, abandon exhausted ones. */
+  sweep(options?: { now?: number; limit?: number }): Promise<SweepSummary>
+  /** Force a pending row terminal (`Error`). Used by the dead-letter branch. */
+  abandon(logId: number, reason: string): Promise<PipelineReport>
 }

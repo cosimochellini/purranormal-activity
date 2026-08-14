@@ -2,6 +2,7 @@ export interface LogPostBody {
   title: string
   description: string
   categories: number[]
+  secret: string
 }
 
 export type LogPostResponse =

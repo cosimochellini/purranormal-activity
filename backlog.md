@@ -9,11 +9,11 @@ This backlog is ordered and intentionally excluded from the current migration sc
 4. Add request rate limiting for AI-heavy and notification endpoints (`/api/log/refine`, `/api/log/submit`, `/api/trigger/*`, `/api/telegram/*`).
 5. Add robust env validation at boot (zod schema + fail-fast startup errors).
 6. Add auth/authorization layer for edit/admin actions (instead of secret-only form flow).
-7. Replace polling-based image refresh (500ms reload) with a less expensive status update mechanism.
-8. Migrate image generation orchestration from trigger+redeploy to a proper job queue/workflow.
+7. Replace polling-based image refresh with a push mechanism. *(Partially done: the 500ms reload is gone; `ImageStatusPoller` now re-runs the route loader on a 3s/6s/12s backoff, capped at ~3.5 min. A real push — Durable Object + WebSocket, or SSE — is still open.)*
+8. ~~Migrate image generation orchestration from trigger+redeploy to a proper job queue/workflow.~~ **Done** — Cloudflare Queues (`purranormal-image-jobs`) with one retry, a dead-letter consumer and a 5-minute cron sweeper.
 9. Add observability stack: structured logging, error reporting, trace IDs, request metrics.
 10. Add production runbooks for incidents (OpenAI failures, Turso outages, R2 upload errors, Telegram failures).
-11. Add retry/backoff policies and idempotency keys for write endpoints.
+11. Add retry/backoff policies and idempotency keys for write endpoints. *(Image generation is covered: atomic per-row attempt claim + one queue retry + retryability classification. The other write endpoints are not.)*
 12. Add DB migration safety flow (staging-like checks, rollback strategy, schema drift detection).
 13. Introduce stricter TypeScript project boundaries and shared API contract modules.
 14. Revisit `npm version patch` on each `dev` run (high noise in versioning).
@@ -33,9 +33,17 @@ This backlog is ordered and intentionally excluded from the current migration sc
 6. Add admin/category management UX for missing categories flow (review/approve/edit).
 7. Add event timeline/history features and richer sorting dimensions.
 8. Improve notification UX (delivery feedback, retries, history, per-channel controls).
-9. Add user-facing status for image generation pipeline (queued/processing/failed/retry).
+9. Add user-facing status for image generation pipeline (queued/processing/failed/retry). *(The data now exists — `log.attempts` plus the `Created`/`Error` status — but `LogStatus` deliberately stayed at 3 values, so the UI still shows one undifferentiated "generating" overlay.)*
 10. Add localization strategy if multilingual support becomes relevant.
 11. Plan and execute domain transition from legacy `*.pages.dev` endpoint (redirects/custom domain strategy).
+
+### New (from the queue migration)
+1. Alert on queue backlog and dead-letter depth — nothing currently notices if the consumer stops keeping up.
+2. `POST /api/log` now requires the shared `SECRET` (the sweeper made it a free recurring OpenAI amplifier otherwise), but it still creates `Created` rows with no `imageDescription` that no client calls. Consider deleting it outright.
+3. A manual `POST /api/upload/[id]` that races an in-flight generation for the same row can be overwritten: the consumer's `store.put` writes the same R2 key and the upload's status flip does not cancel the claim already granted. Narrow window, no data loss beyond the cover itself.
+4. `/api/trigger/[id]`'s secret is the same shared password as the content endpoints; a real admin auth layer is still item 6 above.
+5. Surface `log.attempts` in the UI so a retrying row is distinguishable from a fresh one.
+6. `db/schema.ts` drifts from the live Turso `log` table, which still has a `placeholder` column. That drift makes `drizzle-kit push` stop on an interactive "was it renamed?" prompt for any new `log` column.
 
 ## 3) Documentation Backlog
 1. Add an architecture decision record (ADR) for the migration choices and tradeoffs.

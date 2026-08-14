@@ -4,6 +4,7 @@ import { ARRAY_LIMITS, CHARACTER_LIMITS, VALIDATION_MESSAGES } from '@/constants
 import { LogStatus } from '@/data/enum/logStatus'
 import { log, logCategory } from '@/db/schema'
 import { db } from '@/drizzle'
+import { serverEnv } from '@/env/server'
 import { defineHandlers, method } from '@/services/route/defineHandlers'
 import type { LogPostBody, LogPostResponse } from '@/types/api/log'
 import { ok } from '@/utils/http'
@@ -22,6 +23,18 @@ const logFormSchema = z.object({
   categories: z
     .array(z.number())
     .min(ARRAY_LIMITS.MIN_REQUIRED, VALIDATION_MESSAGES.CATEGORIES_REQUIRED),
+  // Gated for the same reason as `/api/script` and `/api/trigger/[id]`: this
+  // endpoint inserts rows with status `Created`, and the cron sweeper now picks
+  // those up and pays for an image. Without a gate it is a free, recurring
+  // amplifier for the OpenAI bill — the one open door that would defeat the
+  // gates on every other entry point. Every other write endpoint (submit, PUT,
+  // DELETE) already required this.
+  secret: z
+    .string()
+    .min(1, VALIDATION_MESSAGES.SECRET_REQUIRED)
+    .refine((val) => val.toLowerCase() === serverEnv.secret, {
+      message: VALIDATION_MESSAGES.SECRET_INVALID,
+    }),
 })
 
 const FALLBACK_COPY = 'Failed to create log. Please try again.'
@@ -55,11 +68,15 @@ export const Route = createFileRoute('/api/log')({
           body: logFormSchema,
           reporter,
           handler: async ({ body }) => {
+            // `secret` is destructured OUT rather than spread through: it is a
+            // credential, not a column, and `...body` would carry it into the
+            // insert.
+            const { secret: _secret, ...draft } = body
             try {
               const [created] = await db
                 .insert(log)
                 .values({
-                  ...body,
+                  ...draft,
                   createdAt: Date.now(),
                   updatedAt: Date.now(),
                   status: LogStatus.Created,

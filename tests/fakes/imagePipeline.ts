@@ -12,6 +12,7 @@ import type {
   PipelineDeps,
 } from '@/services/imagePipeline/ports'
 import type { AIResult } from '@/services/storyForge'
+import { createInMemoryQueue, type InMemoryQueue } from './queue'
 
 // In-memory implementations of the four pipeline ports plus a
 // `createTestPipeline` helper that wires them together. Used by
@@ -119,6 +120,8 @@ interface InMemoryRow extends LogRow {
   title: string
   categoryIds: number[]
   error: string | null
+  attempts: number
+  updatedAt: number
 }
 
 export interface InMemoryRepoSeed {
@@ -129,6 +132,8 @@ export interface InMemoryRepoSeed {
   status?: LogStatus
   categoryIds?: number[]
   error?: string | null
+  attempts?: number
+  updatedAt?: number
 }
 
 export interface InMemoryLogRepository extends LogRepositoryPort {
@@ -137,20 +142,30 @@ export interface InMemoryLogRepository extends LogRepositoryPort {
   findRow(id: number): InMemoryRow | undefined
   setInsertThrow(err: unknown): void
   setLinkThrow(err: unknown): void
-  setLoadStatusThrow(err: unknown): void
+  setLoadStateThrow(err: unknown): void
+  setClaimThrow(err: unknown): void
   setMarkGeneratedThrow(err: unknown): void
   setMarkErrorThrow(err: unknown): void
 }
 
-export const createInMemoryLogRepository = (): InMemoryLogRepository => {
+/**
+ * `now` is injectable so sweeper cutoffs are exact instead of racing the
+ * wall clock.
+ */
+export const createInMemoryLogRepository = (
+  options: { now?: () => number } = {},
+): InMemoryLogRepository => {
+  const now = options.now ?? (() => Date.now())
   const rowsById = new Map<number, InMemoryRow>()
   let nextId = 1
   let insertThrow: unknown
   let insertShouldThrow = false
   let linkThrow: unknown
   let linkShouldThrow = false
-  let loadStatusThrow: unknown
-  let loadStatusShouldThrow = false
+  let loadStateThrow: unknown
+  let loadStateShouldThrow = false
+  let claimThrow: unknown
+  let claimShouldThrow = false
   let markGeneratedThrow: unknown
   let markGeneratedShouldThrow = false
   let markErrorThrow: unknown
@@ -168,6 +183,8 @@ export const createInMemoryLogRepository = (): InMemoryLogRepository => {
         status: LogStatus.Created,
         categoryIds: [],
         error: null,
+        attempts: 0,
+        updatedAt: now(),
       })
       return { id }
     },
@@ -190,35 +207,84 @@ export const createInMemoryLogRepository = (): InMemoryLogRepository => {
       }
     },
 
-    async findFirstPending() {
-      const ids = Array.from(rowsById.keys()).sort((a, b) => a - b)
-      for (const id of ids) {
-        const row = rowsById.get(id)
-        if (row && row.status === LogStatus.Created) return { id: row.id }
-      }
-      return null
+    async findPending(limit) {
+      return Array.from(rowsById.values())
+        .filter((row) => row.status === LogStatus.Created)
+        .sort((a, b) => a.id - b.id)
+        .slice(0, limit)
+        .map((row) => ({ id: row.id }))
     },
 
-    async loadStatus(id) {
-      if (loadStatusShouldThrow) throw loadStatusThrow
+    async findStalePending({ cutoff, limit }) {
+      return Array.from(rowsById.values())
+        .filter((row) => row.status === LogStatus.Created && row.updatedAt < cutoff)
+        .sort((a, b) => a.updatedAt - b.updatedAt || a.id - b.id)
+        .slice(0, limit)
+        .map((row) => ({ id: row.id, attempts: row.attempts }))
+    },
+
+    async loadState(id) {
+      if (loadStateShouldThrow) throw loadStateThrow
       const row = rowsById.get(id)
       if (!row) return null
-      return { status: row.status }
+      return { status: row.status, attempts: row.attempts }
     },
 
-    async markImageGenerated(id) {
+    // Mirrors the single conditional UPDATE ... RETURNING of the Drizzle
+    // adapter: same predicate, same post-increment return value.
+    async claim(id, maxAttempts) {
+      if (claimShouldThrow) throw claimThrow
+      const row = rowsById.get(id)
+      if (!row) return null
+      if (row.status !== LogStatus.Created) return null
+      if (row.attempts >= maxAttempts) return null
+      row.attempts += 1
+      row.updatedAt = now()
+      return { attempt: row.attempts }
+    },
+
+    async touchPending(ids) {
+      for (const id of ids) {
+        const row = rowsById.get(id)
+        if (row && row.status === LogStatus.Created) row.updatedAt = now()
+      }
+    },
+
+    async requeueForRetry(id) {
+      const row = rowsById.get(id)
+      if (!row) return null
+      row.status = LogStatus.Created
+      row.attempts = 0
+      row.error = null
+      row.updatedAt = now()
+      return { id: row.id }
+    },
+
+    // Mirrors the Drizzle adapter exactly, fence included: a fake that is more
+    // permissive than its adapter makes the suite lie about the very race the
+    // fence exists for.
+    async markImageGenerated(id, forAttempt) {
       if (markGeneratedShouldThrow) throw markGeneratedThrow
       const row = rowsById.get(id)
-      if (row) row.status = LogStatus.ImageGenerated
+      if (!row || row.status !== LogStatus.Created || row.attempts !== forAttempt) return false
+      row.status = LogStatus.ImageGenerated
+      row.error = null
+      row.updatedAt = now()
+      return true
     },
 
-    async markError(id, errorText) {
+    async markError(id, errorText, forAttempt) {
       if (markErrorShouldThrow) throw markErrorThrow
       const row = rowsById.get(id)
-      if (row) {
-        row.status = LogStatus.Error
-        row.error = errorText
-      }
+      // Mirrors the Drizzle adapter's `AND status = 'Created'` guard: only a
+      // pending row can be terminated, so a caller that could not read the row
+      // first cannot clobber one that already succeeded.
+      if (!row || row.status !== LogStatus.Created) return false
+      if (forAttempt !== undefined && row.attempts !== forAttempt) return false
+      row.status = LogStatus.Error
+      row.error = errorText
+      row.updatedAt = now()
+      return true
     },
 
     preload(rows) {
@@ -231,6 +297,8 @@ export const createInMemoryLogRepository = (): InMemoryLogRepository => {
           status: seed.status ?? LogStatus.Created,
           categoryIds: seed.categoryIds ?? [],
           error: seed.error ?? null,
+          attempts: seed.attempts ?? 0,
+          updatedAt: seed.updatedAt ?? now(),
         }
         rowsById.set(row.id, row)
         if (row.id >= nextId) nextId = row.id + 1
@@ -253,9 +321,13 @@ export const createInMemoryLogRepository = (): InMemoryLogRepository => {
       linkThrow = err
       linkShouldThrow = true
     },
-    setLoadStatusThrow(err) {
-      loadStatusThrow = err
-      loadStatusShouldThrow = true
+    setLoadStateThrow(err) {
+      loadStateThrow = err
+      loadStateShouldThrow = true
+    },
+    setClaimThrow(err) {
+      claimThrow = err
+      claimShouldThrow = true
     },
     setMarkGeneratedThrow(err) {
       markGeneratedThrow = err
@@ -288,14 +360,19 @@ export interface TestPipeline {
   aiImage: InMemoryAiImage
   store: InMemoryImageStore
   repo: InMemoryLogRepository
+  queue: InMemoryQueue
   escalator: RecordingEscalator
 }
 
-export const createTestPipeline = (overrides: Partial<PipelineDeps> = {}): TestPipeline => {
+export const createTestPipeline = (
+  overrides: Partial<PipelineDeps> = {},
+  options: { now?: () => number } = {},
+): TestPipeline => {
   const aiText = createInMemoryAiText()
   const aiImage = createInMemoryAiImage()
   const store = createInMemoryImageStore()
-  const repo = createInMemoryLogRepository()
+  const repo = createInMemoryLogRepository(options)
+  const queue = createInMemoryQueue()
   const escalator = createRecordingEscalator()
 
   const pipeline = createImagePipeline({
@@ -303,11 +380,12 @@ export const createTestPipeline = (overrides: Partial<PipelineDeps> = {}): TestP
     aiImage: overrides.aiImage ?? aiImage,
     store: overrides.store ?? store,
     repo: overrides.repo ?? repo,
+    queue: overrides.queue ?? queue,
     escalator: overrides.escalator ?? escalator,
     logger: overrides.logger,
   })
 
-  return { pipeline, aiText, aiImage, store, repo, escalator }
+  return { pipeline, aiText, aiImage, store, repo, queue, escalator }
 }
 
 // Re-export the noop escalator so test setup files can wire it in once.

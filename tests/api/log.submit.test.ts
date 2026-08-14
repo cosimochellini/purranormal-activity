@@ -17,13 +17,14 @@ vi.mock('@/services/storyForge', () => ({
 
 vi.mock('@/services/imagePipeline', () => ({
   imagePipeline: {
-    submit: vi.fn(async () => ({ id: 1, report: { status: 'success', logId: 1 } })),
+    submit: vi.fn(async () => ({ id: 1, enqueued: true })),
   },
 }))
 
 import { imagePipeline } from '@/services/imagePipeline'
 import { storyForge } from '@/services/storyForge'
 import { Route } from '@/start/routes/api/log/submit'
+import { logger } from '@/utils/logger'
 
 const POST = Route.options.server?.handlers?.POST as (ctx: {
   request: Request
@@ -45,12 +46,7 @@ describe('POST /api/log/submit', () => {
     vi.mocked(storyForge.categories).mockResolvedValue([])
     vi.mocked(imagePipeline.submit).mockReset()
     vi.mocked(imagePipeline.submit).mockImplementation(
-      async ({ draft }) =>
-        ({
-          id: 1,
-          report: { status: 'success', logId: 1 },
-          draft,
-        }) as never,
+      async ({ draft }) => ({ id: 1, enqueued: true, draft }) as never,
     )
   })
 
@@ -89,10 +85,7 @@ describe('POST /api/log/submit', () => {
         { id: 2, name: 'Other' },
       ])
 
-      vi.mocked(imagePipeline.submit).mockResolvedValueOnce({
-        id: 123,
-        report: { status: 'success', logId: 123 },
-      })
+      vi.mocked(imagePipeline.submit).mockResolvedValueOnce({ id: 123, enqueued: true })
 
       const res = await callPost({
         description: 'A real description that is long enough.',
@@ -131,10 +124,7 @@ describe('POST /api/log/submit', () => {
       })
 
       vi.mocked(storyForge.categories).mockResolvedValueOnce([{ id: 1, name: 'Real' }])
-      vi.mocked(imagePipeline.submit).mockResolvedValueOnce({
-        id: 5,
-        report: { status: 'success', logId: 5 },
-      })
+      vi.mocked(imagePipeline.submit).mockResolvedValueOnce({ id: 5, enqueued: true })
 
       const res = await callPost({
         description: 'd'.repeat(20),
@@ -264,7 +254,7 @@ describe('POST /api/log/submit', () => {
       expect(imagePipeline.submit).not.toHaveBeenCalled()
     })
 
-    it('still returns success when imagePipeline.submit resolves with a non-success outcome (does not poison the response)', async () => {
+    it('still returns success when the row was saved but the enqueue failed (does not poison the response), and logs it', async () => {
       vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
         ok: true,
         value: {
@@ -277,8 +267,10 @@ describe('POST /api/log/submit', () => {
       vi.mocked(storyForge.categories).mockResolvedValueOnce([])
       vi.mocked(imagePipeline.submit).mockResolvedValueOnce({
         id: 9,
-        report: { status: 'failed', logId: 9, message: 'downstream' },
+        enqueued: false,
+        message: 'Failed to enqueue image generation',
       })
+      vi.mocked(logger.error).mockClear()
 
       const res = await callPost({
         description: 'd'.repeat(20),
@@ -289,6 +281,28 @@ describe('POST /api/log/submit', () => {
       const body = (await res.json()) as { success: true; id: number }
       expect(body.success).toBe(true)
       expect(body.id).toBe(9)
+      expect(res.headers.get('X-Invalidate')).toBe('logs,log:9')
+      // The user's event IS saved and the sweeper will pick it up, but a
+      // silent enqueue failure means the queue itself is unreachable.
+      expect(vi.mocked(logger.error)).toHaveBeenCalledWith(
+        'submit: log 9 was saved but not enqueued',
+      )
+    })
+
+    it('enqueues exactly once on the happy path', async () => {
+      // Guards the assertion gap: every other test here pins `success: true`
+      // regardless of the pipeline result, so a broken producer binding would
+      // otherwise ship green.
+      vi.mocked(storyForge.logDetails).mockResolvedValueOnce({
+        ok: true,
+        value: { title: 't', description: 'd', imageDescription: 'i', categories: [] },
+      })
+      vi.mocked(storyForge.categories).mockResolvedValueOnce([])
+      vi.mocked(imagePipeline.submit).mockResolvedValueOnce({ id: 11, enqueued: true })
+
+      await callPost({ description: 'd'.repeat(20), answers: [], secret: 'test-secret' })
+
+      expect(imagePipeline.submit).toHaveBeenCalledOnce()
     })
 
     it('still maps unexpected throws (non-AIResult) to a friendly general message', async () => {

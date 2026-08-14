@@ -132,6 +132,9 @@ export const Route = createFileRoute('/api/log/$id')({
 
             const { title, description, categories, imageDescription } = result.data
 
+            // Regenerate image only when the prompt changes.
+            const promptChanged = imageDescription !== currentLog.imageDescription
+
             const [updated] = await db
               .update(log)
               .set({
@@ -139,11 +142,10 @@ export const Route = createFileRoute('/api/log/$id')({
                 description,
                 imageDescription,
                 updatedAt: Date.now(),
-                // Regenerate image only when the prompt changes.
-                status:
-                  imageDescription !== currentLog.imageDescription
-                    ? LogStatus.Created
-                    : currentLog.status,
+                status: promptChanged ? LogStatus.Created : currentLog.status,
+                // A new prompt is a new generation cycle: fresh attempt budget,
+                // and the previous failure text no longer describes this row.
+                ...(promptChanged ? { attempts: 0, error: null } : {}),
               })
               .where(eq(log.id, id))
               .returning()
@@ -156,9 +158,13 @@ export const Route = createFileRoute('/api/log/$id')({
                 .values(categories.map((category) => ({ logId: id, categoryId: category })))
             }
 
-            // Pipeline owns its own outcome logging — no need to thread
-            // the report back through this route's response.
-            await imagePipeline.generateImageFor(updated.id)
+            // Enqueue instead of generating inline. The gate is new: the old
+            // unconditional call relied on the pipeline's own `not-pending`
+            // skip, which under a queue costs a message plus a DB round trip
+            // to reach the same conclusion.
+            if (promptChanged || currentLog.status === LogStatus.Created) {
+              await imagePipeline.enqueue(updated.id, 'update')
+            }
 
             const data: LogIdPutResponse = { success: true, data: updated }
             return { data, invalidate: ['logs', `log:${id}`] }

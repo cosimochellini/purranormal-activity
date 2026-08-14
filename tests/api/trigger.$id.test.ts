@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/services/imagePipeline', () => ({
   imagePipeline: {
-    generateImageFor: vi.fn(),
+    retry: vi.fn(),
   },
 }))
 
@@ -10,78 +10,86 @@ import { imagePipeline } from '@/services/imagePipeline'
 import { Route } from '@/start/routes/api/trigger/$id'
 
 const POST = Route.options.server?.handlers?.POST as (ctx: {
+  request: Request
   params: { id: string }
 }) => Promise<Response>
 
-const callPost = (id: string) => POST({ params: { id } })
+// `test-setup.ts` stubs SECRET=test-secret.
+const callPost = (id: string, body: unknown = { secret: 'test-secret' }) =>
+  POST({
+    request: new Request(`http://test/api/trigger/${id}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+    params: { id },
+  })
 
 describe('POST /api/trigger/$id', () => {
   beforeEach(() => {
-    vi.mocked(imagePipeline.generateImageFor).mockReset()
+    vi.mocked(imagePipeline.retry).mockReset()
   })
 
-  it('rejects a non-numeric id without calling the pipeline or emitting X-Invalidate', async () => {
+  it.each([
+    ['a missing secret', {}],
+    ['a wrong secret', { secret: 'nope' }],
+  ])('rejects %s without touching the pipeline', async (_label, body) => {
+    // Enqueueing is cheap for the caller and expensive for us: every message
+    // becomes a paid image generation.
+    const res = await callPost('7', body)
+    const parsed = (await res.json()) as { success: boolean; errors: Record<string, string[]> }
+
+    expect(parsed.success).toBe(false)
+    expect(parsed.errors.secret).toBeDefined()
+    expect(imagePipeline.retry).not.toHaveBeenCalled()
+  })
+
+  it('rejects a non-numeric id without calling the pipeline', async () => {
     const res = await callPost('abc')
+
     expect(await res.json()).toEqual({ success: false, error: 'Invalid log id' })
     expect(res.headers.get('X-Invalidate')).toBeNull()
-    expect(imagePipeline.generateImageFor).not.toHaveBeenCalled()
+    expect(imagePipeline.retry).not.toHaveBeenCalled()
   })
 
-  it('returns success and emits X-Invalidate on report.status === "success"', async () => {
-    vi.mocked(imagePipeline.generateImageFor).mockResolvedValueOnce({
-      status: 'success',
-      logId: 7,
-    })
+  it('requeues and enqueues, emitting X-Invalidate so the UI shows the pending state', async () => {
+    vi.mocked(imagePipeline.retry).mockResolvedValueOnce({ requeued: true, enqueued: true })
 
     const res = await callPost('7')
+
     expect(await res.json()).toEqual({ success: true })
     expect(res.headers.get('X-Invalidate')).toBe('log:7')
-    expect(imagePipeline.generateImageFor).toHaveBeenCalledWith(7)
+    expect(imagePipeline.retry).toHaveBeenCalledWith(7)
   })
 
-  it('returns the report.message and emits X-Invalidate on report.status === "failed"', async () => {
-    vi.mocked(imagePipeline.generateImageFor).mockResolvedValueOnce({
-      status: 'failed',
-      logId: 7,
-      message: 'AI down',
-    })
+  it('reports not-found when the row does not exist', async () => {
+    vi.mocked(imagePipeline.retry).mockResolvedValueOnce({ requeued: false, enqueued: false })
 
     const res = await callPost('7')
-    expect(await res.json()).toEqual({ success: false, error: 'AI down' })
-    expect(res.headers.get('X-Invalidate')).toBe('log:7')
-  })
 
-  it('omits X-Invalidate on skipped:not-found', async () => {
-    vi.mocked(imagePipeline.generateImageFor).mockResolvedValueOnce({
-      status: 'skipped',
-      logId: 7,
-      reason: 'not-found',
-    })
-
-    const res = await callPost('7')
     expect(await res.json()).toEqual({ success: false, error: 'not-found' })
     expect(res.headers.get('X-Invalidate')).toBeNull()
   })
 
-  it('emits X-Invalidate on skipped:not-pending (the row exists, the loader still revalidates)', async () => {
-    vi.mocked(imagePipeline.generateImageFor).mockResolvedValueOnce({
-      status: 'skipped',
-      logId: 7,
-      reason: 'not-pending',
-    })
+  it('surfaces an enqueue failure but still invalidates (the row is pending again)', async () => {
+    vi.mocked(imagePipeline.retry).mockResolvedValueOnce({ requeued: true, enqueued: false })
 
     const res = await callPost('7')
-    expect(await res.json()).toEqual({ success: false, error: 'not-pending' })
+
+    expect(await res.json()).toEqual({
+      success: false,
+      error: 'Failed to enqueue image generation',
+    })
     expect(res.headers.get('X-Invalidate')).toBe('log:7')
   })
 
-  it('falls back to "Unknown error" when report.message is missing on a failed status', async () => {
-    vi.mocked(imagePipeline.generateImageFor).mockResolvedValueOnce({
-      status: 'failed',
-      logId: 7,
-    })
+  it('routes a thrown retry() through the reporter', async () => {
+    vi.mocked(imagePipeline.retry).mockRejectedValueOnce(new Error('db down'))
 
     const res = await callPost('7')
-    expect(await res.json()).toEqual({ success: false, error: 'Unknown error' })
+    const body = (await res.json()) as { success: false; error: string }
+
+    expect(body.success).toBe(false)
+    expect(body.error).toMatch(/pipeline failed|temporarily unavailable/i)
   })
 })
