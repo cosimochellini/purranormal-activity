@@ -1,4 +1,4 @@
-import type { AnyRouteMatch } from '@tanstack/react-router'
+import type { AnyRouteMatch, AnyRouter } from '@tanstack/react-router'
 
 export type InvalidationTag = 'logs' | `log:${number}`
 
@@ -38,10 +38,13 @@ export function matchesTags(
   return false
 }
 
-export function parseInvalidateHeader(value: string | null): InvalidationTag[] {
-  if (!value) return []
-  return value
-    .split(',')
-    .map((token) => token.trim())
-    .filter((token): token is InvalidationTag => token.length > 0)
+/**
+ * Re-run the loaders of the routes a write made stale. Called by the UI after a
+ * successful server-function mutation.
+ */
+export function invalidateTags(
+  router: Pick<AnyRouter, 'invalidate'>,
+  tags: readonly InvalidationTag[],
+): Promise<void> {
+  return router.invalidate({ filter: (match) => matchesTags(match, tags) })
 }

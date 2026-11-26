@@ -1,7 +1,7 @@
 import type { AIError, AIResult } from '@/services/storyForge'
 
 /**
- * Per-route error reporter for /api/log/* handlers.
+ * Error reporter for the server-function actions and the operator API routes.
  *
  * Two responsibilities, two layers:
  *

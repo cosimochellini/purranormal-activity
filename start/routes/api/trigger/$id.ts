@@ -2,11 +2,12 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { VALIDATION_MESSAGES } from '@/constants'
 import { serverEnv } from '@/env/server'
+import { purgePages } from '@/services/edgeCache.server'
+import { createFriendly, type FriendlyMessages } from '@/services/friendly'
 import { imagePipeline } from '@/services/imagePipeline'
 import { defineHandlers, method } from '@/services/route/defineHandlers'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { createFriendly, type FriendlyMessages } from '../log/_friendly'
 
 // Operator endpoint: "regenerate this one's image, now". It resets the row to
 // `Created` with a fresh attempt budget and enqueues it — a plain enqueue would
@@ -55,7 +56,7 @@ export const Route = createFileRoute('/api/trigger/$id')({
         POST: method<{ secret: string }, undefined, undefined, TriggerResponse>({
           body: triggerSchema,
           reporter,
-          handler: async (_input, { params }) => {
+          handler: async (_input, { params, request }) => {
             const logId = Number(params.id)
 
             if (Number.isNaN(logId)) {
@@ -68,14 +69,14 @@ export const Route = createFileRoute('/api/trigger/$id')({
               return { data: { success: false as const, error: 'not-found' } }
             }
 
-            // The row is `Created` again either way, so the loaders should
-            // re-read it: the UI switches to the generating state, and the
-            // sweeper recovers the row if the enqueue itself failed.
+            // The row is `Created` again either way (the sweeper recovers it
+            // if the enqueue itself failed), so a cached detail page is stale.
+            await purgePages(new URL(request.url).origin, ['/', `/${logId}`])
+
             return {
               data: enqueued
                 ? { success: true as const }
                 : { success: false as const, error: 'Failed to enqueue image generation' },
-              invalidate: [`log:${logId}`] as const,
             }
           },
         }),

@@ -374,22 +374,6 @@ describe('categories cache lifecycle (via storyForge)', () => {
     // production adapter.
     expect(cats.fetched).toBe(1)
   })
-
-  it('re-fetches after invalidateCategories()', async () => {
-    const cats = fakeCategoriesPort()
-    const llm = recordingLlm([
-      JSON.stringify({ title: 'a', description: 'b', categories: [], imageDescription: 'c' }),
-      JSON.stringify({ title: 'd', description: 'e', categories: [], imageDescription: 'f' }),
-    ])
-    const sf = createStoryForge({ categories: cats, llm, randomStyle: fakeStyle })
-
-    await sf.logDetails('event', [])
-    expect(cats.fetched).toBe(1)
-
-    sf.invalidateCategories()
-    await sf.logDetails('event', [])
-    expect(cats.fetched).toBe(2)
-  })
 })
 
 // ---------- prompt snapshots ----------

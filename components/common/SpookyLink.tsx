@@ -1,19 +1,11 @@
+import { createLink, type LinkComponent } from '@tanstack/react-router'
 import cn from 'classnames'
-import type { FC, ReactNode } from 'react'
-import { TransitionLink } from './TransitionLink'
+import type { ComponentProps } from 'react'
 
-interface SpookyLinkProps {
-  href: string
-  children: ReactNode
-  className?: string
-  prefetch?: boolean
-}
-
-export const SpookyLink: FC<SpookyLinkProps> = ({ href, children, className, prefetch }) => {
+function SpookyAnchor({ className, children, ...props }: ComponentProps<'a'>) {
   return (
-    <TransitionLink
-      href={href}
-      prefetch={prefetch}
+    <a
+      {...props}
       className={cn(
         'group relative transform transition-all duration-300',
         'hover:scale-110 hover:text-purple-300',
@@ -27,6 +19,12 @@ export const SpookyLink: FC<SpookyLinkProps> = ({ href, children, className, pre
           'bg-purple-500/20 opacity-0 group-hover:opacity-100',
         )}
       />
-    </TransitionLink>
+    </a>
   )
 }
+
+const SpookyRouterLink = createLink(SpookyAnchor)
+
+export const SpookyLink: LinkComponent<typeof SpookyAnchor> = (props) => (
+  <SpookyRouterLink viewTransition {...props} />
+)

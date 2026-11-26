@@ -28,10 +28,8 @@ export function createDefaultCategories(
       // We deliberately do NOT memoise an empty result — a fresh
       // environment whose `category` table has not been seeded yet should
       // re-query on each call until at least one row exists, so seed-time
-      // races (or admin POST /api/categories before the cache populates)
-      // do not strand the user with a synthetic empty list. Once
-      // categories exist, the cache reuses them and subsequent
-      // invalidate() calls (e.g. from POST /api/categories) drop it.
+      // races do not strand the user with a synthetic empty list. Once
+      // categories exist, the cache reuses them until invalidate() drops it.
       if (cache && cache.length > 0) return cloneRows(cache)
       if (inFlight) return inFlight.then(cloneRows)
 

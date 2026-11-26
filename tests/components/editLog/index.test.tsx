@@ -1,30 +1,24 @@
 /** @vitest-environment happy-dom */
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import * as React from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { VALIDATION_MESSAGES } from '@/constants'
 
-const { fetcherImpls } = vi.hoisted(() => ({
-  fetcherImpls: {
-    update: vi.fn(),
-    delete: vi.fn(),
-    upload: vi.fn(),
-  },
+const { updateLog, deleteLog, uploadCover, invalidateTags, router, navigate } = vi.hoisted(() => ({
+  updateLog: vi.fn(),
+  deleteLog: vi.fn(),
+  uploadCover: vi.fn(),
+  invalidateTags: vi.fn(),
+  router: { invalidate: vi.fn() },
+  navigate: vi.fn(),
 }))
 
-vi.mock('@/utils/fetch', () => ({
-  fetcher: (url: string, method?: string) => {
-    if (url === '/api/log/[id]' && method === 'PUT') return fetcherImpls.update
-    if (url === '/api/log/[id]' && method === 'DELETE') return fetcherImpls.delete
-    if (url === '/api/upload/[id]') return fetcherImpls.upload
-    return vi.fn()
-  },
-}))
-
-vi.mock('@tanstack/react-router', () => ({
-  useNavigate: () => vi.fn(async () => {}),
-  useRouter: () => ({ invalidate: vi.fn() }),
-  Link: ({ children, ...rest }: { children: React.ReactNode } & Record<string, unknown>) =>
-    React.createElement('a', rest as Record<string, unknown>, children),
+vi.mock('@/start/services/logs', () => ({ updateLog, deleteLog, uploadCover }))
+vi.mock('@tanstack/react-start', () => ({ useServerFn: (fn: unknown) => fn }))
+vi.mock('@/utils/invalidation', () => ({ invalidateTags }))
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@tanstack/react-router')>()),
+  useNavigate: () => navigate,
+  useRouter: () => router,
 }))
 
 // Stub heavy children
@@ -51,9 +45,7 @@ const initialData = {
 }
 
 beforeEach(() => {
-  fetcherImpls.update.mockReset()
-  fetcherImpls.delete.mockReset()
-  fetcherImpls.upload.mockReset()
+  for (const fn of [updateLog, deleteLog, uploadCover, invalidateTags, navigate]) fn.mockReset()
 })
 
 afterEach(() => {
@@ -64,7 +56,7 @@ describe('EditLogForm — Bug #8 regression', () => {
   it('delete failure resets only submitting.delete, not submitting.form', async () => {
     // Form is in-flight (slow promise) so submitting.form = true
     let resolveUpdate: (v: unknown) => void = () => {}
-    fetcherImpls.update.mockImplementationOnce(
+    updateLog.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
           resolveUpdate = resolve
@@ -72,7 +64,7 @@ describe('EditLogForm — Bug #8 regression', () => {
     )
 
     // Delete fails immediately
-    fetcherImpls.delete.mockRejectedValueOnce(new Error('delete failed'))
+    deleteLog.mockRejectedValueOnce(new Error('delete failed'))
 
     const { container } = render(<EditLogForm initialData={initialData as never} />)
 
@@ -84,7 +76,7 @@ describe('EditLogForm — Bug #8 regression', () => {
     fireEvent.click(findSaveSubmitBtn())
 
     await waitFor(() => {
-      expect(fetcherImpls.update).toHaveBeenCalled()
+      expect(updateLog).toHaveBeenCalled()
     })
 
     // Click Delete → submitting.delete becomes true → fails → finally resets ONLY delete
@@ -92,7 +84,7 @@ describe('EditLogForm — Bug #8 regression', () => {
 
     // Wait for delete handler to settle
     await waitFor(() => {
-      expect(fetcherImpls.delete).toHaveBeenCalled()
+      expect(deleteLog).toHaveBeenCalled()
     })
 
     // After delete-fail finally: submitting.form must remain true (not reset).
@@ -133,14 +125,96 @@ describe('EditLogForm — cover upload', () => {
   })
 
   it("shows the server's error text when the upload is rejected", async () => {
-    fetcherImpls.upload.mockRejectedValueOnce(
-      new Response(JSON.stringify({ error: 'Invalid secret' }), { status: 400 }),
-    )
+    uploadCover.mockResolvedValueOnce({ success: false, error: 'Invalid image' })
     const { container } = render(<EditLogForm initialData={initialData as never} />)
 
     typeSecret()
     pickFile(container)
 
-    expect(await screen.findByText('Invalid secret')).toBeInTheDocument()
+    expect(await screen.findByText('Invalid image')).toBeInTheDocument()
+    expect(navigate).not.toHaveBeenCalled()
+  })
+
+  it('uploads id, file and secret as FormData, then refreshes the log and opens it', async () => {
+    uploadCover.mockResolvedValueOnce({ success: true })
+    const { container } = render(<EditLogForm initialData={initialData as never} />)
+
+    typeSecret()
+    pickFile(container)
+
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith(expect.objectContaining({ to: '/$id' }))
+    })
+    const { data } = uploadCover.mock.calls[0][0] as { data: FormData }
+    expect(data).toBeInstanceOf(FormData)
+    expect(data.get('id')).toBe('1')
+    expect(data.get('secret')).toBe('s3cret')
+    expect((data.get('file') as File).name).toBe('cover.png')
+    expect(invalidateTags).toHaveBeenCalledWith(router, ['logs', 'log:1'])
+  })
+
+  it('renders a thrown SECRET_INVALID under the secret field', async () => {
+    uploadCover.mockRejectedValueOnce(new Error(VALIDATION_MESSAGES.SECRET_INVALID))
+    const { container } = render(<EditLogForm initialData={initialData as never} />)
+
+    typeSecret()
+    pickFile(container)
+
+    const message = await screen.findByText(VALIDATION_MESSAGES.SECRET_INVALID)
+    expect(message.previousElementSibling).toBe(screen.getByPlaceholderText('Secret'))
+    expect(navigate).not.toHaveBeenCalled()
+  })
+})
+
+describe('EditLogForm — update', () => {
+  const save = (container: HTMLElement) =>
+    fireEvent.click(container.querySelector('button[type="submit"]') as HTMLButtonElement)
+
+  it('sends the edited fields plus the secret, then refreshes the log and opens it', async () => {
+    updateLog.mockResolvedValueOnce({ success: true, data: { id: 1 } })
+    const { container } = render(<EditLogForm initialData={initialData as never} />)
+
+    fireEvent.change(screen.getByPlaceholderText('Title'), { target: { value: 'New title' } })
+    fireEvent.change(screen.getByPlaceholderText('Secret'), { target: { value: 's3cret' } })
+    save(container)
+
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith(expect.objectContaining({ to: '/$id' }))
+    })
+    expect(updateLog).toHaveBeenCalledWith({
+      data: {
+        id: 1,
+        title: 'New title',
+        description: 'desc',
+        categories: [],
+        imageDescription: 'img desc',
+        secret: 's3cret',
+      },
+    })
+    expect(invalidateTags).toHaveBeenCalledWith(router, ['logs', 'log:1'])
+  })
+
+  it('renders a thrown SECRET_INVALID under the secret field, not as a form error', async () => {
+    updateLog.mockRejectedValueOnce(new Error(VALIDATION_MESSAGES.SECRET_INVALID))
+    const { container } = render(<EditLogForm initialData={initialData as never} />)
+
+    fireEvent.change(screen.getByPlaceholderText('Secret'), { target: { value: 'nope' } })
+    save(container)
+
+    const message = await screen.findByText(VALIDATION_MESSAGES.SECRET_INVALID)
+    // SpookyInput renders its error as a sibling of the input.
+    expect(message.previousElementSibling).toBe(screen.getByPlaceholderText('Secret'))
+    expect(navigate).not.toHaveBeenCalled()
+    expect(invalidateTags).not.toHaveBeenCalled()
+  })
+
+  it('shows the first field error when the update is rejected', async () => {
+    updateLog.mockResolvedValueOnce({ success: false, errors: { title: ['Title is too short'] } })
+    const { container } = render(<EditLogForm initialData={initialData as never} />)
+
+    save(container)
+
+    expect(await screen.findByText('Title is too short')).toBeInTheDocument()
+    expect(navigate).not.toHaveBeenCalled()
   })
 })

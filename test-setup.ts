@@ -46,10 +46,6 @@ vi.mock('@/utils/logger', () => {
   }
 })
 
-vi.mock('nuqs/adapters/tanstack-router', () => ({
-  NuqsAdapter: ({ children }: { children: unknown }) => children,
-}))
-
 if (!globalThis.fetch || !vi.isMockFunction(globalThis.fetch)) {
   vi.stubGlobal(
     'fetch',

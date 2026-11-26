@@ -4,7 +4,7 @@ import {
   type FriendlyMessages,
   friendlyCopy,
   isAiResultError,
-} from '@/start/routes/api/log/_friendly'
+} from '@/services/friendly'
 
 const baseMessages: FriendlyMessages = {
   AI_UNAVAILABLE: 'AI_UNAVAILABLE',

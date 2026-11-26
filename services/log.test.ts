@@ -1,6 +1,15 @@
+import { gte } from 'drizzle-orm'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LogStatus } from '@/data/enum/logStatus'
+import { log } from '@/db/schema'
 import { SortBy, TimeRange } from '@/types/search'
+import { time } from '@/utils/time'
+
+// Pass-through spy so a test can read the cutoff `getLogs` hands to `gte`.
+vi.mock('drizzle-orm', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('drizzle-orm')>()
+  return { ...actual, gte: vi.fn(actual.gte) }
+})
 
 const { fakeDb } = vi.hoisted(() => {
   // Inline a minimal chainable proxy to avoid `require()` from a hoisted block
@@ -176,5 +185,41 @@ describe('getLogs', () => {
     queueGetLogsResult([], [])
     const result = await getLogs({})
     expect(result).toEqual([])
+  })
+
+  it('computes the time-range cutoff per call, not once at module load', async () => {
+    // A module-level `Date.now()` would freeze at isolate start and drift on a
+    // long-lived Worker: the same window would then return a stale cutoff.
+    const cutoffs: number[] = []
+    const runAt = async (now: number) => {
+      vi.setSystemTime(now)
+      vi.mocked(gte).mockClear()
+      queueGetLogsResult([], [])
+      await getLogs({ timeRange: TimeRange.Day })
+      const createdAtCalls = vi
+        .mocked(gte)
+        .mock.calls.filter(([column]) => column === log.createdAt)
+      expect(createdAtCalls).toHaveLength(1)
+      cutoffs.push(createdAtCalls[0][1] as number)
+    }
+
+    try {
+      const t0 = 1_700_000_000_000
+      const hourLater = t0 + time({ hours: 1 })
+      await runAt(t0)
+      await runAt(hourLater)
+
+      const day = time({ days: 1 })
+      expect(cutoffs).toEqual([t0 - day, hourLater - day])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('adds no createdAt cutoff when the time range is "all"', async () => {
+    queueGetLogsResult([], [])
+    await getLogs({ timeRange: TimeRange.All })
+
+    expect(vi.mocked(gte).mock.calls.some(([column]) => column === log.createdAt)).toBe(false)
   })
 })

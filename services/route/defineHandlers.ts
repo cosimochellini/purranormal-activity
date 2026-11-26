@@ -1,9 +1,8 @@
 import type { ZodType } from 'zod'
 import * as z from 'zod'
+import type { FriendlyReporter } from '@/services/friendly'
 import type { AIResult } from '@/services/storyForge'
-import type { FriendlyReporter } from '@/start/routes/api/log/_friendly'
 import { methodNotAllowed as methodNotAllowedResponse, ok } from '@/utils/http'
-import type { InvalidationTag } from '@/utils/invalidation'
 import { createScopedLogger, type Logger, type LoggerSink } from '@/utils/logger'
 
 /**
@@ -27,10 +26,9 @@ import { createScopedLogger, type Logger, type LoggerSink } from '@/utils/logger
  *          return its `Response` verbatim.
  *   5. Catch any throw → `reporter.guard`'s fromThrown path → return the
  *      reporter's `Response`.
- *   6. Build the success `Response` via `ok<T>(result.data, { invalidate })`.
+ *   6. Build the success `Response` via `ok<T>(result.data)`.
  *
- * Handlers never see the `Response` constructor — `invalidate` is the only
- * response-shape extension surfaced via `RouteResult`.
+ * Handlers never see the `Response` constructor.
  */
 
 export interface ValidationFailure {
@@ -40,7 +38,6 @@ export interface ValidationFailure {
 
 export interface RouteResult<TData> {
   data: TData
-  invalidate?: readonly InvalidationTag[]
 }
 
 export interface RouteContext {
@@ -57,7 +54,7 @@ export interface RouteContext {
  * The handler return type is the union `RouteResult<TData> |
  * AIResult<RouteResult<TData>>` — a single Promise of either shape — so
  * handlers can branch and return mixed shapes (an AI failure passed through
- * bare, plus normal `{ data, invalidate? }` returns).
+ * bare, plus normal `{ data }` returns).
  */
 export interface MethodConfig<
   TBody = undefined,
@@ -320,7 +317,7 @@ export const defineHandlers = <C extends ConfigMapInternal>(
         if (isAI && !isRR) {
           if (handlerResult.ok) {
             const inner = handlerResult.value
-            return ok(inner.data, inner.invalidate ? { invalidate: inner.invalidate } : undefined)
+            return ok(inner.data)
           }
           const ai = methodConfig.reporter.fromAi(handlerResult)
           // `fromAi(!ok)` always returns `{ ok: false, response }` here.
@@ -340,10 +337,7 @@ export const defineHandlers = <C extends ConfigMapInternal>(
         }
 
         const routeResult = handlerResult as RouteResult<unknown>
-        return ok(
-          routeResult.data,
-          routeResult.invalidate ? { invalidate: routeResult.invalidate } : undefined,
-        )
+        return ok(routeResult.data)
       })
   }
 

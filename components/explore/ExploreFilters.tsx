@@ -1,11 +1,47 @@
-import { useExploreFilters } from '../../hooks/useExploreFilters'
-import { SortBy, TimeRange } from '../../types/search'
+import { getRouteApi } from '@tanstack/react-router'
+import { useEffect, useRef, useState } from 'react'
+import type { ExploreSearch } from '@/types/search'
+import { SEARCH_MAX_LENGTH, SortBy, TimeRange } from '../../types/search'
 import { SpookyInput } from '../common/SpookyInput'
 import { SpookySelect } from '../common/SpookySelect'
 import { CategorySelector } from '../editLog/CategorySelector'
 
+const route = getRouteApi('/explore')
+
+const SEARCH_DEBOUNCE_MS = 400
+
 export function ExploreFilters() {
-  const { filters, setFilters } = useExploreFilters()
+  const filters = route.useSearch()
+  const navigate = route.useNavigate()
+  // The box is local state so typing stays instant; the URL (and with it the
+  // loader) follows once the user pauses.
+  const [searchText, setSearchText] = useState(filters.search)
+  // The search value this component last wrote to the URL. A URL change that
+  // doesn't match it came from elsewhere (a nav link, back/forward) and wins.
+  const pushedSearch = useRef(filters.search)
+
+  useEffect(() => {
+    if (filters.search === pushedSearch.current) return
+    pushedSearch.current = filters.search
+    setSearchText(filters.search)
+  }, [filters.search])
+
+  // Any filter change starts over from the first page. `replace` keeps typing
+  // out of the history stack.
+  const setFilters = (patch: Partial<ExploreSearch>) =>
+    navigate({ search: (prev) => ({ ...prev, ...patch, page: 1 }), replace: true })
+
+  useEffect(() => {
+    if (searchText === filters.search) return
+    const timer = setTimeout(() => {
+      pushedSearch.current = searchText
+      navigate({
+        search: (prev) => ({ ...prev, search: searchText, page: 1 }),
+        replace: true,
+      })
+    }, SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  }, [searchText, filters.search, navigate])
 
   return (
     <div className="relative rounded-xl border border-purple-700/30 bg-purple-900/30 p-6 backdrop-blur-xs">
@@ -18,8 +54,9 @@ export function ExploreFilters() {
           <SpookyInput
             id="search"
             label="Search Mysteries"
-            value={filters.search}
-            onChange={(e) => setFilters({ search: e.target.value })}
+            value={searchText}
+            maxLength={SEARCH_MAX_LENGTH}
+            onChange={(e) => setSearchText(e.target.value)}
             placeholder="Search for supernatural events..."
           />
 

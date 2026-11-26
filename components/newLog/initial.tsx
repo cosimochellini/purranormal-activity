@@ -1,9 +1,9 @@
+import { useServerFn } from '@tanstack/react-start'
 import cn from 'classnames'
 import { useState } from 'react'
 import { z } from 'zod'
 import { ARRAY_LIMITS, CHARACTER_LIMITS, UI_CONFIG, VALIDATION_MESSAGES } from '@/constants'
-import type { LogRefineBody, LogRefineResponse } from '@/types/api/log-refine'
-import { fetcher } from '../../utils/fetch'
+import { refineLog as refineLogFn } from '@/start/services/logs'
 import { logger } from '../../utils/logger'
 import { Loading } from '../common/Loading'
 import { SpookyButton } from '../common/SpookyButton'
@@ -11,8 +11,6 @@ import { SpookyCard } from '../common/SpookyCard'
 import { SpookyModal } from '../common/SpookyModal'
 import { SpookyTextarea } from '../common/SpookyTextarea'
 import type { StateSectionProps } from '.'
-
-const refineLog = fetcher<LogRefineResponse, never, LogRefineBody>('/api/log/refine', 'POST')
 
 const MIN_DESCRIPTION_LENGTH = ARRAY_LIMITS.MIN_REQUIRED
 
@@ -36,6 +34,7 @@ export function InitialSection({ onNext, description: initialDescription }: Stat
   const [inlineError, setInlineError] = useState<string | null>(null)
   const [showErrorModal, setShowErrorModal] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const refineLog = useServerFn(refineLogFn)
 
   const remainingChars = CHARACTER_LIMITS.REFINEMENT_DESCRIPTION - description.length
 
@@ -59,7 +58,7 @@ export function InitialSection({ onNext, description: initialDescription }: Stat
 
     try {
       setIsSubmitting(true)
-      const response = await refineLog({ body: { description: validationResult.data.description } })
+      const response = await refineLog({ data: { description: validationResult.data.description } })
 
       if (!response.success) {
         const errorMsg =

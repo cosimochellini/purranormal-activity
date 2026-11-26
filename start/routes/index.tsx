@@ -1,25 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { InfiniteEvents } from '@/components/events/InfiniteEvents'
 import { SpookyFooter } from '@/components/footer/SpookyFooter'
 import { HeroSection } from '@/components/hero/HeroSection'
 import { APP_URL } from '@/env/public'
-import { getLogs } from '@/services/log'
-import { logger } from '@/utils/logger'
+import { getRecentLogs, HOME_PAGE_SIZE } from '@/start/services/logs'
+import { pageCacheControl } from '@/utils/cacheControl'
 
-const LIMIT = 6 * 3
 const HOME_TITLE = 'Paranormal Kitten Logger'
 const HOME_DESCRIPTION = 'Track the magical mishaps and spooky shenanigans of your enchanted kitten'
-
-const getRecentLogs = createServerFn({ method: 'GET' }).handler(async () => {
-  try {
-    return await getLogs({ skip: 0, limit: LIMIT })
-  } catch (error) {
-    logger.error('Failed to load recent logs for home route:', error)
-    return []
-  }
-})
 
 export const Route = createFileRoute('/')({
   head: () => ({
@@ -37,6 +26,8 @@ export const Route = createFileRoute('/')({
     links: [{ rel: 'canonical', href: `${APP_URL}/` }],
   }),
   loader: () => getRecentLogs(),
+  // `getRecentLogs` turns a DB failure into `[]`: never cache an empty list.
+  headers: ({ loaderData, matches }) => pageCacheControl(!!loaderData?.length, matches),
   component: RouteComponent,
 })
 
@@ -54,7 +45,7 @@ function RouteComponent() {
           <h2 className="mb-6 text-2xl font-magical animate-ghost">
             Recent Supernatural Sightings
           </h2>
-          <InfiniteEvents initialLogs={logs} initialLimit={LIMIT} />
+          <InfiniteEvents initialLogs={logs} initialLimit={HOME_PAGE_SIZE} />
         </section>
       </main>
 

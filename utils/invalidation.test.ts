@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import { type InvalidationTag, matchesTags, parseInvalidateHeader } from './invalidation'
+import { describe, expect, it, vi } from 'vitest'
+import { type InvalidationTag, invalidateTags, matchesTags } from './invalidation'
 
 const home = { routeId: '/', params: {} as Record<string, string> }
 const explore = { routeId: '/explore', params: {} as Record<string, string> }
@@ -52,18 +52,14 @@ describe('matchesTags', () => {
   })
 })
 
-describe('parseInvalidateHeader', () => {
-  it('parses a single tag', () => {
-    expect(parseInvalidateHeader('logs')).toEqual(['logs'])
-  })
+describe('invalidateTags', () => {
+  it('invalidates only the matches the tags select', async () => {
+    const invalidate = vi.fn().mockResolvedValue(undefined)
+    await invalidateTags({ invalidate }, ['log:7'])
 
-  it('parses comma-separated tags and trims whitespace', () => {
-    expect(parseInvalidateHeader('logs, log:7')).toEqual(['logs', 'log:7'])
-  })
-
-  it('returns an empty array for null, empty string, and whitespace-only', () => {
-    expect(parseInvalidateHeader(null)).toEqual([])
-    expect(parseInvalidateHeader('')).toEqual([])
-    expect(parseInvalidateHeader(' , ,')).toEqual([])
+    const { filter } = invalidate.mock.calls[0][0] as { filter: (m: unknown) => boolean }
+    expect(filter({ routeId: '/$id/', params: { id: '7' } })).toBe(true)
+    expect(filter({ routeId: '/$id/', params: { id: '8' } })).toBe(false)
+    expect(filter({ routeId: '/', params: {} })).toBe(false)
   })
 })

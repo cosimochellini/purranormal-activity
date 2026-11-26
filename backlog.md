@@ -4,10 +4,10 @@ This backlog is ordered and intentionally excluded from the current migration sc
 
 ## 1) Technical Backlog
 
-1. Add automated tests (unit + integration + E2E) for core flows (`/`, `/explore`, `/new`, `/:id`, `/:id/edit`, `/api/*`).
+1. Add automated tests (unit + integration + E2E) for core flows (`/`, `/explore`, `/new`, `/:id`, `/:id/edit`, the server functions, `/api/*`).
 2. Introduce API contract tests to lock payload compatibility and prevent accidental regressions.
 3. Replace permissive `200`-on-error API responses with proper HTTP status semantics and structured error model.
-4. Add request rate limiting for AI-heavy and notification endpoints (`/api/log/refine`, `/api/log/submit`, `/api/trigger/*`, `/api/telegram/*`).
+4. Add request rate limiting for AI-heavy and notification endpoints (`refineLog`, `submitLog`, `notifyLog` server functions, `/api/trigger/*`).
 5. Add robust env validation at boot (zod schema + fail-fast startup errors).
 6. Add auth/authorization layer for edit/admin actions (instead of secret-only form flow).
 7. Replace polling-based image refresh with a push mechanism. _(Partially done: the 500ms reload is gone; `ImageStatusPoller` now re-runs the route loader on a 3s/6s/12s backoff, capped at ~3.5 min. A real push — Durable Object + WebSocket, or SSE — is still open.)_
@@ -42,8 +42,8 @@ This backlog is ordered and intentionally excluded from the current migration sc
 ### New (from the queue migration)
 
 1. Alert on queue backlog and dead-letter depth — nothing currently notices if the consumer stops keeping up.
-2. `POST /api/log` now requires the shared `SECRET` (the sweeper made it a free recurring OpenAI amplifier otherwise), but it still creates `Created` rows with no `imageDescription` that no client calls. Consider deleting it outright.
-3. A manual `POST /api/upload/[id]` that races an in-flight generation for the same row can be overwritten: the consumer's `store.put` writes the same R2 key and the upload's status flip does not cancel the claim already granted. Narrow window, no data loss beyond the cover itself.
+2. ~~`POST /api/log`~~ deleted: every write now goes through a secret-gated server function.
+3. A manual `uploadCover` that races an in-flight generation for the same row can be overwritten: the consumer's `store.put` writes the same R2 key and the upload's status flip does not cancel the claim already granted. Narrow window, no data loss beyond the cover itself.
 4. `/api/trigger/[id]`'s secret is the same shared password as the content endpoints; a real admin auth layer is still item 6 above.
 5. Surface `log.attempts` in the UI so a retrying row is distinguishable from a fresh one.
 6. `db/schema.ts` drifts from the live Turso `log` table, which still has a `placeholder` column. That drift makes `drizzle-kit push` stop on an interactive "was it renamed?" prompt for any new `log` column.
@@ -51,7 +51,7 @@ This backlog is ordered and intentionally excluded from the current migration sc
 ## 3) Documentation Backlog
 
 1. Add an architecture decision record (ADR) for the migration choices and tradeoffs.
-2. Add endpoint reference docs (`/api/*`) with request/response examples.
+2. Add reference docs for the server functions and the operator `/api/*` routes, with request/response examples.
 3. Add local setup guide for prod-like development with real service integrations.
 4. Add troubleshooting docs for Cloudflare Workers deploy/runtime issues.
 5. Add maintenance guide for future framework upgrades (TanStack Start, Vite, Wrangler).

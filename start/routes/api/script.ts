@@ -2,11 +2,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { VALIDATION_MESSAGES } from '@/constants'
 import { serverEnv } from '@/env/server'
+import { createFriendly, type FriendlyMessages } from '@/services/friendly'
 import { imagePipeline } from '@/services/imagePipeline'
 import { defineHandlers, method } from '@/services/route/defineHandlers'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { createFriendly, type FriendlyMessages } from './log/_friendly'
 
 // Manual kick for the queue: enqueues every pending log (capped) without
 // generating anything inline. The cron sweeper covers the same ground
@@ -56,9 +56,9 @@ export const Route = createFileRoute('/api/script')({
           reporter,
           handler: async () => {
             const { processed } = await imagePipeline.enqueuePending()
-            // No `invalidate`: enqueueing mutates no row that a loader reads.
-            // The detail page's poller picks the change up once the consumer
-            // has actually generated the image.
+            // Enqueueing mutates no row a page reads, so nothing to purge: the
+            // detail page's poller picks the change up once the consumer has
+            // generated the image.
             return { data: { success: true as const, processed } }
           },
         }),

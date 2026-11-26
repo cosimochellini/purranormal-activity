@@ -38,7 +38,7 @@ export const ARRAY_LIMITS = {
   MAX_CATEGORIES: 4,
 } as const
 
-// Manual cover uploads (`POST /api/upload/$id`)
+// Manual cover uploads (`uploadCover` server function)
 export const UPLOAD_LIMITS = {
   /** Maximum size of a manually uploaded cover image, in bytes (5 MB) */
   MAX_BYTES: 5 * 1024 * 1024,
@@ -78,5 +78,12 @@ export const VALIDATION_MESSAGES = {
   ANSWERS_TOO_MANY: `You can provide up to ${ARRAY_LIMITS.MAX_ANSWERS} answers`,
   CATEGORY_REQUIRED: 'At least one category must be selected',
   SECRET_INVALID: 'The secret password is incorrect. Please check and try again.',
-  SECRET_REQUIRED: 'Secret password is required to submit this event',
+  SECRET_REQUIRED: 'Secret password is required',
+} as const
+
+// `Cache-Control` values for SSR pages (see `services/edgeCache.server.ts`).
+// `s-maxage` is what opts a page into the edge cache; browsers always revalidate.
+export const CACHE_CONTROL = {
+  PAGE: 'public, max-age=0, s-maxage=60',
+  NO_STORE: 'no-store',
 } as const

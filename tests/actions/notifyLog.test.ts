@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('@/drizzle', () => ({ db: {} }))
+vi.mock('@/services/imagePipeline', () => ({ imagePipeline: {} }))
+vi.mock('@/services/imageStore/r2.server', () => ({ imageStore: {} }))
+vi.mock('@/services/storyForge', () => ({ storyForge: {} }))
+
 vi.mock('@/services/log', () => ({
   getLog: vi.fn(),
+  getLogs: vi.fn(),
 }))
 
 vi.mock('@/services/notifier', () => ({
@@ -9,34 +15,33 @@ vi.mock('@/services/notifier', () => ({
 }))
 
 import { getLog } from '@/services/log'
+import { notifyLog } from '@/services/logActions.server'
 import { notifier } from '@/services/notifier'
-import { Route } from '@/start/routes/api/telegram/$id'
-
-const POST = Route.options.server?.handlers?.POST as (ctx: {
-  params: { id: string }
-}) => Promise<Response>
-
-const callPost = (id: string) => POST({ params: { id } })
 
 const mockEvent = (id: number) => ({ id }) as never
 
-describe('POST /api/telegram/$id', () => {
+describe('notifyLog', () => {
   beforeEach(() => {
     vi.mocked(getLog).mockReset()
     vi.mocked(notifier.notify).mockReset()
   })
 
-  it('rejects a non-numeric id', async () => {
-    const res = await callPost('abc')
-    expect(await res.json()).toEqual({ success: false, error: 'Invalid event ID' })
+  it.each([
+    ['NaN', Number.NaN],
+    ['zero', 0],
+    ['a negative id', -4],
+    ['a fractional id', 2.5],
+  ])('rejects %s', async (_label, id) => {
+    expect(await notifyLog(id)).toEqual({ success: false, error: 'Invalid event ID' })
     expect(getLog).not.toHaveBeenCalled()
     expect(notifier.notify).not.toHaveBeenCalled()
   })
 
   it('returns "Event not found" when the log is missing', async () => {
     vi.mocked(getLog).mockResolvedValueOnce(null)
-    const res = await callPost('7')
-    expect(await res.json()).toEqual({ success: false, error: 'Event not found' })
+
+    expect(await notifyLog(7)).toEqual({ success: false, error: 'Event not found' })
+    expect(getLog).toHaveBeenCalledWith(7)
     expect(notifier.notify).not.toHaveBeenCalled()
   })
 
@@ -50,9 +55,8 @@ describe('POST /api/telegram/$id', () => {
       messageId: 42,
     })
 
-    const res = await callPost('7')
-
-    expect(await res.json()).toEqual({ success: true, messageId: 42 })
+    expect(await notifyLog(7)).toEqual({ success: true, messageId: 42 })
+    expect(notifier.notify).toHaveBeenCalledWith({ id: 7 })
   })
 
   it('falls back to messageId 0 when delivered but messageId is undefined', async () => {
@@ -65,9 +69,7 @@ describe('POST /api/telegram/$id', () => {
       messageId: undefined,
     })
 
-    const res = await callPost('7')
-
-    expect(await res.json()).toEqual({ success: true, messageId: 0 })
+    expect(await notifyLog(7)).toEqual({ success: true, messageId: 0 })
   })
 
   it('reports partial failure with the failedPhotoChats list', async () => {
@@ -80,9 +82,7 @@ describe('POST /api/telegram/$id', () => {
       messageId: 11,
     })
 
-    const res = await callPost('7')
-
-    expect(await res.json()).toEqual({
+    expect(await notifyLog(7)).toEqual({
       success: false,
       error: 'Telegram fan-out partial',
       partial: { reachedChats: 2, totalChats: 2, failedPhotoChats: ['c1'] },
@@ -99,9 +99,7 @@ describe('POST /api/telegram/$id', () => {
       messageId: undefined,
     })
 
-    const res = await callPost('7')
-
-    expect(await res.json()).toEqual({
+    expect(await notifyLog(7)).toEqual({
       success: false,
       error: 'Telegram fan-out failed',
       partial: { reachedChats: 0, totalChats: 2, failedPhotoChats: [] },
@@ -110,23 +108,22 @@ describe('POST /api/telegram/$id', () => {
 
   it('forwards a thrown Error.message verbatim (no friendly-copy rewrite)', async () => {
     // The friendly classifier would normally rewrite libsql tokens into a
-    // static "Telegram dispatch failed" string. This route opts out so the
-    // raw cause survives — the contract pre-refactor.
+    // static string. This action opts out so the raw cause survives.
     vi.mocked(getLog).mockRejectedValueOnce(new Error('libsql: connection lost'))
 
-    const res = await callPost('7')
+    expect(await notifyLog(7)).toEqual({ success: false, error: 'libsql: connection lost' })
+  })
 
-    expect(await res.json()).toEqual({
-      success: false,
-      error: 'libsql: connection lost',
-    })
+  it('forwards a notifier throw the same way', async () => {
+    vi.mocked(getLog).mockResolvedValueOnce(mockEvent(7))
+    vi.mocked(notifier.notify).mockRejectedValueOnce(new Error('telegram 502'))
+
+    expect(await notifyLog(7)).toEqual({ success: false, error: 'telegram 502' })
   })
 
   it('falls back to `Unknown error` when a non-Error value is thrown', async () => {
     vi.mocked(getLog).mockRejectedValueOnce('explosion' as never)
 
-    const res = await callPost('7')
-
-    expect(await res.json()).toEqual({ success: false, error: 'Unknown error' })
+    expect(await notifyLog(7)).toEqual({ success: false, error: 'Unknown error' })
   })
 })

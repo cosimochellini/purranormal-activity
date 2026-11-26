@@ -1,7 +1,8 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router'
-import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
+import type { ReactNode } from 'react'
 import { FloatingMenu } from '@/components/common/FloatingMenu'
 import { NotFoundPage } from '@/components/common/NotFoundPage'
+import { getCategories } from '@/start/services/logs'
 import '@/start/globals.css'
 
 export const Route = createRootRoute({
@@ -25,13 +26,32 @@ export const Route = createRootRoute({
         name: 'keywords',
         content: 'paranormal, kitten, magical, tracking, spooky',
       },
+      { name: 'theme-color', content: '#1a1025' },
     ],
+    links: [{ rel: 'icon', href: '/favicon.ico', sizes: 'any' }],
   }),
+  // Categories are read by every page that shows a badge. They only change by
+  // hand in the DB; the 5-minute staleTime bounds how long a degraded `[]`
+  // (`getCategories` never throws) can stick in a client session.
+  loader: () => getCategories(),
+  staleTime: 5 * 60_000,
   notFoundComponent: NotFoundPage,
+  // The document lives in the shell, which renders even when a root-level
+  // error replaces `component`: the error page still gets styles and hydrates.
+  shellComponent: RootDocument,
   component: RootComponent,
 })
 
 function RootComponent() {
+  return (
+    <>
+      <FloatingMenu />
+      <Outlet />
+    </>
+  )
+}
+
+function RootDocument({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="h-full scrollbar-hidden" suppressHydrationWarning>
       <head>
@@ -41,10 +61,7 @@ function RootComponent() {
         className="min-h-full w-full bg-linear-to-b from-midnight-blue to-deep-purple text-ghost-white antialiased"
         suppressHydrationWarning
       >
-        <NuqsAdapter>
-          <FloatingMenu />
-          <Outlet />
-        </NuqsAdapter>
+        {children}
         <Scripts />
       </body>
     </html>

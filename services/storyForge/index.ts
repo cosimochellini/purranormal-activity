@@ -213,7 +213,6 @@ export function createStoryForge(overrides: Partial<Deps> = {}): StoryForge {
     imagePrompt,
     telegramMessage,
     categories,
-    invalidateCategories: () => deps.categories.invalidate(),
   }
 }
 

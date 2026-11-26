@@ -1,6 +1,6 @@
+import { getRouteApi } from '@tanstack/react-router'
 import classNames from 'classnames'
 import { use } from 'react'
-import { getCategories } from '../../../static/promise'
 
 interface CategoryProps {
   category: number
@@ -9,20 +9,14 @@ interface CategoryProps {
   onClick?: () => void
 }
 
+// The icon set is its own chunk; categories come from the root loader.
 const categoryIconsPromise = import('./Icons').then((module) => module.categoryIcons)
 
-let cachedPromises:
-  | ReturnType<typeof Promise.all<[typeof categoryIconsPromise, ReturnType<typeof getCategories>]>>
-  | undefined
-const getPromises = () => {
-  if (!cachedPromises) {
-    cachedPromises = Promise.all([categoryIconsPromise, getCategories()])
-  }
-  return cachedPromises
-}
+const rootRoute = getRouteApi('__root__')
 
 export function Category({ category, iconOnly = false, selected, onClick }: CategoryProps) {
-  const [categoryIcons, categories] = use(getPromises())
+  const categoryIcons = use(categoryIconsPromise)
+  const categories = rootRoute.useLoaderData()
 
   const currentCategory = categories.find((c) => c.id === category)
   const Icon =

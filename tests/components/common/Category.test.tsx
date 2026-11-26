@@ -4,12 +4,15 @@ import type * as React from 'react'
 import { Suspense } from 'react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../../static/promise', () => ({
-  getCategories: () =>
-    Promise.resolve([
+// Categories come from the root route's loader.
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@tanstack/react-router')>()),
+  getRouteApi: () => ({
+    useLoaderData: () => [
       { id: 1, name: 'Spectral', icon: 'questionMark' },
       { id: 2, name: 'Phantom', icon: 'questionMark' },
-    ]),
+    ],
+  }),
 }))
 
 import { Category } from '@/components/common/Category'
@@ -49,7 +52,7 @@ describe('Category', () => {
   it('renders the category name and a clickable button', async () => {
     await renderCategory({ category: 1, selected: false })
 
-    // Wait for suspense to resolve (icons + categories promises)
+    // Wait for suspense to resolve (the lazily imported icons)
     const btn = await screen.findByRole('button', undefined, { timeout: 3000 })
     expect(btn).toBeInTheDocument()
     expect(btn).toHaveAttribute('aria-pressed', 'false')

@@ -1,14 +1,21 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Suspense } from 'react'
+import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { ExploreSection } from '@/components/explore/ExploreSection'
-import { ExploreSkeleton } from '@/components/explore/ExploreSkeleton'
 import { APP_URL } from '@/env/public'
+import { listLogs } from '@/start/services/logs'
+import { EXPLORE_DEFAULTS, exploreSearchSchema } from '@/types/search'
 
 const EXPLORE_TITLE = 'Explore | Paranormal Kitten Logger'
 const EXPLORE_DESCRIPTION = 'Explore the paranormal records of our enchanted encounters...'
 
 export const Route = createFileRoute('/explore')({
+  validateSearch: exploreSearchSchema,
+  // Default values never reach the URL: `/explore` stays `/explore`.
+  search: { middlewares: [stripSearchParams(EXPLORE_DEFAULTS)] },
+  loaderDeps: ({ search }) => search,
+  // Deferred: the loader resolves at once, so the filters stay mounted while a
+  // new result page streams in (SSR included) behind `<Await>`.
+  loader: ({ deps }) => ({ results: listLogs({ data: deps }) }),
   head: () => ({
     meta: [
       { title: EXPLORE_TITLE },
@@ -39,9 +46,7 @@ function RouteComponent() {
           </p>
         </div>
 
-        <Suspense fallback={<ExploreSkeleton />}>
-          <ExploreSection />
-        </Suspense>
+        <ExploreSection />
       </main>
     </div>
   )
