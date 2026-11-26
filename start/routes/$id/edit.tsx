@@ -8,7 +8,7 @@ export const Route = createFileRoute('/$id/edit')({
   loader: async ({ params }) => {
     const id = Number(params.id)
 
-    if (!Number.isInteger(id) || id <= 0) throw notFound()
+    if (!Number.isSafeInteger(id) || id <= 0) throw notFound()
 
     const log = await getLogById({ data: { id } })
 

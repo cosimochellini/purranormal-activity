@@ -42,8 +42,9 @@ export function useInfiniteScroll({ initialLogs, initialLimit }: UseInfiniteScro
           isLoading: false,
         })
       } catch (_error) {
-        // Just set loading to false and continue
-        setState({ isLoading: false })
+        // Stop paging. The sentinel would otherwise remount, fire again while
+        // still in view, and hammer a failing server in a tight loop.
+        setState({ isLoading: false, hasMore: false })
       }
     },
     [logs, setState, initialLimit],

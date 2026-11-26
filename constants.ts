@@ -78,7 +78,7 @@ export const VALIDATION_MESSAGES = {
   ANSWERS_TOO_MANY: `You can provide up to ${ARRAY_LIMITS.MAX_ANSWERS} answers`,
   CATEGORY_REQUIRED: 'At least one category must be selected',
   SECRET_INVALID: 'The secret password is incorrect. Please check and try again.',
-  SECRET_REQUIRED: 'Secret password is required to submit this event',
+  SECRET_REQUIRED: 'Secret password is required',
 } as const
 
 // `Cache-Control` values for SSR pages (see `services/edgeCache.server.ts`).

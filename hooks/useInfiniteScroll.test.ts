@@ -94,7 +94,7 @@ describe('useInfiniteScroll', () => {
     expect(result.current.logs.map((l) => l.id)).toEqual([1, 2, 3, 4])
   })
 
-  it('error path resets isLoading and keeps existing logs', async () => {
+  it('error path resets isLoading, keeps existing logs and stops paging', async () => {
     const initialLogs = [makeLog(1), makeLog(2), makeLog(3)]
     listLogs.mockRejectedValueOnce(new Error('boom'))
     const { result } = renderHook(() => useInfiniteScroll({ initialLogs, initialLimit: 3 }))
@@ -108,5 +108,11 @@ describe('useInfiniteScroll', () => {
     })
 
     expect(result.current.logs).toHaveLength(3)
+    // No retry loop: a failed page ends infinite scroll for this view.
+    expect(result.current.hasMore).toBe(false)
+    act(() => {
+      result.current.handleLoadMore()
+    })
+    expect(listLogs).toHaveBeenCalledTimes(1)
   })
 })

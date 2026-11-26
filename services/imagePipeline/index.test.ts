@@ -351,7 +351,7 @@ describe('pipeline.generateImageFor', () => {
 
   it('discards a generation whose cycle was superseded by an edit mid-flight', async () => {
     // The race this fence exists for: the user edits the prompt while the
-    // original generation is still running. `PUT /api/log/$id` resets `attempts`
+    // original generation is still running. `updateLog` resets `attempts`
     // to 0 and enqueues a fresh job. Without the fence, the in-flight run would
     // then mark the row `ImageGenerated` with the OLD prompt's image, and the
     // edit's own job would be refused as `not-pending` — the change silently
