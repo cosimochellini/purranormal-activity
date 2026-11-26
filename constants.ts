@@ -38,6 +38,12 @@ export const ARRAY_LIMITS = {
   MAX_CATEGORIES: 4,
 } as const
 
+// Manual cover uploads (`POST /api/upload/$id`)
+export const UPLOAD_LIMITS = {
+  /** Maximum size of a manually uploaded cover image, in bytes (5 MB) */
+  MAX_BYTES: 5 * 1024 * 1024,
+} as const
+
 // UI configuration
 export const UI_CONFIG = {
   /** Default textarea rows for initial log form */

@@ -31,9 +31,12 @@ const POST = Route.options.server?.handlers?.POST as (ctx: {
 
 const SECRET = 'test-secret'
 
-const withFile = (secret: string | null = SECRET) => {
+const withFile = (
+  secret: string | null = SECRET,
+  file: File = new File(['payload'], 'cover.webp', { type: 'image/webp' }),
+) => {
   const formData = new FormData()
-  formData.append('file', new File(['payload'], 'cover.webp', { type: 'image/webp' }))
+  formData.append('file', file)
   if (secret !== null) formData.append('secret', secret)
   return formData
 }
@@ -47,6 +50,10 @@ const buildRequest = (id: string, formData: FormData) =>
 describe('POST /api/upload/$id', () => {
   beforeEach(() => {
     vi.mocked(imageStore.put).mockReset()
+    vi.mocked(fakeDb.update).mockClear()
+    // Default: the log row exists.
+    fakeDb.get.mockReset()
+    fakeDb.get.mockResolvedValue({ id: 7 })
   })
 
   it('returns 400 with `File is required` when the file part is missing', async () => {
@@ -73,12 +80,64 @@ describe('POST /api/upload/$id', () => {
     expect(imageStore.put).toHaveBeenCalledWith(7, expect.any(Uint8Array))
   })
 
+  it('invalidates the list and detail loaders on success', async () => {
+    vi.mocked(imageStore.put).mockResolvedValueOnce(undefined)
+
+    const res = await POST({ request: buildRequest('7', withFile()), params: { id: '7' } })
+    expect(res.headers.get('X-Invalidate')).toBe('logs,log:7')
+  })
+
+  it.each([
+    [
+      'a non-image file',
+      new File(['payload'], 'notes.txt', { type: 'text/plain' }),
+      'File must be an image',
+    ],
+    [
+      'a file over 5 MB',
+      new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'big.png', { type: 'image/png' }),
+      'File is too large (max 5 MB)',
+    ],
+  ])('returns 400 for %s without writing anything', async (_label, file, error) => {
+    const res = await POST({
+      request: buildRequest('7', withFile(SECRET, file)),
+      params: { id: '7' },
+    })
+
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error })
+    expect(imageStore.put).not.toHaveBeenCalled()
+    expect(fakeDb.update).not.toHaveBeenCalled()
+  })
+
+  it('accepts non-webp images (e.g. a phone JPEG)', async () => {
+    vi.mocked(imageStore.put).mockResolvedValueOnce(undefined)
+    const jpeg = new File(['payload'], 'photo.jpg', { type: 'image/jpeg' })
+
+    const res = await POST({
+      request: buildRequest('7', withFile(SECRET, jpeg)),
+      params: { id: '7' },
+    })
+    expect(res.status).toBe(200)
+    expect(imageStore.put).toHaveBeenCalledOnce()
+  })
+
+  it('returns 400 `Log not found` for an unknown id without writing an orphan object', async () => {
+    fakeDb.get.mockResolvedValueOnce(undefined)
+
+    const res = await POST({ request: buildRequest('999', withFile()), params: { id: '999' } })
+
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'Log not found' })
+    expect(imageStore.put).not.toHaveBeenCalled()
+    expect(fakeDb.update).not.toHaveBeenCalled()
+  })
+
   it('marks the row ImageGenerated so the cron sweeper cannot overwrite the upload', async () => {
     // Without this the row stays `Created`, and the sweeper would eventually
     // enqueue it, replace the hand-uploaded cover with a generated one, and
     // then mark it `Error`.
     vi.mocked(imageStore.put).mockResolvedValueOnce(undefined)
-    vi.mocked(fakeDb.update).mockClear()
 
     await POST({ request: buildRequest('7', withFile()), params: { id: '7' } })
 
