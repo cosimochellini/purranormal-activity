@@ -60,13 +60,13 @@ Husky + lint-staged auto-formats staged files on commit via Biome.
 
 ### Directory Layout
 
-- `start/` - TanStack Start source root (`srcDirectory`): `routes/` (pages + API endpoints), `router.tsx`, `server.ts` (worker entry)
+- `start/` - TanStack Start source root (`srcDirectory`): `routes/` (pages + the two operator API routes), `services/logs.ts` (every server function the UI calls, plus `secretMiddleware`), `router.tsx`, `server.ts` (worker entry)
 - `components/` - React components organized by feature (hero/, events/, explore/, newLog/, editLog/, etc.)
 - `db/schema.ts` - Drizzle ORM schema (3 tables: `log`, `category`, `log_category`)
 - `drizzle/index.ts` - Database connection (`drizzle-orm/libsql/web`, Workers-compatible)
-- `services/` - Business logic: `imagePipeline/` (image generation orchestration + queue producer/consumer/sweeper), `storyForge/` (all LLM text generation), `imageStore/` (R2), `notifier/`, `telegram/`, `route/` (the `defineHandlers` envelope), `log.ts`, `imageGen.ts`
-- `utils/` - Utility functions (fetch.ts, http.ts, batch.ts, etc.)
-- `hooks/` - React hooks (useExploreData, useInfiniteScroll, useSound, state)
+- `services/` - Business logic: `imagePipeline/` (image generation orchestration + queue producer/consumer/sweeper), `storyForge/` (all LLM text generation), `imageStore/` (R2), `notifier/`, `telegram/`, `route/` (the `defineHandlers` envelope, operator routes only), `logActions.server.ts` (logic behind the server functions), `friendly.ts` (user-facing error copy), `edgeCache.server.ts` (SSR Cache API layer), `log.ts`, `imageGen.ts`
+- `utils/` - Utility functions (invalidation.ts, secret.ts, fetch.ts for outbound HTTP, batch.ts, etc.)
+- `hooks/` - React hooks (useInfiniteScroll, useSound, state)
 - `env/server.ts` - Lazy server-only env getters (Workers-safe, single source of truth)
 - `env/public.ts` - Browser-facing env (Vite `import.meta.env` + fallback chain)
 - `data/enum/` - Enumerations (logStatus: Created|ImageGenerated|Error, imageStyle: 16+ styles)
@@ -78,16 +78,16 @@ Husky + lint-staged auto-formats staged files on commit via Biome.
 Image generation runs on a Cloudflare Queue, never inside a request.
 
 1. User submits event description via `/new`
-2. `POST /api/log/submit` — `storyForge.logDetails` (`gpt-5.6-terra`) produces title, description, categories and `imageDescription`
+2. `submitLog` server function — `storyForge.logDetails` (`gpt-5.6-terra`) produces title, description, categories and `imageDescription`
 3. `imagePipeline.submit` inserts the row with status `Created`, links categories, and enqueues `{ v: 1, logId, source }` on `IMAGE_QUEUE`. The response returns immediately
 4. The queue consumer (`start/server.ts` → `services/imagePipeline/consumer.ts`) claims one attempt atomically, then generates: `storyForge.imagePrompt` if `imageDescription` is empty → `gpt-image-2` → R2 `put` at `<logId>/cover.webp` → status `ImageGenerated`
 5. On a _transient_ failure the row stays `Created` and the message is retried once after 30s. On a deterministic failure (moderation refusal, storyForge `validation`, missing row) or once the budget is spent, the row becomes `Error`
 6. Two backstops: the dead-letter queue consumer forces a stuck row out of `Created`, and a 5-minute cron (`imagePipeline.sweep`) re-enqueues rows whose message was lost and abandons rows whose budget is gone
 7. `/[id]` mounts `ImageStatusPoller`, which re-runs the route loader on a backing-off schedule until the status changes
 
-**Anyone who puts a row into `Created` enqueues; only the consumer generates.** Entry points: `submit`, `PUT /api/log/[id]` (when `imageDescription` changed), `POST /api/trigger/[id]` (operator retry, secret-gated), `POST /api/script` (manual enqueue of all pending, secret-gated), and the cron sweeper.
+**Anyone who puts a row into `Created` enqueues; only the consumer generates.** Entry points: `submitLog`, `updateLog` (when `imageDescription` changed), `POST /api/trigger/[id]` (operator retry, secret-gated), `POST /api/script` (manual enqueue of all pending, secret-gated), and the cron sweeper.
 
-Every endpoint that can create or re-pend a row is secret-gated, `POST /api/log` included: the sweeper pays for an image for any stale `Created` row regardless of who created it, so a single open endpoint would defeat the gates on all the others.
+Every server function or endpoint that can create, change or re-pend a row is secret-gated (`secretMiddleware` for server functions; `refineLog` is the only public one and it never writes): the sweeper pays for an image for any stale `Created` row regardless of who created it, so a single open endpoint would defeat the gates on all the others.
 
 Queue tuning lives in `services/imagePipeline/config.ts`; `config.test.ts` asserts it agrees with `wrangler.jsonc` (queue names, `max_retries`, `retry_delay`, cron, `main`).
 
@@ -134,8 +134,12 @@ Three tables in Turso (SQLite): `log` (events with title, description, status, i
 - Interfaces preferred over type aliases
 - Maps preferred over enums
 - Lowercase-with-dashes for directory names (e.g., `components/auth-wizard`)
-- URL state management for explore filters: `nuqs` with `nuqs/adapters/tanstack-router`
-- Cache strategy: fresh SSR / no-store on Workers; advanced edge caching is deferred backlog
+- Data: route loaders call server functions (`start/services/logs.ts`); components call them through `useServerFn`. After a successful write, call `invalidateTags(router, tags)` (`utils/invalidation.ts`) so the affected loaders re-run. Server-function logic lives in `services/logActions.server.ts` so it is testable without the Start compiler.
+- Explore filters live in the URL: `/explore` has `validateSearch: exploreSearchSchema` (`types/search.ts`), `stripSearchParams` for defaults, `loaderDeps` + a deferred loader rendered through `<Await>`.
+- Errors/pending: router-wide `defaultErrorComponent` (`RouteError`), `defaultPendingComponent` (`Loading`), `defaultNotFoundComponent` (`NotFoundPage`).
+- Links: `TransitionLink` / `SpookyLink` are typed router links (`to` + `params`); preloading comes from `defaultPreload: 'intent'`.
+- Server fn builder method is `.validator()` (this Start version has no `.inputValidator()`).
+- Cache strategy: pages opt into the SSR edge cache with route `headers()` returning `CACHE_CONTROL.PAGE` (`s-maxage=60`); `start/server.ts` wraps the Start handler with `withEdgeCache`, keyed by URL + `__BUILD_ID__`; writes call `purgePages`. `caches.default` is a no-op on `*.workers.dev`, so it only takes effect on a custom domain. `/$id` sends `no-store` while its image is `Created`.
 
 ## Design Theme
 

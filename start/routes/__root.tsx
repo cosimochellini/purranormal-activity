@@ -1,7 +1,7 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router'
-import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
 import { FloatingMenu } from '@/components/common/FloatingMenu'
 import { NotFoundPage } from '@/components/common/NotFoundPage'
+import { getCategories } from '@/start/services/logs'
 import '@/start/globals.css'
 
 export const Route = createRootRoute({
@@ -25,8 +25,14 @@ export const Route = createRootRoute({
         name: 'keywords',
         content: 'paranormal, kitten, magical, tracking, spooky',
       },
+      { name: 'theme-color', content: '#1a1025' },
     ],
+    links: [{ rel: 'icon', href: '/favicon.ico', sizes: 'any' }],
   }),
+  // Categories are read by every page that shows a badge. They only change by
+  // hand in the DB, so the client never refetches them after the first load.
+  loader: () => getCategories(),
+  staleTime: Number.POSITIVE_INFINITY,
   notFoundComponent: NotFoundPage,
   component: RootComponent,
 })
@@ -41,10 +47,8 @@ function RootComponent() {
         className="min-h-full w-full bg-linear-to-b from-midnight-blue to-deep-purple text-ghost-white antialiased"
         suppressHydrationWarning
       >
-        <NuqsAdapter>
-          <FloatingMenu />
-          <Outlet />
-        </NuqsAdapter>
+        <FloatingMenu />
+        <Outlet />
         <Scripts />
       </body>
     </html>

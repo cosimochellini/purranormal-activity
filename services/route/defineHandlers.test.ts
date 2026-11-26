@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import * as z from 'zod'
+import type { FriendlyReporter } from '@/services/friendly'
 import { defineHandlers, type RouteResult } from '@/services/route/defineHandlers'
-import type { FriendlyReporter } from '@/start/routes/api/log/_friendly'
 
 // A no-op reporter that mirrors `createFriendly`'s contract without the
-// `_friendly.ts` matcher / classification surface. Tests that want to inspect
+// `services/friendly.ts` matcher / classification surface. Tests that want to inspect
 // reporter behaviour drive the spies directly.
 const makeStubReporter = (): FriendlyReporter<Response> & {
   guardSpy: ReturnType<typeof vi.fn>

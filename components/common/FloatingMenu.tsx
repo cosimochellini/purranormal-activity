@@ -5,15 +5,15 @@ import { memo, useState } from 'react'
 import { TransitionLink } from './TransitionLink'
 
 interface MenuItem {
-  href: string
+  to: '/' | '/new' | '/explore'
   icon: ReactNode
   label: string
 }
 
 const menuItems = [
-  { href: '/', icon: <IconCat />, label: 'Home' },
-  { href: '/new', icon: <IconSearch />, label: 'New' },
-  { href: '/explore', icon: <IconCrystalBall />, label: 'Explore' },
+  { to: '/', icon: <IconCat />, label: 'Home' },
+  { to: '/new', icon: <IconSearch />, label: 'New' },
+  { to: '/explore', icon: <IconCrystalBall />, label: 'Explore' },
 ] as const satisfies MenuItem[]
 
 const buttonStyles = {
@@ -57,10 +57,10 @@ interface MenuItemProps extends MenuItem {
   index: number
 }
 
-const MenuItemComponent = memo(({ href, icon: Icon, label, isOpen, index }: MenuItemProps) => {
+const MenuItemComponent = memo(({ to, icon: Icon, label, isOpen, index }: MenuItemProps) => {
   return (
     <TransitionLink
-      href={href}
+      to={to}
       className={cn(menuStyles.link, buttonStyles.glow)}
       style={{
         transitionDelay: `${index * 100}ms`,

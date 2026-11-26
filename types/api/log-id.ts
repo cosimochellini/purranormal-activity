@@ -1,15 +1,7 @@
 import type { Log } from '@/db/schema'
 
-export type LogIdGetResponse =
-  | {
-      success: true
-      data: Log
-    }
-  | {
-      success: false
-    }
-
 export interface LogIdPutBody {
+  id: number
   title: string
   description: string
   categories: number[]
@@ -28,6 +20,7 @@ export type LogIdPutResponse =
     }
 
 export interface LogIdDeleteBody {
+  id: number
   secret: string
 }
 
@@ -37,6 +30,5 @@ export type LogIdDeleteResponse =
     }
   | {
       success: false
-      error?: string
-      errors?: Partial<Record<keyof LogIdDeleteBody, string[]>>
+      error: string
     }

@@ -11,7 +11,6 @@ interface EventCardProps {
   log: LogWithCategories
 
   priority?: boolean
-  prefetch?: boolean
 }
 
 const cardClasses = classNames(
@@ -23,13 +22,13 @@ const cardClasses = classNames(
   'h-full flex flex-col justify-between',
 )
 
-function EventCardComponent({ log, priority, prefetch = false }: EventCardProps) {
+function EventCardComponent({ log, priority }: EventCardProps) {
   const { id, title, description, categories } = log
 
   const styles = transitions(id)
 
   return (
-    <TransitionLink href={`/${id}`} prefetch={prefetch}>
+    <TransitionLink to="/$id" params={{ id: String(id) }}>
       <div className={cardClasses}>
         <div className="relative flex justify-center mb-4">
           <div className="relative w-full aspect-square overflow-hidden rounded-md">

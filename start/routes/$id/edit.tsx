@@ -2,13 +2,13 @@ import { createFileRoute, notFound } from '@tanstack/react-router'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { NotFoundPage } from '@/components/common/NotFoundPage'
 import { EditLogForm } from '@/components/editLog'
-import { getLogById } from '@/start/services/log'
+import { getLogById } from '@/start/services/logs'
 
 export const Route = createFileRoute('/$id/edit')({
   loader: async ({ params }) => {
     const id = Number(params.id)
 
-    if (!Number.isFinite(id)) throw notFound()
+    if (!Number.isInteger(id) || id <= 0) throw notFound()
 
     const log = await getLogById({ data: { id } })
 
@@ -16,6 +16,12 @@ export const Route = createFileRoute('/$id/edit')({
 
     return log
   },
+  head: ({ loaderData }) => ({
+    meta: [
+      { title: `Edit ${loaderData?.title ?? 'log'} | Paranormal Kitten Logger` },
+      { name: 'robots', content: 'noindex' },
+    ],
+  }),
   notFoundComponent: NotFoundPage,
   component: RouteComponent,
 })

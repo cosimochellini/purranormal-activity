@@ -1,25 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { InfiniteEvents } from '@/components/events/InfiniteEvents'
 import { SpookyFooter } from '@/components/footer/SpookyFooter'
 import { HeroSection } from '@/components/hero/HeroSection'
+import { CACHE_CONTROL } from '@/constants'
 import { APP_URL } from '@/env/public'
-import { getLogs } from '@/services/log'
-import { logger } from '@/utils/logger'
+import { getRecentLogs, HOME_PAGE_SIZE } from '@/start/services/logs'
 
-const LIMIT = 6 * 3
 const HOME_TITLE = 'Paranormal Kitten Logger'
 const HOME_DESCRIPTION = 'Track the magical mishaps and spooky shenanigans of your enchanted kitten'
-
-const getRecentLogs = createServerFn({ method: 'GET' }).handler(async () => {
-  try {
-    return await getLogs({ skip: 0, limit: LIMIT })
-  } catch (error) {
-    logger.error('Failed to load recent logs for home route:', error)
-    return []
-  }
-})
 
 export const Route = createFileRoute('/')({
   head: () => ({
@@ -37,6 +26,7 @@ export const Route = createFileRoute('/')({
     links: [{ rel: 'canonical', href: `${APP_URL}/` }],
   }),
   loader: () => getRecentLogs(),
+  headers: () => ({ 'Cache-Control': CACHE_CONTROL.PAGE }),
   component: RouteComponent,
 })
 
@@ -54,7 +44,7 @@ function RouteComponent() {
           <h2 className="mb-6 text-2xl font-magical animate-ghost">
             Recent Supernatural Sightings
           </h2>
-          <InfiniteEvents initialLogs={logs} initialLimit={LIMIT} />
+          <InfiniteEvents initialLogs={logs} initialLimit={HOME_PAGE_SIZE} />
         </section>
       </main>
 

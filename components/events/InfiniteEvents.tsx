@@ -27,7 +27,7 @@ export function InfiniteEvents({ initialLogs, initialLimit }: InfiniteEventsProp
       {/* Main grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {logs.map((log, index) => (
-          <EventCard key={log.id} log={log} priority={index < 2} prefetch={index < 6} />
+          <EventCard key={log.id} log={log} priority={index < 2} />
         ))}
       </div>
 

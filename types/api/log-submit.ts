@@ -13,7 +13,6 @@ export type LogSubmitResponse =
   | {
       success: true
       id: number
-      missingCategories: string[]
     }
   | {
       success: false

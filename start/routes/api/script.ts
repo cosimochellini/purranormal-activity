@@ -2,11 +2,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { VALIDATION_MESSAGES } from '@/constants'
 import { serverEnv } from '@/env/server'
+import { createFriendly, type FriendlyMessages } from '@/services/friendly'
 import { imagePipeline } from '@/services/imagePipeline'
 import { defineHandlers, method } from '@/services/route/defineHandlers'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { createFriendly, type FriendlyMessages } from './log/_friendly'
 
 // Manual kick for the queue: enqueues every pending log (capped) without
 // generating anything inline. The cron sweeper covers the same ground

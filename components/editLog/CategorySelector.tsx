@@ -1,6 +1,5 @@
+import { getRouteApi } from '@tanstack/react-router'
 import type { CSSProperties } from 'react'
-import { use } from 'react'
-import { getCategories } from '../../static/promise'
 import { range } from '../../utils/array'
 import { Category as CategoryComponent } from '../common/Category'
 
@@ -11,8 +10,10 @@ interface CategorySelectorProps {
   iconsOnly?: boolean
 }
 
+const rootRoute = getRouteApi('__root__')
+
 export function CategorySelector({ selected, onChange, styles, iconsOnly }: CategorySelectorProps) {
-  const categories = use(getCategories())
+  const categories = rootRoute.useLoaderData()
 
   const toggleCategory = (categoryId: number) => {
     const newCategories = selected.includes(categoryId)

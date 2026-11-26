@@ -1,5 +1,6 @@
 import { IconRefresh } from '@tabler/icons-react'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useRouter } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
 import classNames from 'classnames'
 import type { ChangeEvent, FormEvent } from 'react'
 import { Suspense, useRef, useState } from 'react'
@@ -8,33 +9,32 @@ import { EventImage } from '@/components/events/EventImage'
 import { UI_CONFIG, UPLOAD_LIMITS } from '@/constants'
 import type { LogWithCategories } from '@/db/schema'
 import { usePartialState } from '@/hooks/state'
-import type { LogIdDeleteResponse, LogIdPutBody, LogIdPutResponse } from '@/types/api/log-id'
-import type { UploadIdResponse } from '@/types/api/upload-id'
-import { fetcher } from '@/utils/fetch'
+import {
+  deleteLog as deleteLogFn,
+  updateLog as updateLogFn,
+  uploadCover,
+} from '@/start/services/logs'
+import { invalidateTags } from '@/utils/invalidation'
 import { logger } from '@/utils/logger'
+import { secretErrorMessage } from '@/utils/secret'
 import { transitions } from '@/utils/viewTransition'
 import { SpookyInput } from '../common/SpookyInput'
 import { SpookyTextarea } from '../common/SpookyTextarea'
 import { CategorySelector, CategorySelectorSkeleton } from './CategorySelector'
 
-interface Secret {
-  secret: string
-}
-
-const updateLog = fetcher<LogIdPutResponse, never, LogIdPutBody>('/api/log/[id]', 'PUT')
-const deleteLog = fetcher<LogIdDeleteResponse, never, Secret>('/api/log/[id]', 'DELETE')
-const uploadImage = fetcher<UploadIdResponse, never, FormData>('/api/upload/[id]', 'POST')
-
 interface UpdateImageButtonProps {
   id: number
-  // The upload endpoint writes to R2 *and* flips the row to `ImageGenerated`,
-  // which takes it out of the cron sweeper's reach — so it is gated like every
-  // other write endpoint, and the form has to hand its secret over.
+  // The upload writes to R2 *and* flips the row to `ImageGenerated`, which
+  // takes it out of the cron sweeper's reach — so it is gated like every other
+  // write, and the form has to hand its secret over.
   secret: string
+  onSecretError: (message: string) => void
 }
 
-function UpdateImageButton({ id, secret }: UpdateImageButtonProps) {
+function UpdateImageButton({ id, secret, onSecretError }: UpdateImageButtonProps) {
   const navigate = useNavigate()
+  const router = useRouter()
+  const uploadImage = useServerFn(uploadCover)
   const [isLoading, setIsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
@@ -62,20 +62,18 @@ function UpdateImageButton({ id, secret }: UpdateImageButtonProps) {
     setIsLoading(true)
     try {
       const formData = new FormData()
+      formData.append('id', String(id))
       formData.append('file', file)
       formData.append('secret', secret)
 
-      const data = await uploadImage({
-        params: { id },
-        body: formData,
-      })
+      const data = await uploadImage({ data: formData })
 
       if (!data.success) {
-        const errors = Object.values(data.errors ?? {}).flat()
-        setError(errors[0] ?? 'Failed to upload image')
+        setError(data.error)
         return
       }
 
+      await invalidateTags(router, ['logs', `log:${id}`])
       await navigate({
         to: '/$id',
         params: { id: `${id}` },
@@ -84,13 +82,13 @@ function UpdateImageButton({ id, secret }: UpdateImageButtonProps) {
 
       setError('')
     } catch (err) {
-      logger.error('Failed to upload image:', err)
-      // `fetcher` throws the raw `Response` on non-2xx; the route puts a
-      // specific reason in `error` (e.g. 'Invalid secret', 'Log not found').
-      const body = (err instanceof Response ? await err.json().catch(() => null) : null) as {
-        error?: unknown
-      } | null
-      setError(typeof body?.error === 'string' ? body.error : 'Failed to upload image')
+      const secretError = secretErrorMessage(err)
+      if (secretError) {
+        onSecretError(secretError)
+      } else {
+        logger.error('Failed to upload image:', err)
+        setError('Failed to upload image')
+      }
     } finally {
       setIsLoading(false)
       if (fileInputRef.current) {
@@ -132,19 +130,24 @@ interface EditLogFormProps {
 
 export function EditLogForm({ initialData }: EditLogFormProps) {
   const navigate = useNavigate()
+  const router = useRouter()
+  const updateLog = useServerFn(updateLogFn)
+  const deleteLog = useServerFn(deleteLogFn)
   const [submitting, setSubmitting] = usePartialState({ form: false, delete: false })
   const [error, setError] = useState('')
+  const [secretError, setSecretError] = useState('')
   const [formData, setFormData] = usePartialState(() => ({ ...initialData, secret: '' }))
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setSubmitting({ form: true })
     setError('')
+    setSecretError('')
 
     try {
+      const { id, title, description, categories, imageDescription, secret } = formData
       const response = await updateLog({
-        body: formData,
-        params: { id: initialData.id },
+        data: { id, title, description, categories, imageDescription, secret },
       })
 
       if (!response.success) {
@@ -153,13 +156,16 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
         return
       }
 
+      await invalidateTags(router, ['logs', `log:${initialData.id}`])
       await navigate({
         to: '/$id',
         params: { id: `${initialData.id}` },
         viewTransition: true,
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update')
+      const message = secretErrorMessage(err)
+      if (message) setSecretError(message)
+      else setError(err instanceof Error ? err.message : 'Failed to update')
     } finally {
       setSubmitting({ form: false })
     }
@@ -167,24 +173,25 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
 
   const handleDelete = async () => {
     setSubmitting({ delete: true })
-
     setError('')
+    setSecretError('')
 
     try {
       const response = await deleteLog({
-        params: { id: initialData.id },
-        body: formData,
+        data: { id: initialData.id, secret: formData.secret },
       })
 
       if (!response.success) {
-        const errors = Object.values(response.errors ?? {}).flat()
-        setError(errors[0] ?? response.error ?? 'Failed to update')
+        setError(response.error)
         return
       }
 
+      await invalidateTags(router, ['logs', `log:${initialData.id}`])
       await navigate({ to: '/', viewTransition: true })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete')
+      const message = secretErrorMessage(err)
+      if (message) setSecretError(message)
+      else setError(err instanceof Error ? err.message : 'Failed to delete')
     } finally {
       setSubmitting({ delete: false })
     }
@@ -202,7 +209,11 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
           height={200}
           style={styles.image}
         />
-        <UpdateImageButton id={initialData.id} secret={formData.secret} />
+        <UpdateImageButton
+          id={initialData.id}
+          secret={formData.secret}
+          onSecretError={setSecretError}
+        />
       </div>
 
       <form onSubmit={handleSubmit} className="w-full max-w-2xl space-y-6 p-4">
@@ -263,7 +274,11 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
             placeholder="Secret"
             type="password"
             value={formData.secret}
-            onChange={(e) => setFormData({ secret: e.target.value })}
+            error={secretError || undefined}
+            onChange={(e) => {
+              setFormData({ secret: e.target.value })
+              setSecretError('')
+            }}
           />
         </div>
 

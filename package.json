@@ -37,7 +37,6 @@
     "ai": "^7.0.181",
     "classnames": "^2.5.1",
     "drizzle-orm": "^0.45.4",
-    "nuqs": "^2.10.3",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-intersection-observer": "^11.0.1",

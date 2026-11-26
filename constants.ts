@@ -80,3 +80,10 @@ export const VALIDATION_MESSAGES = {
   SECRET_INVALID: 'The secret password is incorrect. Please check and try again.',
   SECRET_REQUIRED: 'Secret password is required to submit this event',
 } as const
+
+// `Cache-Control` values for SSR pages (see `services/edgeCache.server.ts`).
+// `s-maxage` is what opts a page into the edge cache; browsers always revalidate.
+export const CACHE_CONTROL = {
+  PAGE: 'public, max-age=0, s-maxage=60',
+  NO_STORE: 'no-store',
+} as const

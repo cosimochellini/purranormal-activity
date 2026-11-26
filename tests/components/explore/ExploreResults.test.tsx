@@ -1,30 +1,18 @@
 /** @vitest-environment happy-dom */
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ---------------------------------------------------------------------------
 // Mocks
 // ---------------------------------------------------------------------------
 
-// fetcher mock — captures aborted-signal flag so tests can assert race control.
-const { fetcherImpl } = vi.hoisted(() => ({ fetcherImpl: vi.fn() }))
-vi.mock('@/utils/fetch', () => ({
-  fetcher: () => fetcherImpl,
+// The `/explore` loader hands the component a promise of the page's results.
+const { loaderData } = vi.hoisted(() => ({
+  loaderData: { results: undefined as unknown as Promise<unknown> },
 }))
-
-// useExploreFilters mock returns a controllable filters object.
-const { exploreState } = vi.hoisted(() => ({
-  exploreState: {
-    page: 1,
-    limit: 10,
-    search: '',
-    categories: [] as number[],
-    sortBy: 'recent',
-    timeRange: 'all',
-  },
-}))
-vi.mock('@/hooks/useExploreFilters', () => ({
-  useExploreFilters: () => ({ filters: exploreState, setFilters: () => {}, reset: () => {} }),
+vi.mock('@tanstack/react-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@tanstack/react-router')>()),
+  getRouteApi: () => ({ useLoaderData: () => loaderData }),
 }))
 
 // EventCard stub
@@ -45,22 +33,22 @@ vi.mock('@/components/common/Loading', () => ({
 }))
 
 import { ExploreResults } from '@/components/explore/ExploreResults'
-import { logger } from '@/utils/logger'
 
 beforeEach(() => {
-  fetcherImpl.mockReset()
-  // Reset shared explore state to defaults
-  exploreState.page = 1
-  exploreState.limit = 10
-  exploreState.search = ''
-  exploreState.categories = []
-  exploreState.sortBy = 'recent'
-  exploreState.timeRange = 'all'
+  loaderData.results = Promise.resolve({ logs: [], hasMore: false, nextPage: null })
 })
 
 afterEach(() => {
   cleanup()
 })
+
+// `use` suspends on the first render even for a settled promise; flushing inside
+// an async `act` lets React retry it deterministically.
+const renderResults = async () => {
+  await act(async () => {
+    render(<ExploreResults />)
+  })
+}
 
 const fakeLog = (id: number, title = `t${id}`) => ({
   id,
@@ -74,51 +62,44 @@ const fakeLog = (id: number, title = `t${id}`) => ({
   categories: [],
 })
 
-describe('ExploreResults — Bug #3 regression', () => {
-  it('aborts in-flight requests when filters change rapidly; only latest renders', async () => {
-    // First call: never resolves until aborted; capture its signal
-    let firstSignal: AbortSignal | undefined
-    fetcherImpl.mockImplementationOnce(({ signal }: { signal: AbortSignal }) => {
-      firstSignal = signal
-      return new Promise(() => {
-        /* hang */
-      })
-    })
-    fetcherImpl.mockResolvedValueOnce({
-      success: true,
-      data: [fakeLog(2, 'second')],
+describe('ExploreResults', () => {
+  it('renders one card per log from the resolved loader promise', async () => {
+    loaderData.results = Promise.resolve({
+      logs: [fakeLog(1, 'first'), fakeLog(2, 'second')],
       hasMore: false,
       nextPage: null,
     })
 
-    const { rerender } = render(<ExploreResults />)
+    await renderResults()
 
-    // Trigger a rerender with changed search to start a second request and abort the first.
-    exploreState.search = 'ghost'
-    rerender(<ExploreResults />)
-
-    await waitFor(() => {
-      expect(screen.getByTestId('event-card-2')).toBeInTheDocument()
-    })
-
-    expect(firstSignal?.aborted).toBe(true)
-    // The card from the (never-resolved) first request must NOT be in the DOM.
-    expect(screen.queryByTestId('event-card-1')).toBeNull()
+    expect(screen.getByTestId('event-card-1')).toHaveTextContent('first')
+    expect(screen.getByTestId('event-card-2')).toHaveTextContent('second')
+    expect(screen.queryByTestId('no-logs')).toBeNull()
   })
-})
 
-describe('ExploreResults — Bug #13 regression', () => {
-  it('routes fetch errors through logger.error (not console.error)', async () => {
-    fetcherImpl.mockRejectedValueOnce(new Error('boom'))
+  it('renders NoLogsFound for an empty page', async () => {
+    await renderResults()
 
-    render(<ExploreResults />)
+    expect(screen.getByTestId('no-logs')).toBeInTheDocument()
+    expect(screen.queryByTestId(/^event-card-/)).toBeNull()
+  })
 
-    await waitFor(() => {
-      expect(vi.mocked(logger.error)).toHaveBeenCalled()
+  it('shows the Loading fallback while the promise is pending', async () => {
+    let resolve!: (value: unknown) => void
+    loaderData.results = new Promise((r) => {
+      resolve = r
     })
 
-    const calledArgs = vi.mocked(logger.error).mock.calls.flat()
-    const calledWithBoom = calledArgs.some((a) => a instanceof Error && a.message === 'boom')
-    expect(calledWithBoom).toBe(true)
+    await renderResults()
+
+    expect(screen.getByTestId('loading')).toBeInTheDocument()
+    expect(screen.queryByTestId('no-logs')).toBeNull()
+
+    await act(async () => {
+      resolve({ logs: [fakeLog(3)], hasMore: false, nextPage: null })
+    })
+
+    expect(screen.getByTestId('event-card-3')).toBeInTheDocument()
+    expect(screen.queryByTestId('loading')).toBeNull()
   })
 })

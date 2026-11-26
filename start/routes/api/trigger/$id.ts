@@ -2,11 +2,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { VALIDATION_MESSAGES } from '@/constants'
 import { serverEnv } from '@/env/server'
+import { createFriendly, type FriendlyMessages } from '@/services/friendly'
 import { imagePipeline } from '@/services/imagePipeline'
 import { defineHandlers, method } from '@/services/route/defineHandlers'
 import { ok } from '@/utils/http'
 import { logger } from '@/utils/logger'
-import { createFriendly, type FriendlyMessages } from '../log/_friendly'
 
 // Operator endpoint: "regenerate this one's image, now". It resets the row to
 // `Created` with a fresh attempt budget and enqueues it — a plain enqueue would

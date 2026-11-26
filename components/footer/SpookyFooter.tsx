@@ -3,12 +3,12 @@ import { Version } from './Version'
 
 interface FooterLink {
   text: string
-  href: string
+  to: '/new' | '/explore'
 }
 
 const footerLinks: FooterLink[] = [
-  { text: 'New Haunting', href: '/new' },
-  { text: 'Explore Archives', href: '/explore' },
+  { text: 'New Haunting', to: '/new' },
+  { text: 'Explore Archives', to: '/explore' },
 ] as const
 
 export function SpookyFooter() {
@@ -18,7 +18,7 @@ export function SpookyFooter() {
         <ul className="flex gap-6 justify-center items-center animate-fade-in-up motion-safe:animate-duration-700">
           {footerLinks.map((link) => (
             <li key={link.text}>
-              <SpookyLink href={link.href}>{link.text}</SpookyLink>
+              <SpookyLink to={link.to}>{link.text}</SpookyLink>
             </li>
           ))}
         </ul>

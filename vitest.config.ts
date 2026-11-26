@@ -1,9 +1,11 @@
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url))
+const { version } = JSON.parse(readFileSync(path.join(rootDir, 'package.json'), 'utf8'))
 
 // Note: we deliberately do NOT load `cloudflare()` or `tanstackStart()` plugins
 // here — they boot a Wrangler runtime which breaks Vitest's worker pool.
@@ -11,6 +13,10 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url))
 // via the `/** @vitest-environment happy-dom */` pragma at the top of the file.
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(version),
+    __BUILD_ID__: JSON.stringify('test-build'),
+  },
   plugins: [react()],
   resolve: {
     alias: {
@@ -33,7 +39,7 @@ export default defineConfig({
     ],
     server: {
       deps: {
-        inline: ['@tanstack/react-router', 'nuqs'],
+        inline: ['@tanstack/react-router'],
       },
     },
     coverage: {

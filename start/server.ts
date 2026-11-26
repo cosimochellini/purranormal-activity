@@ -1,4 +1,5 @@
 import { createStartHandler, defaultStreamHandler } from '@tanstack/react-start/server'
+import { withEdgeCache } from '@/services/edgeCache.server'
 import { createQueueConsumer, imagePipeline } from '@/services/imagePipeline'
 import { logger } from '@/utils/logger'
 
@@ -13,14 +14,16 @@ import { logger } from '@/utils/logger'
  * up, with no error anywhere. Keep this a plain object literal.
  *
  * Keep this file a wiring shim: it sits outside the vitest coverage include
- * list, so all the logic lives in `services/imagePipeline/`.
+ * list, so all the logic lives in `services/imagePipeline/` and
+ * `services/edgeCache.server.ts`.
  */
-const fetch = createStartHandler(defaultStreamHandler)
+const startFetch = createStartHandler(defaultStreamHandler)
 
 const consume = createQueueConsumer({ pipeline: imagePipeline })
 
 export default {
-  fetch,
+  fetch: (request: Request, _env: unknown, ctx: ExecutionContext) =>
+    withEdgeCache(request, ctx, () => startFetch(request)),
   // Return the promise rather than using `ctx.waitUntil`: the runtime keeps
   // the invocation alive for a returned promise, whereas `waitUntil` would let
   // the handler resolve before the ack/retry decisions were made.

@@ -1,10 +1,7 @@
 import { useCallback } from 'react'
 import type { LogWithCategories } from '@/db/schema'
-import type { LogAllResponse } from '@/types/api/log-all'
-import { fetcher } from '@/utils/fetch'
+import { listLogs } from '@/start/services/logs'
 import { usePartialState } from './state'
-
-const getLogs = fetcher<LogAllResponse, { page: string; limit: string }>('/api/log/all')
 
 interface UseInfiniteScrollState {
   logs: LogWithCategories[]
@@ -33,26 +30,17 @@ export function useInfiniteScroll({ initialLogs, initialLimit }: UseInfiniteScro
       setState({ isLoading: true })
 
       try {
-        const response = await getLogs({
-          query: {
-            page: page.toString(),
-            limit: initialLimit.toString(),
-          },
+        const response = await listLogs({ data: { page, limit: initialLimit } })
+
+        // Filter out any duplicates (though this should be rare with proper pagination)
+        const newLogs = response.logs.filter((log) => !logs.some((l) => l.id === log.id))
+
+        setState({
+          logs: [...logs, ...newLogs],
+          nextPage: response.nextPage,
+          hasMore: response.hasMore,
+          isLoading: false,
         })
-
-        if (response.success) {
-          const { data, hasMore: apiHasMore, nextPage: apiNextPage } = response
-
-          // Filter out any duplicates (though this should be rare with proper pagination)
-          const newLogs = data.filter((log) => !logs.some((l) => l.id === log.id))
-
-          setState({
-            logs: [...logs, ...newLogs],
-            nextPage: apiNextPage,
-            hasMore: apiHasMore,
-            isLoading: false,
-          })
-        }
       } catch (_error) {
         // Just set loading to false and continue
         setState({ isLoading: false })

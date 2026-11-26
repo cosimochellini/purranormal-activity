@@ -35,7 +35,7 @@ export function NotFoundPage() {
           />
         </div>
 
-        <SpookyLink href="/" prefetch>
+        <SpookyLink to="/">
           <SpookyButton>Return to Safety</SpookyButton>
         </SpookyLink>
       </main>

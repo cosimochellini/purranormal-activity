@@ -86,17 +86,6 @@ describe('lazy semantics (post-load mutation reflected)', () => {
   })
 })
 
-describe('serverEnv.version', () => {
-  it('returns the npm_package_version when set', () => {
-    process.env.npm_package_version = '9.9.9'
-    expect(serverEnv.version).toBe('9.9.9')
-  })
-
-  it('falls back to empty string when unset', () => {
-    expect(serverEnv.version).toBe('')
-  })
-})
-
 // The drizzle client is constructed by `@/drizzle` and reads `TURSO_*` env
 // vars. Historically the construction was eager at module-load (the getter
 // values were snapshotted inside libsql's `expandConfig`), which would crash

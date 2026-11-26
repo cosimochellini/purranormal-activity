@@ -1,9 +1,12 @@
 import { IconX } from '@tabler/icons-react'
+import { useRouter } from '@tanstack/react-router'
+import { useServerFn } from '@tanstack/react-start'
 import cn from 'classnames'
 import { useState } from 'react'
+import { submitLog as submitLogFn } from '@/start/services/logs'
 import type { FollowUpQuestion } from '@/types/api/log-refine'
-import type { LogSubmitBody, LogSubmitResponse } from '@/types/api/log-submit'
-import { fetcher } from '@/utils/fetch'
+import { invalidateTags } from '@/utils/invalidation'
+import { secretErrorMessage } from '@/utils/secret'
 import { logger } from '../../utils/logger'
 import { SpookyButton } from '../common/SpookyButton'
 import { SpookyInput } from '../common/SpookyInput'
@@ -15,8 +18,6 @@ interface AnsweredQuestion extends FollowUpQuestion {
   answer: string
   otherText: string | null
 }
-
-const submitLog = fetcher<LogSubmitResponse, never, LogSubmitBody>('/api/log/submit', 'POST')
 
 // Helper functions
 const MAX_OTHER_TEXT_LENGTH = 150
@@ -88,6 +89,8 @@ export function RefinementSection({
   onNext,
   onPrevious,
 }: StateSectionProps) {
+  const router = useRouter()
+  const submitLog = useServerFn(submitLogFn)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [answers, setAnswers] = useState<AnsweredQuestion[]>(
     () => questions?.map((q) => ({ ...q, answer: '', otherText: null })) ?? [],
@@ -125,7 +128,7 @@ export function RefinementSection({
         return { question: a.question, answer: a.answer }
       })
 
-      const response = await submitLog({ body: { description, answers: payloadAnswers, secret } })
+      const response = await submitLog({ data: { description, answers: payloadAnswers, secret } })
 
       if (!response.success) {
         // Handle validation errors from API
@@ -139,8 +142,14 @@ export function RefinementSection({
         return
       }
 
-      onNext?.({ logId: response.id, missingCategories: response.missingCategories })
+      await invalidateTags(router, ['logs'])
+      onNext?.({ logId: response.id })
     } catch (error) {
+      const secretError = secretErrorMessage(error)
+      if (secretError) {
+        setFieldErrors({ secret: [secretError] })
+        return
+      }
       // Handle network or unexpected errors
       logger.error('Failed to submit log:', error)
       setErrorMessage('Unable to save the event. Please check your connection and try again.')

@@ -1,7 +1,7 @@
 import type { ZodType } from 'zod'
 import * as z from 'zod'
+import type { FriendlyReporter } from '@/services/friendly'
 import type { AIResult } from '@/services/storyForge'
-import type { FriendlyReporter } from '@/start/routes/api/log/_friendly'
 import { methodNotAllowed as methodNotAllowedResponse, ok } from '@/utils/http'
 import type { InvalidationTag } from '@/utils/invalidation'
 import { createScopedLogger, type Logger, type LoggerSink } from '@/utils/logger'

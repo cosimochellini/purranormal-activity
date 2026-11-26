@@ -89,7 +89,7 @@ Default local URL is shown in terminal (typically `http://localhost:3000`).
 
 ### Image generation
 
-Generation never runs inside a request. `POST /api/log/submit` saves the row as
+Generation never runs inside a request. The `submitLog` server function saves the row as
 `Created` and enqueues a job; the queue consumer in `start/server.ts` does the
 work, retries **once** after 30s on a transient failure, and marks the row
 `Error` when the attempt budget is spent or the failure is deterministic (a
@@ -168,7 +168,7 @@ wrangler deploy --dry-run --config dist/server/wrangler.json
 - `/new`
 - `/:id`
 - `/:id/edit`
-- `/api/*` internal routes
+- `/api/script`, `/api/trigger/:id` operator routes (everything the UI does goes through server functions)
 
 ## Manual QA
 

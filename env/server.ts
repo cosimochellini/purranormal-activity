@@ -46,7 +46,4 @@ export const serverEnv = {
       .map((s) => s.trim())
       .filter(Boolean)
   },
-  get version() {
-    return process.env.npm_package_version ?? ''
-  },
 }

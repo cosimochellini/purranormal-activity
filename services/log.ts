@@ -12,13 +12,13 @@ const sorting = {
   [SortBy.Title]: [asc(log.title)],
 } as const satisfies Record<SortBy, SQL[]>
 
-const now = Date.now()
-
-const ranges = {
+// Window lengths, not cutoffs: the cutoff is taken per query. A module-level
+// `Date.now()` would freeze at isolate start and drift on a long-lived Worker.
+const rangeMs = {
   [TimeRange.All]: 0,
-  [TimeRange.Day]: now - time({ days: 1 }),
-  [TimeRange.Week]: now - time({ days: 7 }),
-  [TimeRange.Month]: now - time({ days: 30 }),
+  [TimeRange.Day]: time({ days: 1 }),
+  [TimeRange.Week]: time({ days: 7 }),
+  [TimeRange.Month]: time({ days: 30 }),
 } as const satisfies Record<TimeRange, number>
 
 async function addCategories(logs: Log[]) {
@@ -90,7 +90,7 @@ export async function getLogs({
     : undefined
 
   const timeRangeCondition =
-    timeRange !== TimeRange.All ? gte(log.createdAt, ranges[timeRange]) : undefined
+    timeRange !== TimeRange.All ? gte(log.createdAt, Date.now() - rangeMs[timeRange]) : undefined
 
   const logs = await db
     .select()

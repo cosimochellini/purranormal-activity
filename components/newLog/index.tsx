@@ -16,7 +16,6 @@ export interface FormValues {
   description: string
   questions: FollowUpQuestion[]
   logId: number
-  missingCategories: string[]
 }
 
 export interface StateSectionProps {
@@ -25,7 +24,6 @@ export interface StateSectionProps {
   description?: string
   questions?: FollowUpQuestion[]
   logId?: number
-  missingCategories?: string[]
 }
 
 const stateMap = {
@@ -73,7 +71,6 @@ export function NewLogForm() {
       description={body?.description}
       questions={body?.questions}
       logId={body?.logId}
-      missingCategories={body?.missingCategories}
     />
   )
 }
