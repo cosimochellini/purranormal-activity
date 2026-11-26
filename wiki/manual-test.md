@@ -218,12 +218,12 @@
 
 #### TC-DET-003: Notification Button (if visible)
 
-| Field               | Value                                                            |
-| ------------------- | ---------------------------------------------------------------- |
-| **Priority**        | Low                                                              |
-| **Prerequisites**   | Existing event                                                   |
-| **Steps**           | 1. Navigate to `/{id}`<br>2. If present, tap "Send Notification" |
-| **Expected Result** | - Request sent<br>- Visual feedback (success or error)           |
+| Field               | Value                                                                                                                                                                               |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Priority**        | Low                                                                                                                                                                                 |
+| **Prerequisites**   | Existing event                                                                                                                                                                      |
+| **Steps**           | 1. Navigate to `/{id}`<br>2. Tap "Send Notification"<br>3. Enter a wrong secret, tap "Send"<br>4. Enter the correct secret, tap "Send"                                              |
+| **Expected Result** | - A modal asks for the secret before anything is sent<br>- Step 3: the error shows under the secret field, nothing is sent<br>- Step 4: success or failure result in the same modal |
 
 ---
 

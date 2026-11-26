@@ -139,7 +139,7 @@ Three tables in Turso (SQLite): `log` (events with title, description, status, i
 - Errors/pending: router-wide `defaultErrorComponent` (`RouteError`), `defaultPendingComponent` (`Loading`), `defaultNotFoundComponent` (`NotFoundPage`).
 - Links: `TransitionLink` / `SpookyLink` are typed router links (`to` + `params`); preloading comes from `defaultPreload: 'intent'`.
 - Server fn builder method is `.validator()` (this Start version has no `.inputValidator()`).
-- Cache strategy: `/` and `/$id` opt into the SSR edge cache with route `headers()` returning `CACHE_CONTROL.PAGE` (`s-maxage=60`); `start/server.ts` wraps the Start handler with `withEdgeCache`, keyed by URL + `__BUILD_ID__`, and never caches URLs with a query string; writes (server functions, `/api/trigger/$id`) call `purgePages`. `caches.default` is a no-op on `*.workers.dev`, so it only takes effect on a custom domain. `/$id` sends `no-store` while its image is `Created`, `/` while its list is empty. `/explore` is not edge-cached.
+- Cache strategy: `/` and `/$id` opt into the SSR edge cache with route `headers()` returning `CACHE_CONTROL.PAGE` (`s-maxage=60`); `start/server.ts` wraps the Start handler with `withEdgeCache`, keyed by URL + `__BUILD_ID__`, and never caches URLs with a query string; writes (server functions, `/api/trigger/$id`) call `purgePages`. `caches.default` is a no-op on `*.workers.dev`, so it only takes effect on a custom domain. Pages build the header with `pageCacheControl` (`utils/cacheControl.ts`): `no-store` while a `/$id` image is `Created`, while `/` has an empty list, or whenever the root categories degraded to `[]`. `/explore` is not edge-cached.
 
 ## Design Theme
 

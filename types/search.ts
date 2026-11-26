@@ -19,6 +19,9 @@ export enum TimeRange {
  * Every field falls back to its default instead of failing: a hand-edited or
  * stale link still renders the page.
  */
+/** Longest search the schema accepts; the search box enforces it too. */
+export const SEARCH_MAX_LENGTH = 200
+
 export const EXPLORE_DEFAULTS = {
   page: 1,
   limit: 10,
@@ -44,7 +47,7 @@ export const exploreSearchSchema = z.object({
     .max(50)
     .default(EXPLORE_DEFAULTS.limit)
     .catch(EXPLORE_DEFAULTS.limit),
-  search: z.preprocess(toText, z.string().max(200)).default('').catch(''),
+  search: z.preprocess(toText, z.string().max(SEARCH_MAX_LENGTH)).default('').catch(''),
   categories: z
     .preprocess(toList, z.array(z.coerce.number().int().positive()))
     .default([])

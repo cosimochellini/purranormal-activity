@@ -6,11 +6,11 @@ import { NotFoundPage } from '@/components/common/NotFoundPage'
 import { SendNotificationButton } from '@/components/common/SendNotificationButton'
 import { EventImage } from '@/components/events/EventImage'
 import { ImageStatusPoller } from '@/components/image/ImageStatusPoller'
-import { CACHE_CONTROL } from '@/constants'
 import { LogStatus } from '@/data/enum/logStatus'
 import { APP_URL } from '@/env/public'
 import { publicUrl } from '@/services/imageStore'
 import { getLogById } from '@/start/services/logs'
+import { pageCacheControl } from '@/utils/cacheControl'
 import { transitions } from '@/utils/viewTransition'
 
 export const Route = createFileRoute('/$id/')({
@@ -53,12 +53,8 @@ export const Route = createFileRoute('/$id/')({
   },
   // A row still generating flips status within minutes, and a missing row may
   // appear soon: cache neither.
-  headers: ({ loaderData }) => ({
-    'Cache-Control':
-      !loaderData || loaderData.status === LogStatus.Created
-        ? CACHE_CONTROL.NO_STORE
-        : CACHE_CONTROL.PAGE,
-  }),
+  headers: ({ loaderData, matches }) =>
+    pageCacheControl(!!loaderData && loaderData.status !== LogStatus.Created, matches),
   notFoundComponent: NotFoundPage,
   component: RouteComponent,
 })

@@ -31,11 +31,10 @@ export const Route = createRootRoute({
     links: [{ rel: 'icon', href: '/favicon.ico', sizes: 'any' }],
   }),
   // Categories are read by every page that shows a badge. They only change by
-  // hand in the DB, so the client never refetches them after the first load.
-  // `getCategories` never throws (a DB failure degrades to `[]`), so no page
-  // depends on this read succeeding.
+  // hand in the DB; the 5-minute staleTime bounds how long a degraded `[]`
+  // (`getCategories` never throws) can stick in a client session.
   loader: () => getCategories(),
-  staleTime: Number.POSITIVE_INFINITY,
+  staleTime: 5 * 60_000,
   notFoundComponent: NotFoundPage,
   // The document lives in the shell, which renders even when a root-level
   // error replaces `component`: the error page still gets styles and hydrates.

@@ -170,14 +170,24 @@ describe('listLogs', () => {
 })
 
 describe('getCategories', () => {
-  it('degrades a failure to [] without memoising it, then reads once per isolate', async () => {
+  it('degrades every failure to [] without memoising it, then reads once per isolate', async () => {
+    // A missing TURSO_* env throws synchronously from the lazy db proxy.
+    selectFrom.mockImplementationOnce(() => {
+      throw new Error('Missing required env: TURSO_DATABASE_URL')
+    })
+    await expect(call(fns.getCategories, undefined)).resolves.toEqual([])
+
     selectFrom.mockRejectedValueOnce(new Error('db down'))
+    await expect(call(fns.getCategories, undefined)).resolves.toEqual([])
+
+    // An unseeded table is not memoised either.
+    selectFrom.mockResolvedValueOnce([])
     await expect(call(fns.getCategories, undefined)).resolves.toEqual([])
 
     selectFrom.mockResolvedValueOnce([{ id: 1, name: 'Ghost', icon: 'ghost' }])
     await expect(call(fns.getCategories, undefined)).resolves.toHaveLength(1)
     await call(fns.getCategories, undefined)
 
-    expect(selectFrom).toHaveBeenCalledTimes(2)
+    expect(selectFrom).toHaveBeenCalledTimes(4)
   })
 })

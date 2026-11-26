@@ -137,14 +137,12 @@ describe('uploadCover', () => {
     )
   })
 
-  it('returns the verbatim cause string when imageStore.put throws, and does not flip the status', async () => {
+  it('keeps the cause out of the response when imageStore.put throws, and does not flip the status', async () => {
     vi.mocked(imageStore.put).mockRejectedValueOnce(new Error('boom'))
 
-    // `Failed to upload file ${error}` embeds the cause's `.toString()`
-    // (an Error stringifies to `Error: boom`).
     expect(await uploadCover(form())).toEqual({
       success: false,
-      error: 'Failed to upload file Error: boom',
+      error: 'Failed to upload file',
     })
     expect(fakeDb.update).not.toHaveBeenCalled()
   })

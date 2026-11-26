@@ -98,16 +98,23 @@ export const listLogs = createServerFn({ method: 'GET' })
 
 // ponytail: categories only change by hand in the DB, so one read per isolate.
 // Add a TTL if categories ever become editable at runtime.
-let categoriesCache: Promise<(typeof category.$inferSelect)[]> | undefined
+let categoriesCache: (typeof category.$inferSelect)[] | undefined
 
-/** Never throws: a failed read is logged, not memoised, and degrades to no categories. */
-export const getCategories = createServerFn({ method: 'GET' }).handler(() => {
-  categoriesCache ??= Promise.resolve(db.select().from(category)).catch((error) => {
+/**
+ * Never throws: any failure (DB or a missing env, which throws synchronously)
+ * is logged and degrades to no categories. Only a non-empty read is memoised,
+ * so a blip or an unseeded table is retried on the next call.
+ */
+export const getCategories = createServerFn({ method: 'GET' }).handler(async () => {
+  if (categoriesCache) return categoriesCache
+  try {
+    const rows = await db.select().from(category)
+    if (rows.length > 0) categoriesCache = rows
+    return rows
+  } catch (error) {
     logger.error('Failed to load categories:', error)
-    categoriesCache = undefined
     return []
-  })
-  return categoriesCache
+  }
 })
 
 // --- writes -----------------------------------------------------------------

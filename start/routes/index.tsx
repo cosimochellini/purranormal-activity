@@ -3,9 +3,9 @@ import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { InfiniteEvents } from '@/components/events/InfiniteEvents'
 import { SpookyFooter } from '@/components/footer/SpookyFooter'
 import { HeroSection } from '@/components/hero/HeroSection'
-import { CACHE_CONTROL } from '@/constants'
 import { APP_URL } from '@/env/public'
 import { getRecentLogs, HOME_PAGE_SIZE } from '@/start/services/logs'
+import { pageCacheControl } from '@/utils/cacheControl'
 
 const HOME_TITLE = 'Paranormal Kitten Logger'
 const HOME_DESCRIPTION = 'Track the magical mishaps and spooky shenanigans of your enchanted kitten'
@@ -27,9 +27,7 @@ export const Route = createFileRoute('/')({
   }),
   loader: () => getRecentLogs(),
   // `getRecentLogs` turns a DB failure into `[]`: never cache an empty list.
-  headers: ({ loaderData }) => ({
-    'Cache-Control': loaderData?.length ? CACHE_CONTROL.PAGE : CACHE_CONTROL.NO_STORE,
-  }),
+  headers: ({ loaderData, matches }) => pageCacheControl(!!loaderData?.length, matches),
   component: RouteComponent,
 })
 

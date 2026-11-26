@@ -1,7 +1,7 @@
 import { getRouteApi } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import type { ExploreSearch } from '@/types/search'
-import { SortBy, TimeRange } from '../../types/search'
+import { SEARCH_MAX_LENGTH, SortBy, TimeRange } from '../../types/search'
 import { SpookyInput } from '../common/SpookyInput'
 import { SpookySelect } from '../common/SpookySelect'
 import { CategorySelector } from '../editLog/CategorySelector'
@@ -55,6 +55,7 @@ export function ExploreFilters() {
             id="search"
             label="Search Mysteries"
             value={searchText}
+            maxLength={SEARCH_MAX_LENGTH}
             onChange={(e) => setSearchText(e.target.value)}
             placeholder="Search for supernatural events..."
           />

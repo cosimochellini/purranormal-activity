@@ -294,8 +294,9 @@ export const uploadCover = async (form: FormData): Promise<UploadIdResponse> => 
 
     return { success: true }
   } catch (error) {
+    // The cause (SQL, R2 detail) goes to the log, not to the browser.
     logger.error('Failed to upload cover:', error)
-    return { success: false, error: `Failed to upload file ${error}` }
+    return { success: false, error: 'Failed to upload file' }
   }
 }
 
