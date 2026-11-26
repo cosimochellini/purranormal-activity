@@ -16,7 +16,7 @@ export const readSecret = (data: unknown): string => {
       : typeof data === 'object' && data !== null
         ? (data as { secret?: unknown }).secret
         : undefined
-  return typeof value === 'string' ? value.trim() : ''
+  return typeof value === 'string' ? value : ''
 }
 
 /**

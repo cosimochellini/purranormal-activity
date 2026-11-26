@@ -1,5 +1,5 @@
 import { getRouteApi } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ExploreSearch } from '@/types/search'
 import { SortBy, TimeRange } from '../../types/search'
 import { SpookyInput } from '../common/SpookyInput'
@@ -16,6 +16,15 @@ export function ExploreFilters() {
   // The box is local state so typing stays instant; the URL (and with it the
   // loader) follows once the user pauses.
   const [searchText, setSearchText] = useState(filters.search)
+  // The search value this component last wrote to the URL. A URL change that
+  // doesn't match it came from elsewhere (a nav link, back/forward) and wins.
+  const pushedSearch = useRef(filters.search)
+
+  useEffect(() => {
+    if (filters.search === pushedSearch.current) return
+    pushedSearch.current = filters.search
+    setSearchText(filters.search)
+  }, [filters.search])
 
   // Any filter change starts over from the first page. `replace` keeps typing
   // out of the history stack.
@@ -24,14 +33,13 @@ export function ExploreFilters() {
 
   useEffect(() => {
     if (searchText === filters.search) return
-    const timer = setTimeout(
-      () =>
-        navigate({
-          search: (prev) => ({ ...prev, search: searchText, page: 1 }),
-          replace: true,
-        }),
-      SEARCH_DEBOUNCE_MS,
-    )
+    const timer = setTimeout(() => {
+      pushedSearch.current = searchText
+      navigate({
+        search: (prev) => ({ ...prev, search: searchText, page: 1 }),
+        replace: true,
+      })
+    }, SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(timer)
   }, [searchText, filters.search, navigate])
 

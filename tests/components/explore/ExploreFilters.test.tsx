@@ -55,6 +55,34 @@ const navigatedSearch = (call: number) => {
 }
 
 describe('ExploreFilters — debounced search', () => {
+  it('follows a search change made outside the box (e.g. a nav link to /explore)', () => {
+    Object.assign(search, { search: 'cat' })
+    const { rerender } = render(<ExploreFilters />)
+    expect(screen.getByLabelText('Search Mysteries')).toHaveValue('cat')
+
+    // The floating menu's plain `/explore` link clears the search in the URL.
+    Object.assign(search, { search: '' })
+    rerender(<ExploreFilters />)
+    wait(1000)
+
+    expect(screen.getByLabelText('Search Mysteries')).toHaveValue('')
+    // The stale 'cat' must not be written back.
+    expect(navigate).not.toHaveBeenCalled()
+  })
+
+  it('keeps what the user is typing when its own search lands in the URL', () => {
+    const { rerender } = render(<ExploreFilters />)
+
+    type('gh')
+    wait(400)
+    type('gho')
+    // The router commits the 'gh' navigation while the user keeps typing.
+    Object.assign(search, { search: 'gh' })
+    rerender(<ExploreFilters />)
+
+    expect(screen.getByLabelText('Search Mysteries')).toHaveValue('gho')
+  })
+
   it('updates the input at once and navigates once after 400ms, back on page 1', () => {
     render(<ExploreFilters />)
 

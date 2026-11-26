@@ -51,6 +51,7 @@ export default defineConfig({
         'hooks/**',
         'components/**',
         'start/routes/api/**',
+        'start/services/**',
         'env/**',
       ],
       exclude: [

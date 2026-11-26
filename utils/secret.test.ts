@@ -3,8 +3,8 @@ import { VALIDATION_MESSAGES } from '@/constants'
 import { readSecret, secretErrorMessage } from './secret'
 
 describe('readSecret', () => {
-  it('reads and trims the secret from an object', () => {
-    expect(readSecret({ secret: '  s3cret ' })).toBe('s3cret')
+  it('reads the secret from an object as is', () => {
+    expect(readSecret({ secret: ' s3cret ' })).toBe(' s3cret ')
   })
 
   it('reads the secret from FormData', () => {

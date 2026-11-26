@@ -1,19 +1,8 @@
-import type { InvalidationTag } from './invalidation'
-
-interface OkInit {
-  invalidate?: readonly InvalidationTag[]
-}
-
-export function ok<T>(body: T, init?: OkInit) {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  }
-
-  if (init?.invalidate?.length) {
-    headers['X-Invalidate'] = init.invalidate.join(',')
-  }
-
-  return new Response(JSON.stringify(body), { status: 200, headers })
+export function ok<T>(body: T) {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  })
 }
 
 export function badRequest<T>(error?: T) {

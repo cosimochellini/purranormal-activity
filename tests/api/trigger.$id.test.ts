@@ -5,7 +5,9 @@ vi.mock('@/services/imagePipeline', () => ({
     retry: vi.fn(),
   },
 }))
+vi.mock('@/services/edgeCache.server', () => ({ purgePages: vi.fn() }))
 
+import { purgePages } from '@/services/edgeCache.server'
 import { imagePipeline } from '@/services/imagePipeline'
 import { Route } from '@/start/routes/api/trigger/$id'
 
@@ -48,17 +50,17 @@ describe('POST /api/trigger/$id', () => {
     const res = await callPost('abc')
 
     expect(await res.json()).toEqual({ success: false, error: 'Invalid log id' })
-    expect(res.headers.get('X-Invalidate')).toBeNull()
+    expect(purgePages).not.toHaveBeenCalled()
     expect(imagePipeline.retry).not.toHaveBeenCalled()
   })
 
-  it('requeues and enqueues, emitting X-Invalidate so the UI shows the pending state', async () => {
+  it('requeues and enqueues, purging the cached pages so they show the pending state', async () => {
     vi.mocked(imagePipeline.retry).mockResolvedValueOnce({ requeued: true, enqueued: true })
 
     const res = await callPost('7')
 
     expect(await res.json()).toEqual({ success: true })
-    expect(res.headers.get('X-Invalidate')).toBe('log:7')
+    expect(purgePages).toHaveBeenCalledWith('http://test', ['/', '/7'])
     expect(imagePipeline.retry).toHaveBeenCalledWith(7)
   })
 
@@ -68,10 +70,10 @@ describe('POST /api/trigger/$id', () => {
     const res = await callPost('7')
 
     expect(await res.json()).toEqual({ success: false, error: 'not-found' })
-    expect(res.headers.get('X-Invalidate')).toBeNull()
+    expect(purgePages).not.toHaveBeenCalled()
   })
 
-  it('surfaces an enqueue failure but still invalidates (the row is pending again)', async () => {
+  it('surfaces an enqueue failure but still purges (the row is pending again)', async () => {
     vi.mocked(imagePipeline.retry).mockResolvedValueOnce({ requeued: true, enqueued: false })
 
     const res = await callPost('7')
@@ -80,7 +82,7 @@ describe('POST /api/trigger/$id', () => {
       success: false,
       error: 'Failed to enqueue image generation',
     })
-    expect(res.headers.get('X-Invalidate')).toBe('log:7')
+    expect(purgePages).toHaveBeenCalledWith('http://test', ['/', '/7'])
   })
 
   it('routes a thrown retry() through the reporter', async () => {

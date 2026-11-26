@@ -71,7 +71,6 @@ describe('defineHandlers — envelope', () => {
       expect(res.status).toBe(200)
       expect(res.headers.get('Content-Type')).toBe('application/json')
       expect(await res.json()).toEqual({ success: true, who: 'kitten' })
-      expect(res.headers.get('X-Invalidate')).toBeNull()
     })
   })
 
@@ -141,7 +140,7 @@ describe('defineHandlers — envelope', () => {
   })
 
   describe('AIResult unwrap', () => {
-    it('unwraps an AIResult.ok return into a success Response with invalidate honoured', async () => {
+    it('unwraps an AIResult.ok return into a success Response', async () => {
       const reporter = makeStubReporter()
 
       const handlers = defineHandlers({
@@ -152,7 +151,6 @@ describe('defineHandlers — envelope', () => {
               ok: true,
               value: {
                 data: { success: true, id: 9 },
-                invalidate: ['logs' as const, 'log:9' as const],
               } satisfies RouteResult<{ success: true; id: number }>,
             }) as const,
         },
@@ -163,7 +161,6 @@ describe('defineHandlers — envelope', () => {
         params: {},
       })
       expect(res.status).toBe(200)
-      expect(res.headers.get('X-Invalidate')).toBe('logs,log:9')
       expect(await res.json()).toEqual({ success: true, id: 9 })
     })
 

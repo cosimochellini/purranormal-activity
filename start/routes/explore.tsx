@@ -1,7 +1,6 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { SpookyBackground } from '@/components/background/SpookyBackground'
 import { ExploreSection } from '@/components/explore/ExploreSection'
-import { CACHE_CONTROL } from '@/constants'
 import { APP_URL } from '@/env/public'
 import { listLogs } from '@/start/services/logs'
 import { EXPLORE_DEFAULTS, exploreSearchSchema } from '@/types/search'
@@ -17,7 +16,6 @@ export const Route = createFileRoute('/explore')({
   // Deferred: the loader resolves at once, so the filters stay mounted while a
   // new result page streams in (SSR included) behind `<Await>`.
   loader: ({ deps }) => ({ results: listLogs({ data: deps }) }),
-  headers: () => ({ 'Cache-Control': CACHE_CONTROL.PAGE }),
   head: () => ({
     meta: [
       { title: EXPLORE_TITLE },

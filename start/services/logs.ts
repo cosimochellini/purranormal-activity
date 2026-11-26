@@ -37,12 +37,13 @@ export const HOME_PAGE_SIZE = 6 * 3
 /**
  * Gate for every write. Runs before the function's own validator, so it reads
  * the raw payload (an object or an upload's `FormData`). Same rule as the
- * operator routes: case-insensitive, surrounding whitespace ignored.
+ * operator routes and the old submit/upload endpoints: the input is lowercased
+ * and compared to `SECRET`, which is stored lowercase.
  */
 const secretMiddleware = createMiddleware({ type: 'function' }).server(({ data, next }) => {
   const secret = readSecret(data)
   if (!secret) throw new Error(VALIDATION_MESSAGES.SECRET_REQUIRED)
-  if (secret.toLowerCase() !== serverEnv.secret.toLowerCase()) {
+  if (secret.toLowerCase() !== serverEnv.secret) {
     throw new Error(VALIDATION_MESSAGES.SECRET_INVALID)
   }
   return next()

@@ -40,7 +40,7 @@ afterEach(() => {
 describe('withEdgeCache', () => {
   it('caches a page that opts in, then serves it without rendering', async () => {
     const render = vi.fn(() => page(PAGE_CACHE_CONTROL))
-    const req = () => new Request('https://kitten.test/explore?search=cat')
+    const req = () => new Request('https://kitten.test/7')
 
     expect(await (await withEdgeCache(req(), ctx, render)).text()).toBe('<html>page</html>')
     await flush()
@@ -48,9 +48,7 @@ describe('withEdgeCache', () => {
 
     expect(render).toHaveBeenCalledTimes(1)
     // The key carries the build id so a deploy never serves old asset links.
-    expect([...store.keys()][0]).toBe(
-      `https://kitten.test/explore?search=cat&__build=${__BUILD_ID__}`,
-    )
+    expect([...store.keys()][0]).toBe(`https://kitten.test/7?__build=${__BUILD_ID__}`)
   })
 
   it.each([
@@ -67,6 +65,8 @@ describe('withEdgeCache', () => {
     new Request('https://kitten.test/_serverFn/abc'),
     new Request('https://kitten.test/api/script'),
     new Request('https://kitten.test/', { headers: { 'x-tsr-serverFn': 'true' } }),
+    // Query-string variants can't be purged by path, so they are never cached.
+    new Request('https://kitten.test/?utm_source=x'),
   ])('bypasses the cache for $url ($method)', async (request) => {
     const render = vi.fn(() => page(PAGE_CACHE_CONTROL))
     await withEdgeCache(request, ctx, render)

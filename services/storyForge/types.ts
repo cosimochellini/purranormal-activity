@@ -39,7 +39,6 @@ export interface StoryForge {
    * cache as the prompt-rendering path.
    */
   categories(): Promise<LogDetailsCategory[]>
-  invalidateCategories(): void
 }
 
 export interface CategoriesPort {

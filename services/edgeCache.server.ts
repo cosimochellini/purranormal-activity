@@ -6,7 +6,9 @@ import { logger } from '@/utils/logger'
  * Worker responses are never cached by the CDN on their own, so this caches
  * page HTML explicitly. A page opts in through its route `headers()` by sending
  * `CACHE_CONTROL.PAGE`; everything else (server functions, `/api/*`, non-GET,
- * non-200, pages without `s-maxage`) passes straight through.
+ * non-200, pages without `s-maxage`, any URL with a query string) passes
+ * straight through. Query strings are excluded so a purge of `/<path>` always
+ * drops the only cached copy of that page.
  *
  * `caches.default` is a silent no-op on `*.workers.dev` hosts: this layer only
  * does anything once the worker is served from a custom domain.
@@ -26,8 +28,8 @@ const pageCache = (): Cache | undefined =>
 
 const isPageRequest = (request: Request) => {
   if (request.method !== 'GET' || request.headers.has('x-tsr-serverFn')) return false
-  const { pathname } = new URL(request.url)
-  return !pathname.startsWith('/api/') && !pathname.startsWith('/_serverFn')
+  const { pathname, search } = new URL(request.url)
+  return !search && !pathname.startsWith('/api/') && !pathname.startsWith('/_serverFn')
 }
 
 /**

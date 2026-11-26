@@ -42,14 +42,6 @@ describe('POST /api/script', () => {
     expect(imagePipeline.enqueuePending).toHaveBeenCalledOnce()
   })
 
-  it('never emits X-Invalidate — enqueueing mutates no row a loader reads', async () => {
-    vi.mocked(imagePipeline.enqueuePending).mockResolvedValueOnce({ processed: 3 })
-
-    const res = await callPost()
-
-    expect(res.headers.get('X-Invalidate')).toBeNull()
-  })
-
   it('reports processed:0 for an idle queue', async () => {
     const res = await callPost()
 
@@ -78,7 +70,6 @@ describe('POST /api/script', () => {
     expect(body.success).toBe(false)
     expect(body.processed).toBe(0)
     expect(body.error).toMatch(/process logs|temporarily unavailable/i)
-    expect(res.headers.get('X-Invalidate')).toBeNull()
   })
 
   it('GET responds with 405 Method Not Allowed advertising POST', async () => {

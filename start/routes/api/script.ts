@@ -56,9 +56,9 @@ export const Route = createFileRoute('/api/script')({
           reporter,
           handler: async () => {
             const { processed } = await imagePipeline.enqueuePending()
-            // No `invalidate`: enqueueing mutates no row that a loader reads.
-            // The detail page's poller picks the change up once the consumer
-            // has actually generated the image.
+            // Enqueueing mutates no row a page reads, so nothing to purge: the
+            // detail page's poller picks the change up once the consumer has
+            // generated the image.
             return { data: { success: true as const, processed } }
           },
         }),

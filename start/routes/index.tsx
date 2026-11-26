@@ -26,7 +26,10 @@ export const Route = createFileRoute('/')({
     links: [{ rel: 'canonical', href: `${APP_URL}/` }],
   }),
   loader: () => getRecentLogs(),
-  headers: () => ({ 'Cache-Control': CACHE_CONTROL.PAGE }),
+  // `getRecentLogs` turns a DB failure into `[]`: never cache an empty list.
+  headers: ({ loaderData }) => ({
+    'Cache-Control': loaderData?.length ? CACHE_CONTROL.PAGE : CACHE_CONTROL.NO_STORE,
+  }),
   component: RouteComponent,
 })
 
