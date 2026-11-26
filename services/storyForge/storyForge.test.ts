@@ -695,7 +695,7 @@ describe('prompt snapshots', () => {
         - Titolo all'inizio del messaggio accattivante in grassetto con emoji collegate all'evento
         - La descrizione dopo il titolo deve essere breve e misteriosa (max 500 caratteri)
         - Link al dettaglio con testo invitante e clickbait, suscitando pena, curiosità e empatia per il pulcino (max 100 caratteri)
-        - Il link deve essere: https://purranormal-activity.pages.dev/21
+        - Il link deve essere: https://purranormal-activity.grandekello.workers.dev//21
         - Tono giocoso ma misterioso, perfetto per social media
 
         "

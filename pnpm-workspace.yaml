@@ -1,7 +1,16 @@
 packages:
   - "."
 
-onlyBuiltDependencies:
-  - "@tailwindcss/oxide"
-  - esbuild
-  - workerd
+allowBuilds:
+  "@tailwindcss/oxide": true
+  esbuild: true
+  workerd: true
+
+# pnpm 11+ reads only auth/registry settings from .npmrc
+engineStrict: true
+fetchTimeout: 100000
+fetchRetries: 3
+fetchRetryFactor: 2
+fetchRetryMintimeout: 10000
+fetchRetryMaxtimeout: 60000
+maxsockets: 50

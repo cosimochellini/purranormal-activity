@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "purranormal-activity",
-  "compatibility_date": "2026-02-24",
+  "compatibility_date": "2026-11-17",
   "compatibility_flags": ["nodejs_compat"],
   // `main` — and not the presence of `start/server.ts` — decides what the
   // deployed worker exports. `@cloudflare/vite-plugin` builds the ssr

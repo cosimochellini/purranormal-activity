@@ -40,8 +40,8 @@ Husky + lint-staged auto-formats staged files on commit via Biome.
 
 ### Primary Tech Stack
 
-- **Framework**: TanStack Start 1.162.9 + TanStack Router 1.162.9
-- **Build**: Vite 7.3.1 + `@cloudflare/vite-plugin` 1.25.5
+- **Framework**: TanStack Start 1.169.7 + TanStack Router 1.170.46
+- **Build**: Vite 8.3.8 + `@cloudflare/vite-plugin` 1.70.1
 - **Deployment**: Cloudflare Workers via `wrangler deploy`
 
 ### Shared Infrastructure (unchanged by migration)
@@ -53,8 +53,8 @@ Husky + lint-staged auto-formats staged files on commit via Biome.
 - **Background work**: Cloudflare Queues (`purranormal-image-jobs` + dead-letter) and a 5-minute cron trigger
 - **Storage**: Cloudflare R2 for generated images, via the native `IMAGES` bucket binding
 - **Linter/Formatter**: Biome (single quotes, no semicolons, 2-space indent, 100 char line width)
-- **Package Manager**: pnpm
-- **Node**: 22
+- **Package Manager**: pnpm 12
+- **Node**: 26
 
 ## Architecture
 

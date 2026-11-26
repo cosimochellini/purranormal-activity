@@ -20,7 +20,7 @@ Track magical mishaps and spooky shenanigans of an enchanted kitten. This projec
 
 ## Requirements
 
-- Node.js `22.x`
+- Node.js `26.x`
 - `pnpm`
 
 ## Setup
