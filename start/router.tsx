@@ -7,10 +7,9 @@ import { routeTree } from './routeTree.gen'
 export function getRouter() {
   return createRouter({
     routeTree,
+    // Hover/touch preloads (fresh for the default 30s) make the click that
+    // follows render from cache. Mutations invalidate what they touch.
     defaultPreload: 'intent',
-    // Hover/touch preloads stay fresh for 30s, so the click that follows renders
-    // from cache. Mutations invalidate the routes they touch explicitly.
-    defaultPreloadStaleTime: 30_000,
     defaultPendingComponent: Loading,
     defaultErrorComponent: RouteError,
     defaultNotFoundComponent: NotFoundPage,

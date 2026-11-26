@@ -103,3 +103,20 @@ describe('ExploreResults', () => {
     expect(screen.queryByTestId('loading')).toBeNull()
   })
 })
+
+describe('ExploreResults — failed page', () => {
+  it('shows an inline error instead of unmounting the route', async () => {
+    const failed = Promise.reject(new Error('Failed to fetch logs'))
+    failed.catch(() => {})
+    loaderData.results = failed
+    // React logs caught boundary errors; keep the test output quiet.
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    await act(async () => {
+      render(<ExploreResults />)
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent('The archives are unreachable')
+    consoleError.mockRestore()
+  })
+})

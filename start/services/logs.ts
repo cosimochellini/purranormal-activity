@@ -43,7 +43,15 @@ export const HOME_PAGE_SIZE = 6 * 3
 const secretMiddleware = createMiddleware({ type: 'function' }).server(({ data, next }) => {
   const secret = readSecret(data)
   if (!secret) throw new Error(VALIDATION_MESSAGES.SECRET_REQUIRED)
-  if (secret.toLowerCase() !== serverEnv.secret) {
+  let expected: string
+  try {
+    expected = serverEnv.secret
+  } catch (error) {
+    // Missing `SECRET`: log the config error, don't ship its text to the browser.
+    logger.error('secretMiddleware:', error)
+    throw new Error('Unable to verify the secret right now')
+  }
+  if (secret.toLowerCase() !== expected) {
     throw new Error(VALIDATION_MESSAGES.SECRET_INVALID)
   }
   return next()
@@ -75,18 +83,29 @@ export const getRecentLogs = createServerFn({ method: 'GET' }).handler(async () 
   }
 })
 
+// Thrown errors are serialized to the browser with their message, so a DB
+// error (SQL, params) is logged here and replaced with a fixed one.
 export const listLogs = createServerFn({ method: 'GET' })
   .validator(exploreSearchSchema)
-  .handler(({ data }) => listLogsAction(data))
+  .handler(async ({ data }) => {
+    try {
+      return await listLogsAction(data)
+    } catch (error) {
+      logger.error('Failed to list logs:', error)
+      throw new Error('Failed to fetch logs')
+    }
+  })
 
 // ponytail: categories only change by hand in the DB, so one read per isolate.
 // Add a TTL if categories ever become editable at runtime.
 let categoriesCache: Promise<(typeof category.$inferSelect)[]> | undefined
 
+/** Never throws: a failed read is logged, not memoised, and degrades to no categories. */
 export const getCategories = createServerFn({ method: 'GET' }).handler(() => {
   categoriesCache ??= Promise.resolve(db.select().from(category)).catch((error) => {
+    logger.error('Failed to load categories:', error)
     categoriesCache = undefined
-    throw error
+    return []
   })
   return categoriesCache
 })

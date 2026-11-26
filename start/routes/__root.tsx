@@ -1,4 +1,5 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from '@tanstack/react-router'
+import type { ReactNode } from 'react'
 import { FloatingMenu } from '@/components/common/FloatingMenu'
 import { NotFoundPage } from '@/components/common/NotFoundPage'
 import { getCategories } from '@/start/services/logs'
@@ -31,13 +32,27 @@ export const Route = createRootRoute({
   }),
   // Categories are read by every page that shows a badge. They only change by
   // hand in the DB, so the client never refetches them after the first load.
+  // `getCategories` never throws (a DB failure degrades to `[]`), so no page
+  // depends on this read succeeding.
   loader: () => getCategories(),
   staleTime: Number.POSITIVE_INFINITY,
   notFoundComponent: NotFoundPage,
+  // The document lives in the shell, which renders even when a root-level
+  // error replaces `component`: the error page still gets styles and hydrates.
+  shellComponent: RootDocument,
   component: RootComponent,
 })
 
 function RootComponent() {
+  return (
+    <>
+      <FloatingMenu />
+      <Outlet />
+    </>
+  )
+}
+
+function RootDocument({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="h-full scrollbar-hidden" suppressHydrationWarning>
       <head>
@@ -47,8 +62,7 @@ function RootComponent() {
         className="min-h-full w-full bg-linear-to-b from-midnight-blue to-deep-purple text-ghost-white antialiased"
         suppressHydrationWarning
       >
-        <FloatingMenu />
-        <Outlet />
+        {children}
         <Scripts />
       </body>
     </html>

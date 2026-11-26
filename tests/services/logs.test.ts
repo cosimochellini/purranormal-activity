@@ -162,10 +162,17 @@ describe('edge-cache purge', () => {
   })
 })
 
+describe('listLogs', () => {
+  it('replaces a DB error with a fixed message before it reaches the browser', async () => {
+    vi.mocked(actions.listLogs).mockRejectedValueOnce(new Error('Failed query: select … params: x'))
+    await expect(call(fns.listLogs, {})).rejects.toThrow(/^Failed to fetch logs$/)
+  })
+})
+
 describe('getCategories', () => {
-  it('reads once per isolate and retries after a failure', async () => {
+  it('degrades a failure to [] without memoising it, then reads once per isolate', async () => {
     selectFrom.mockRejectedValueOnce(new Error('db down'))
-    await expect(call(fns.getCategories, undefined)).rejects.toThrow('db down')
+    await expect(call(fns.getCategories, undefined)).resolves.toEqual([])
 
     selectFrom.mockResolvedValueOnce([{ id: 1, name: 'Ghost', icon: 'ghost' }])
     await expect(call(fns.getCategories, undefined)).resolves.toHaveLength(1)

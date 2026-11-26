@@ -186,7 +186,9 @@ export function EditLogForm({ initialData }: EditLogFormProps) {
         return
       }
 
-      await invalidateTags(router, ['logs', `log:${initialData.id}`])
+      // Not `log:<id>`: that would re-run this page's loader on a deleted row
+      // and flash the 404 before the navigation lands.
+      await invalidateTags(router, ['logs'])
       await navigate({ to: '/', viewTransition: true })
     } catch (err) {
       const message = secretErrorMessage(err)
