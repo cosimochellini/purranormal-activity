@@ -110,3 +110,37 @@ describe('EditLogForm — Bug #8 regression', () => {
     resolveUpdate({ success: true })
   })
 })
+
+describe('EditLogForm — cover upload', () => {
+  const uploadBtn = () => screen.getByRole('button', { name: /Update image/i })
+  const fileInput = (container: HTMLElement) =>
+    container.querySelector('input[type="file"]') as HTMLInputElement
+  const typeSecret = () =>
+    fireEvent.change(screen.getByPlaceholderText('Secret'), { target: { value: 's3cret' } })
+  const pickFile = (container: HTMLElement) =>
+    fireEvent.change(fileInput(container), {
+      target: { files: [new File(['x'], 'cover.png', { type: 'image/png' })] },
+    })
+
+  it('blocks the upload and asks for the secret when it is empty', () => {
+    const { container } = render(<EditLogForm initialData={initialData as never} />)
+    const click = vi.spyOn(fileInput(container), 'click')
+
+    fireEvent.click(uploadBtn())
+
+    expect(click).not.toHaveBeenCalled()
+    expect(screen.getByText('Enter the secret first')).toBeInTheDocument()
+  })
+
+  it("shows the server's error text when the upload is rejected", async () => {
+    fetcherImpls.upload.mockRejectedValueOnce(
+      new Response(JSON.stringify({ error: 'Invalid secret' }), { status: 400 }),
+    )
+    const { container } = render(<EditLogForm initialData={initialData as never} />)
+
+    typeSecret()
+    pickFile(container)
+
+    expect(await screen.findByText('Invalid secret')).toBeInTheDocument()
+  })
+})

@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { eq } from 'drizzle-orm'
+import { UPLOAD_LIMITS } from '@/constants'
 import { LogStatus } from '@/data/enum/logStatus'
 import { log } from '@/db/schema'
 import { db } from '@/drizzle'
@@ -11,10 +12,11 @@ import { badRequest, ok } from '@/utils/http'
 // This route is intentionally OFF the `defineHandlers` envelope:
 //   - It reads `multipart/form-data` (not JSON), so the envelope's body
 //     slot is not applicable.
-//   - It returns `400` (`badRequest`) on every failure path, with three
-//     distinct copies — `'File is required'` / `'Invalid log ID'` / a
-//     verbatim catch-path `Failed to upload file ${error}` — preserving
-//     the pre-refactor surface byte-for-byte.
+//   - It returns `400` (`badRequest`) on every failure path, each with its
+//     own `error` copy (`'File is required'`, `'Invalid log ID'`,
+//     `'Invalid secret'`, `'File must be an image'`, `'File is too large…'`,
+//     `'Log not found'`, and the verbatim catch-path
+//     `Failed to upload file ${error}`) — the edit form shows that copy as is.
 //
 // Adopting the envelope for this route would require either collapsing the
 // granular copies (which broke the surface in PR #18) or extending the
@@ -46,6 +48,19 @@ export const Route = createFileRoute('/api/upload/$id')({
             return badRequest('Invalid secret')
           }
 
+          // Any image format is accepted: the object is still stored as
+          // `cover.webp`, and browsers sniff the real format in `<img>`.
+          if (!file.type.startsWith('image/')) return badRequest('File must be an image')
+          if (file.size > UPLOAD_LIMITS.MAX_BYTES) {
+            return badRequest('File is too large (max 5 MB)')
+          }
+
+          // Checked before the R2 write: otherwise an unknown id leaves an
+          // orphan `<id>/cover.webp` behind and the status update below
+          // silently matches zero rows.
+          const row = await db.select({ id: log.id }).from(log).where(eq(log.id, logId)).get()
+          if (!row) return badRequest('Log not found')
+
           const bytes = new Uint8Array(await file.arrayBuffer())
           await imageStore.put(logId, bytes)
 
@@ -63,7 +78,7 @@ export const Route = createFileRoute('/api/upload/$id')({
             })
             .where(eq(log.id, logId))
 
-          return ok<UploadIdResponse>({ success: true })
+          return ok<UploadIdResponse>({ success: true }, { invalidate: ['logs', `log:${logId}`] })
         } catch (error) {
           return badRequest(`Failed to upload file ${error}`)
         }

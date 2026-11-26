@@ -5,7 +5,7 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { Suspense, useRef, useState } from 'react'
 import { SpookyButton } from '@/components/common/SpookyButton'
 import { EventImage } from '@/components/events/EventImage'
-import { UI_CONFIG } from '@/constants'
+import { UI_CONFIG, UPLOAD_LIMITS } from '@/constants'
 import type { LogWithCategories } from '@/db/schema'
 import { usePartialState } from '@/hooks/state'
 import type { LogIdDeleteResponse, LogIdPutBody, LogIdPutResponse } from '@/types/api/log-id'
@@ -39,12 +39,25 @@ function UpdateImageButton({ id, secret }: UpdateImageButtonProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
   const handleClick = () => {
+    // The secret field sits at the bottom of the form, below this button, so
+    // an empty secret is the common mistake: catch it before opening the picker.
+    if (!secret.trim()) {
+      setError('Enter the secret first')
+      return
+    }
+    setError('')
     fileInputRef.current?.click()
   }
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    if (file.size > UPLOAD_LIMITS.MAX_BYTES) {
+      setError('File is too large (max 5 MB)')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
 
     setIsLoading(true)
     try {
@@ -72,7 +85,12 @@ function UpdateImageButton({ id, secret }: UpdateImageButtonProps) {
       setError('')
     } catch (err) {
       logger.error('Failed to upload image:', err)
-      setError('Failed to upload image')
+      // `fetcher` throws the raw `Response` on non-2xx; the route puts a
+      // specific reason in `error` (e.g. 'Invalid secret', 'Log not found').
+      const body = (err instanceof Response ? await err.json().catch(() => null) : null) as {
+        error?: unknown
+      } | null
+      setError(typeof body?.error === 'string' ? body.error : 'Failed to upload image')
     } finally {
       setIsLoading(false)
       if (fileInputRef.current) {
