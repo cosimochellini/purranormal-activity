@@ -3,7 +3,7 @@ import { getLog } from '@/services/log'
 import { logger } from '@/utils/logger'
 
 export const getLogById = createServerFn({ method: 'GET' })
-  .inputValidator((data: { id: number }) => data)
+  .validator((data: { id: number }) => data)
   .handler(async ({ data }) => {
     try {
       return await getLog(data.id)

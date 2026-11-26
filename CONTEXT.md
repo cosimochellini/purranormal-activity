@@ -11,9 +11,10 @@ The module that owns the image-generation state machine: prompt refinement,
 image model call, R2 write, error recording on the `log` row, and Telegram
 escalation when a secondary write fails after a primary failure. Delivery and
 redelivery are Cloudflare Queues' job, not this module's — the pipeline decides
-whether a failure *deserves* a retry and whether the budget is spent.
+whether a failure _deserves_ a retry and whether the budget is spent.
 
 Public surface (see `services/imagePipeline/`):
+
 - `submit({ draft, categoryIds })` — insert + link categories + enqueue. Never generates inline.
 - `enqueue(logId, source)` — fire-and-forget queue write; returns `false` instead of throwing.
 - `retry(logId)` — reset a row to `Created` with a fresh budget, then enqueue. Backs the operator endpoint.
@@ -80,5 +81,6 @@ write fails after a primary failure has already been recorded. Pipeline core
 stays presentation-free; adapters own the channel + formatting.
 
 Two adapters live in `services/imagePipeline/adapters/`:
+
 - `telegramEscalator` — production fan-out to every configured Telegram chat.
 - `noopEscalator` — test-only sink that records calls without sending.
