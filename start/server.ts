@@ -22,8 +22,12 @@ const startFetch = createStartHandler(defaultStreamHandler)
 const consume = createQueueConsumer({ pipeline: imagePipeline })
 
 export default {
+  // Miniflare honours `s-maxage` too: skip the edge cache in `vite dev`, or every
+  // reload within 60s would serve stale SSR HTML.
   fetch: (request: Request, _env: unknown, ctx: ExecutionContext) =>
-    withEdgeCache(request, ctx, () => startFetch(request)),
+    import.meta.env.DEV
+      ? startFetch(request)
+      : withEdgeCache(request, ctx, () => startFetch(request)),
   // Return the promise rather than using `ctx.waitUntil`: the runtime keeps
   // the invocation alive for a returned promise, whereas `waitUntil` would let
   // the handler resolve before the ack/retry decisions were made.
